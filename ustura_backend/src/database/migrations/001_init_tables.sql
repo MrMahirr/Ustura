@@ -84,8 +84,7 @@ CREATE TABLE IF NOT EXISTS reservations (
     salon_id     UUID         NOT NULL REFERENCES salons (id) ON DELETE CASCADE,
     staff_id     UUID         NOT NULL REFERENCES staff (id) ON DELETE CASCADE,
     slot_start   TIMESTAMPTZ  NOT NULL,
-    slot_end     TIMESTAMPTZ  NOT NULL
-                    GENERATED ALWAYS AS (slot_start + INTERVAL '30 minutes') STORED,
+    slot_end     TIMESTAMPTZ  NOT NULL,
     status       VARCHAR(20)  NOT NULL DEFAULT 'pending'
                     CHECK (status IN ('pending', 'confirmed', 'cancelled')),
     notes        TEXT,
