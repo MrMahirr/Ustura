@@ -1,0 +1,36 @@
+# Workspace artifacts
+Thumbs.db
+.DS_Store
+*.log
+
+# Root environment
+.env
+.env.local
+.env.*.local
+
+# Backend
+/ustura_backend/node_modules/
+/ustura_backend/dist/
+/ustura_backend/build/
+/ustura_backend/coverage/
+/ustura_backend/.nyc_output/
+/ustura_backend/.temp/
+/ustura_backend/.tmp/
+/ustura_backend/.env
+/ustura_backend/.env.local
+/ustura_backend/.env.development.local
+/ustura_backend/.env.test.local
+/ustura_backend/.env.production.local
+
+# Frontend
+/Ustura_Frontend/node_modules/
+/Ustura_Frontend/.expo/
+/Ustura_Frontend/dist/
+/Ustura_Frontend/web-build/
+/Ustura_Frontend/.kotlin/
+/Ustura_Frontend/.metro-health-check*
+/Ustura_Frontend/expo-env.d.ts
+/Ustura_Frontend/*.tsbuildinfo
+/Ustura_Frontend/.env*.local
+/Ustura_Frontend/ios/
+/Ustura_Frontend/android/
