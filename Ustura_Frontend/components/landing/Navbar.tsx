@@ -1,33 +1,40 @@
 import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Platform, Pressable } from 'react-native';
 import { Link, usePathname, useRouter, type Href } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import Button from '@/components/ui/Button';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
+import { hexToRgba } from '@/utils/color';
 
 type NavbarLinkProps = {
   href: Href;
   label: string;
   isActive: boolean;
   primary: string;
-  onSurface: string;
+  onSurfaceVariant: string;
 };
 
-function NavbarLink({ href, label, isActive, primary, onSurface }: NavbarLinkProps) {
+type NavbarProps = {
+  onRegisterPress?: () => void;
+};
+
+function NavbarLink({ href, label, isActive, primary, onSurfaceVariant }: NavbarLinkProps) {
   return (
     <Link href={href} asChild>
       <Pressable style={styles.linkWrapper}>
         {({ hovered }: { hovered: boolean }) => {
-          const showUnderline = isActive || hovered;
+          const isHighlighted = isActive || hovered;
 
           return (
-            <View style={[styles.linkInner, hovered && styles.linkInnerHovered]}>
+            <View style={[styles.linkInner, isHighlighted && styles.linkInnerHovered]}>
               <Text
                 style={[
                   styles.link,
-                  { color: showUnderline ? primary : onSurface },
+                  { color: isHighlighted ? primary : onSurfaceVariant },
                 ]}>
                 {label}
               </Text>
@@ -35,7 +42,7 @@ function NavbarLink({ href, label, isActive, primary, onSurface }: NavbarLinkPro
                 style={[
                   styles.linkUnderline,
                   { backgroundColor: primary },
-                  showUnderline && styles.linkUnderlineVisible,
+                  isHighlighted && styles.linkUnderlineVisible,
                 ]}
               />
             </View>
@@ -46,7 +53,7 @@ function NavbarLink({ href, label, isActive, primary, onSurface }: NavbarLinkPro
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ onRegisterPress }: NavbarProps) {
   const { width } = useWindowDimensions();
   const layout = getLandingLayout(width);
   const isDesktop = width >= 1200;
@@ -56,17 +63,52 @@ export default function Navbar() {
   const router = useRouter();
 
   const primary = useThemeColor({}, 'primary');
-  const onSurface = useThemeColor({}, 'onSurface');
   const surface = useThemeColor({}, 'surface');
+  const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
+  const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
+  const outlineVariant = useThemeColor({}, 'outlineVariant');
+  const { theme, toggleTheme } = useAppTheme();
 
   const isAnasayfa = pathname === '/' || pathname === '/(public)' || pathname === '/(public)/index';
   const isKuaforler = pathname === '/kuaforler' || pathname === '/(public)/kuaforler';
+  const isHizmetler = pathname === '/hizmetler' || pathname === '/(public)/hizmetler';
+  const isHakkimizda = pathname === '/hakkimizda' || pathname === '/(public)/hakkimizda';
+  const navbarBackground = theme === 'light' ? 'rgba(253, 251, 255, 0.86)' : 'rgba(17, 17, 24, 0.84)';
+
+  const handleRegisterPress = () => {
+    if (onRegisterPress) {
+      onRegisterPress();
+      return;
+    }
+
+    router.push({
+      pathname: '/(public)',
+      params: { scrollTo: 'register' },
+    });
+  };
 
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: Platform.OS === 'web' ? 'rgba(19, 19, 24, 0.8)' : surface },
+        {
+          backgroundColor: Platform.OS === 'web' ? navbarBackground : surface,
+          borderBottomColor: outlineVariant,
+        },
+        Platform.OS === 'web'
+          ? ({
+              boxShadow:
+                theme === 'light'
+                  ? '0 14px 34px rgba(27, 27, 32, 0.07)'
+                  : '0 18px 38px rgba(0, 0, 0, 0.34)',
+            } as any)
+          : {
+              shadowColor: '#000000',
+              shadowOpacity: theme === 'light' ? 0.08 : 0.24,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 6,
+            },
       ]}>
       <View
         style={[
@@ -88,21 +130,28 @@ export default function Navbar() {
               label="ANASAYFA"
               isActive={isAnasayfa}
               primary={primary}
-              onSurface={onSurface}
+              onSurfaceVariant={onSurfaceVariant}
+            />
+            <NavbarLink
+              href="/(public)/hizmetler"
+              label="HIZMETLER"
+              isActive={isHizmetler}
+              primary={primary}
+              onSurfaceVariant={onSurfaceVariant}
             />
             <NavbarLink
               href="/(public)/kuaforler"
               label="KUAFORLER"
               isActive={isKuaforler}
               primary={primary}
-              onSurface={onSurface}
+              onSurfaceVariant={onSurfaceVariant}
             />
             <NavbarLink
-              href="/"
+              href="/(public)/hakkimizda"
               label="HAKKIMIZDA"
-              isActive={false}
+              isActive={isHakkimizda}
               primary={primary}
-              onSurface={onSurface}
+              onSurfaceVariant={onSurfaceVariant}
             />
           </View>
         )}
@@ -113,10 +162,42 @@ export default function Navbar() {
               title="Salonumu Kaydet"
               variant="outline"
               interactionPreset="outlineCta"
-              style={{ marginRight: 16 }}
+              onPress={handleRegisterPress}
+              style={{ marginRight: 12 }}
             />
           )}
-          <Button title="Randevu Al" interactionPreset="cta" />
+          <Button
+            title="Randevu Al"
+            interactionPreset="cta"
+            onPress={() => router.push('/(public)/kuaforler')}
+            style={{ marginRight: 12 }}
+          />
+          <Pressable
+            onPress={toggleTheme}
+            accessibilityRole="button"
+            style={({ hovered, pressed }) => [
+              styles.themeToggle,
+              {
+                backgroundColor: hovered ? surfaceContainerLow : surface,
+                borderColor: hovered ? hexToRgba(primary, 0.38) : outlineVariant,
+                transform: [{ scale: pressed ? 0.96 : hovered ? 1.02 : 1 }],
+              },
+              Platform.OS === 'web'
+                ? ({
+                    boxShadow: hovered
+                      ? `0 12px 24px ${hexToRgba(primary, 0.14)}`
+                      : '0 6px 16px rgba(27, 27, 32, 0.08)',
+                  } as any)
+                : {
+                    shadowColor: primary,
+                    shadowOpacity: hovered ? 0.16 : 0.08,
+                    shadowRadius: hovered ? 14 : 8,
+                    shadowOffset: { width: 0, height: hovered ? 8 : 4 },
+                    elevation: hovered ? 8 : 3,
+                  },
+            ]}>
+            <MaterialIcons name={theme === 'light' ? 'dark-mode' : 'light-mode'} size={20} color={primary} />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -129,8 +210,13 @@ const styles = StyleSheet.create({
     top: 0,
     width: '100%',
     zIndex: 50,
-    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)',
-    ...(Platform.OS === 'web' && { backdropFilter: 'blur(20px)' } as any),
+    borderBottomWidth: 1,
+    ...(Platform.OS === 'web'
+      ? ({
+          backdropFilter: 'blur(20px)',
+          transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 360ms ease',
+        } as any)
+      : {}),
   },
   content: {
     flexDirection: 'row',
@@ -141,11 +227,11 @@ const styles = StyleSheet.create({
   },
   logo: {
     ...Typography.headlineLg,
+    fontSize: 34,
   },
   links: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 32,
   },
   linkWrapper: {
     paddingBottom: 4,
@@ -153,15 +239,16 @@ const styles = StyleSheet.create({
   linkInner: {
     position: 'relative',
     alignSelf: 'flex-start',
-    paddingBottom: 8,
+    paddingBottom: 10,
     transform: [{ scale: 1 }],
     transition: 'transform 0.18s ease',
   } as any,
   linkInnerHovered: {
-    transform: [{ scale: 1.04 }],
+    transform: [{ scale: 1.03 }],
   },
   link: {
-    ...Typography.labelLg,
+    ...Typography.labelMd,
+    fontSize: 13,
     transition: 'color 0.18s ease',
   } as any,
   linkUnderline: {
@@ -169,12 +256,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 1.5,
+    height: 2,
     opacity: 0,
     borderRadius: 999,
     transform: [{ scaleX: 0 }],
     transformOrigin: 'center',
-    transition: 'transform 0.22s ease, opacity 0.18s ease',
+    transition: 'transform 0.24s ease, opacity 0.18s ease',
   } as any,
   linkUnderlineVisible: {
     opacity: 1,
@@ -184,4 +271,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  themeToggle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    ...(Platform.OS === 'web'
+      ? ({
+          transition: 'background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, transform 200ms ease',
+          cursor: 'pointer',
+        } as any)
+      : {}),
+  } as any,
 });

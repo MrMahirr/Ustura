@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Pressable, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
+import { hexToRgba } from '@/utils/color';
 
 export default function HowItWorks() {
   const { width } = useWindowDimensions();
@@ -14,8 +15,11 @@ export default function HowItWorks() {
   const primary = useThemeColor({}, 'primary');
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
+  const onPrimary = useThemeColor({}, 'onPrimary');
+  const surface = useThemeColor({}, 'surface');
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surfaceContainerHighest = useThemeColor({}, 'surfaceContainerHighest');
+  const outlineVariant = useThemeColor({}, 'outlineVariant');
 
   const steps = [
     {
@@ -55,31 +59,63 @@ export default function HowItWorks() {
           </Text>
         </View>
 
-        <View style={[styles.grid, { flexDirection: isWide ? 'row' : 'column', gap: isWide ? 48 : 32 }]}>
+        <View style={[styles.grid, { flexDirection: isWide ? 'row' : 'column', gap: isWide ? 48 : 24 }]}>
           {steps.map((step, index) => (
-            <View
+            <Pressable
               key={index}
               style={[
-                styles.stepCard,
+                styles.stepPressable,
                 {
                   flex: isWide ? 1 : undefined,
-                  alignItems: layout.isCompact ? 'center' : 'flex-start',
                 },
               ]}>
-              <View style={[styles.iconBox, { backgroundColor: surfaceContainerHighest, borderLeftColor: primary }]}>
-                <MaterialIcons name={step.icon} size={32} color={primary} />
-              </View>
-              <Text style={[styles.stepTitle, { color: onSurface, textAlign: layout.isCompact ? 'center' : 'left' }]}>
-                {step.title}
-              </Text>
-              <Text
-                style={[
-                  styles.stepDescription,
-                  { color: onSurfaceVariant, textAlign: layout.isCompact ? 'center' : 'left' },
-                ]}>
-                {step.description}
-              </Text>
-            </View>
+              {({ hovered, pressed }) => (
+                <View
+                  style={[
+                    styles.stepCard,
+                    {
+                      alignItems: layout.isCompact ? 'center' : 'flex-start',
+                      backgroundColor: surface,
+                      borderColor: hovered ? hexToRgba(primary, 0.22) : outlineVariant,
+                      transform: [{ translateY: hovered ? -6 : pressed ? -2 : 0 }],
+                    },
+                    Platform.OS === 'web'
+                      ? ({
+                          boxShadow: hovered
+                            ? `0 18px 34px ${hexToRgba(primary, 0.10)}`
+                            : '0 10px 24px rgba(27, 27, 32, 0.06)',
+                        } as any)
+                      : {
+                          shadowColor: '#000000',
+                          shadowOpacity: hovered ? 0.10 : 0.05,
+                          shadowRadius: hovered ? 18 : 12,
+                          shadowOffset: { width: 0, height: hovered ? 10 : 6 },
+                          elevation: hovered ? 8 : 4,
+                        },
+                  ]}>
+                  <View
+                    style={[
+                      styles.iconBox,
+                      {
+                        backgroundColor: hovered ? primary : surfaceContainerHighest,
+                        borderLeftColor: primary,
+                      },
+                    ]}>
+                    <MaterialIcons name={step.icon} size={32} color={hovered ? onPrimary : primary} />
+                  </View>
+                  <Text style={[styles.stepTitle, { color: onSurface, textAlign: layout.isCompact ? 'center' : 'left' }]}>
+                    {step.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.stepDescription,
+                      { color: onSurfaceVariant, textAlign: layout.isCompact ? 'center' : 'left' },
+                    ]}>
+                    {step.description}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
           ))}
         </View>
       </View>
@@ -105,8 +141,19 @@ const styles = StyleSheet.create({
     ...Typography.displayMd,
   },
   grid: {},
+  stepPressable: {
+    width: '100%',
+  },
   stepCard: {
     alignItems: 'flex-start',
+    padding: 28,
+    borderRadius: 20,
+    borderWidth: 1,
+    ...(Platform.OS === 'web'
+      ? ({
+          transition: 'background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, transform 220ms ease',
+        } as any)
+      : {}),
   },
   iconBox: {
     width: 64,
@@ -115,6 +162,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
     borderLeftWidth: 4,
+    borderRadius: 12,
   },
   stepTitle: {
     ...Typography.headlineLg,

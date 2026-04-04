@@ -1,9 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
 import { MaterialIcons } from '@expo/vector-icons';
+
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAppTheme } from '@/contexts/ThemeContext';
+import { Typography } from '@/constants/typography';
 import Button from '@/components/ui/Button';
+import { hexToRgba } from '@/utils/color';
 
 export interface SalonCardProps {
   id: string;
@@ -18,10 +21,13 @@ export interface SalonCardProps {
 export default function SalonCard({ name, location, rating, reviewCount, imageUrl, barbers }: SalonCardProps) {
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surfaceContainerHighest = useThemeColor({}, 'surfaceContainerHighest');
+  const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
   const primary = useThemeColor({}, 'primary');
   const surface = useThemeColor({}, 'surface');
+  const outlineVariant = useThemeColor({}, 'outlineVariant');
+  const { theme } = useAppTheme();
 
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const shadowAnim = React.useRef(new Animated.Value(0)).current;
@@ -29,47 +35,65 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
   const handleHoverIn = () => {
     Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 1.05, useNativeDriver: true }),
-      Animated.timing(shadowAnim, { toValue: 1, duration: 300, useNativeDriver: false })
+      Animated.timing(shadowAnim, { toValue: 1, duration: 300, useNativeDriver: false }),
     ]).start();
   };
 
   const handleHoverOut = () => {
     Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
-      Animated.timing(shadowAnim, { toValue: 0, duration: 300, useNativeDriver: false })
+      Animated.timing(shadowAnim, { toValue: 0, duration: 300, useNativeDriver: false }),
     ]).start();
   };
 
   return (
-    <Pressable 
-      onHoverIn={handleHoverIn} 
-      onHoverOut={handleHoverOut}
-      style={styles.pressableWrapper}
-    >
-      <Animated.View style={[styles.card, { 
-        backgroundColor: surfaceContainerLow,
-        shadowColor: primary,
-        shadowOpacity: shadowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.15] }),
-        shadowRadius: 30,
-        elevation: shadowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) as any,
-      }]}>
-        
-        {/* Image Container */}
+    <Pressable onHoverIn={handleHoverIn} onHoverOut={handleHoverOut} style={styles.pressableWrapper}>
+      <Animated.View
+        style={[
+          styles.card,
+          {
+            backgroundColor: surfaceContainerLow,
+            borderColor: outlineVariant,
+            shadowColor: primary,
+            shadowOpacity: shadowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.15] }),
+            shadowRadius: 30,
+            elevation: shadowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) as any,
+          },
+        ]}>
         <View style={styles.imageWrapper}>
-          <Animated.Image 
-            source={{ uri: imageUrl }} 
-            style={[styles.image, { transform: [{ scale: scaleAnim }] }]} 
+          <Animated.Image
+            source={{ uri: imageUrl }}
+            style={[
+              styles.image,
+              {
+                transform: [{ scale: scaleAnim }],
+                opacity: theme === 'light' ? 0.9 : 0.72,
+              },
+            ]}
             resizeMode="cover"
           />
-          {/* Glass Rating Badge */}
-          <View style={[styles.ratingBadge, { backgroundColor: Platform.OS === 'web' ? 'rgba(19, 19, 24, 0.8)' : surface }]}>
+
+          <View
+            style={[
+              styles.ratingBadge,
+              {
+                backgroundColor:
+                  theme === 'light'
+                    ? Platform.OS === 'web'
+                      ? 'rgba(255, 255, 255, 0.92)'
+                      : surfaceContainerLowest
+                    : Platform.OS === 'web'
+                      ? 'rgba(19, 19, 24, 0.8)'
+                      : surface,
+                borderColor: hexToRgba(primary, theme === 'light' ? 0.22 : 0.16),
+              },
+            ]}>
             <MaterialIcons name="star" size={14} color={primary} />
             <Text style={[styles.ratingText, { color: onSurface }]}>{rating.toFixed(1)}</Text>
             <Text style={[styles.reviewText, { color: onSurfaceVariant }]}>({reviewCount})</Text>
           </View>
         </View>
 
-        {/* Content Container */}
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: onSurface }]}>{name}</Text>
@@ -79,7 +103,6 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
             </View>
           </View>
 
-          {/* Barbers Chips */}
           <View style={styles.barbersWrapper}>
             {barbers.map((barber, index) => (
               <View key={index} style={[styles.barberChip, { backgroundColor: surfaceContainerHighest }]}>
@@ -88,16 +111,14 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
             ))}
           </View>
 
-          {/* Action Button */}
           <View style={styles.actionWrapper}>
-            <Button 
-              title="Randevu Al" 
+            <Button
+              title="Randevu Al"
               style={{ width: '100%', paddingVertical: 12, minHeight: 44 }}
               textStyle={{ fontSize: 12, letterSpacing: 1.5 }}
             />
           </View>
         </View>
-
       </Animated.View>
     </Pressable>
   );
@@ -111,7 +132,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     overflow: 'hidden',
-    borderRadius: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    ...(Platform.OS === 'web'
+      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 260ms ease' } as any)
+      : {}),
   },
   imageWrapper: {
     position: 'relative',
@@ -121,7 +146,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    opacity: 0.7,
   },
   ratingBadge: {
     position: 'absolute',
@@ -132,8 +156,11 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 4,
-    ...(Platform.OS === 'web' && { backdropFilter: 'blur(8px)' } as any),
+    borderRadius: 999,
+    borderWidth: 1,
+    ...(Platform.OS === 'web'
+      ? ({ backdropFilter: 'blur(8px)', transition: 'background-color 360ms ease, border-color 360ms ease' } as any)
+      : {}),
   },
   ratingText: {
     ...Typography.bodyMd,
@@ -173,7 +200,7 @@ const styles = StyleSheet.create({
   barberChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 2,
+    borderRadius: 999,
   },
   barberText: {
     fontSize: 10,
@@ -182,6 +209,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   actionWrapper: {
-    marginTop: 'auto', // pushes button to bottom
+    marginTop: 'auto',
   },
 });

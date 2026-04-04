@@ -1,13 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, useWindowDimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 import Button from '@/components/ui/Button';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
+import { hexToRgba } from '@/utils/color';
 
-export default function HeroSection() {
+type HeroSectionProps = {
+  onRegisterPress?: () => void;
+};
+
+export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const layout = getLandingLayout(width);
   const isDesktop = layout.isDesktop;
@@ -17,20 +25,28 @@ export default function HeroSection() {
   const primary = useThemeColor({}, 'primary');
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
+  const surface = useThemeColor({}, 'surface');
+  const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surfaceContainerHighest = useThemeColor({}, 'surfaceContainerHighest');
   const onPrimary = useThemeColor({}, 'onPrimary');
+  const outlineVariant = useThemeColor({}, 'outlineVariant');
+  const { theme } = useAppTheme();
 
   return (
     <View
       style={[
         styles.container,
         {
+          backgroundColor: surface,
           paddingHorizontal: layout.horizontalPadding,
           paddingTop: isTablet ? 120 : 104,
           paddingBottom: width < 768 ? 56 : 72,
         },
       ]}>
+      <View style={[styles.glowPrimary, { backgroundColor: hexToRgba(primary, theme === 'light' ? 0.12 : 0.08) }]} />
+      <View style={[styles.glowSecondary, { backgroundColor: hexToRgba(primary, theme === 'light' ? 0.06 : 0.05) }]} />
+
       <View
         style={[
           styles.content,
@@ -50,13 +66,18 @@ export default function HeroSection() {
               alignItems: isCompact ? 'center' : 'flex-start',
             },
           ]}>
+          <Text style={[styles.eyebrow, { color: primary, textAlign: isCompact ? 'center' : 'left' }]}>
+            MODERN BAKIM
+          </Text>
+
           <Text
             style={[
               styles.headline,
               {
                 color: onSurface,
                 textAlign: isCompact ? 'center' : 'left',
-                lineHeight: width < 768 ? 44 : 52,
+                fontSize: width < 768 ? 48 : width < 1280 ? 64 : 76,
+                lineHeight: width < 768 ? 56 : width < 1280 ? 72 : 84,
                 maxWidth: isCompact ? 820 : 640,
               },
             ]}>
@@ -71,6 +92,8 @@ export default function HeroSection() {
                 color: onSurfaceVariant,
                 textAlign: isCompact ? 'center' : 'left',
                 maxWidth: isCompact ? 760 : 600,
+                fontSize: width < 768 ? 18 : 20,
+                lineHeight: width < 768 ? 30 : 34,
               },
             ]}>
             Ustura ile en iyi berberleri kesfedin ve saniyeler icinde randevunuzu olusturun. Modern bakimin dijital adresi.
@@ -90,12 +113,14 @@ export default function HeroSection() {
               title="Randevu Al"
               icon="calendar-month"
               interactionPreset="cta"
+              onPress={() => router.push('/(public)/kuaforler')}
               style={isDesktop ? { marginRight: 16 } : { marginBottom: 16 }}
             />
             <Button
               title="Salonunu Kaydet"
               variant="outline"
               interactionPreset="outlineCta"
+              onPress={onRegisterPress}
             />
           </View>
         </View>
@@ -110,15 +135,40 @@ export default function HeroSection() {
               alignSelf: 'center',
             },
           ]}>
-          <View style={[styles.imageWrapper, { backgroundColor: surfaceContainerLow }]}>
+          <View
+            style={[
+              styles.imageWrapper,
+              {
+                backgroundColor: surfaceContainerLow,
+                borderColor: outlineVariant,
+              },
+              Platform.OS === 'web'
+                ? ({
+                    boxShadow:
+                      theme === 'light'
+                        ? '0 26px 60px rgba(27, 27, 32, 0.10)'
+                        : '0 26px 60px rgba(0, 0, 0, 0.34)',
+                  } as any)
+                : {
+                    shadowColor: '#000000',
+                    shadowOpacity: theme === 'light' ? 0.12 : 0.24,
+                    shadowRadius: 28,
+                    shadowOffset: { width: 0, height: 12 },
+                    elevation: 12,
+                  },
+            ]}>
             <Image
-              source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQAFGExDLMXdObkEKDhvhAaZ59gJ_Dc0c2OwcwhFxiVzAvYpa2xT4jdFEfAZb8qhu_2sE8tARQLy42nRaD4cod5Y_Q0NTPtIggI2xZ9Vpxwg0zkpXK8QLwD9J20nCYJdhuwptetN7qERG57GoVe-Om80ea2gDplgrWgOxt8owoJ4fK5Bs9pQlEedALb-QlWureGhCrJYU15cDeKdvboA_tDTknCfqX_r7hKfnrGX9xkyE_M0fkpQINIOsaQCPjH0fyIznSnhjb-5k' }}
-              style={styles.mainImage}
+              source={require('../../assets/images/landing/hero-barber.png')}
+              style={[styles.mainImage, { opacity: theme === 'light' ? 0.96 : 0.72 }]}
               resizeMode="cover"
             />
 
             <LinearGradient
-              colors={['transparent', 'rgba(19, 19, 24, 1)']}
+              colors={
+                theme === 'light'
+                  ? ['rgba(253, 251, 255, 0)', 'rgba(253, 251, 255, 0.14)', 'rgba(253, 251, 255, 0.78)']
+                  : ['rgba(17, 17, 24, 0)', 'rgba(17, 17, 24, 0.18)', 'rgba(17, 17, 24, 0.92)']
+              }
               style={StyleSheet.absoluteFillObject}
             />
 
@@ -126,17 +176,37 @@ export default function HeroSection() {
               style={[
                 styles.mockupCard,
                 {
-                  backgroundColor: Platform.OS === 'web' ? 'rgba(53, 52, 58, 0.9)' : surfaceContainerHighest,
-                  borderColor: 'rgba(230, 195, 100, 0.2)',
+                  backgroundColor:
+                    theme === 'light'
+                      ? 'rgba(255, 255, 255, 0.92)'
+                      : Platform.OS === 'web'
+                        ? 'rgba(53, 52, 58, 0.9)'
+                        : surfaceContainerHighest,
+                  borderColor: hexToRgba(primary, theme === 'light' ? 0.18 : 0.24),
                   left: width < 768 ? 20 : 32,
                   right: width < 768 ? 20 : 32,
                   bottom: width < 768 ? 20 : 32,
                   padding: width < 768 ? 20 : 24,
                 },
+                Platform.OS === 'web'
+                  ? ({
+                      boxShadow:
+                        theme === 'light'
+                          ? '0 18px 44px rgba(27, 27, 32, 0.14)'
+                          : '0 18px 44px rgba(0, 0, 0, 0.26)',
+                      backdropFilter: 'blur(18px)',
+                    } as any)
+                  : {
+                      shadowColor: '#000000',
+                      shadowOpacity: theme === 'light' ? 0.16 : 0.24,
+                      shadowRadius: 22,
+                      shadowOffset: { width: 0, height: 10 },
+                      elevation: 10,
+                    },
               ]}>
               <View style={styles.mockupHeader}>
                 <Image
-                  source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDX2Ybc6uR2gVs56Ln4AmF09y4OJyQ_EWwI3LL3-v3sYitIGL7AizrAdqxXBoXTDDOBC_CH0D4uJwuRBBItS7wEFMeFDxms2mzN4pSSPYtFaFs-urIDjT9EJIRM6z0U5ingK4EfjxNRzHLTeILoEgOAyIMvxDGoE51vRy25ZlPRwXuzyZasMbxrp3-Vyfod-tlhJeFn2tJYwEOKUvAR5la9ca2qSo1T5Jb0HPES2nzmJHdW_S0fYiun3HZ9xWwYY-PLDiBfS7IKSug' }}
+                  source={require('../../assets/images/landing/landing_avatar.png')}
                   style={styles.mockupAvatar}
                 />
                 <View>
@@ -149,10 +219,18 @@ export default function HeroSection() {
                 <View style={[styles.timeSlot, { backgroundColor: primary }]}>
                   <Text style={[styles.timeText, { color: onPrimary, fontFamily: 'Manrope-Bold' }]}>10:30</Text>
                 </View>
-                <View style={[styles.timeSlot, { backgroundColor: surfaceContainerLow }]}>
+                <View
+                  style={[
+                    styles.timeSlot,
+                    { backgroundColor: theme === 'light' ? surfaceContainerLowest : surfaceContainerLow },
+                  ]}>
                   <Text style={[styles.timeText, { color: onSurfaceVariant }]}>11:00</Text>
                 </View>
-                <View style={[styles.timeSlot, { backgroundColor: surfaceContainerLow }]}>
+                <View
+                  style={[
+                    styles.timeSlot,
+                    { backgroundColor: theme === 'light' ? surfaceContainerLowest : surfaceContainerLow },
+                  ]}>
                   <Text style={[styles.timeText, { color: onSurfaceVariant }]}>11:30</Text>
                 </View>
               </View>
@@ -166,16 +244,42 @@ export default function HeroSection() {
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 800,
+    minHeight: 700,
     justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    ...(Platform.OS === 'web'
+      ? ({ transition: 'background-color 360ms ease, color 360ms ease' } as any)
+      : {}),
   },
   content: {
     width: '100%',
     alignSelf: 'center',
   },
+  glowPrimary: {
+    position: 'absolute',
+    width: 420,
+    height: 420,
+    borderRadius: 210,
+    top: -120,
+    right: -80,
+  },
+  glowSecondary: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    bottom: 80,
+    left: -100,
+  },
   textContent: {
     width: '100%',
     zIndex: 10,
+  },
+  eyebrow: {
+    ...Typography.labelLg,
+    letterSpacing: 4,
+    marginBottom: 18,
   },
   headline: {
     ...Typography.displayLg,
@@ -195,22 +299,25 @@ const styles = StyleSheet.create({
   imageWrapper: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
-    borderColor: 'rgba(153, 144, 126, 0.2)',
+    ...(Platform.OS === 'web'
+      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 360ms ease' } as any)
+      : {}),
   },
   mainImage: {
     width: '100%',
     height: '100%',
-    opacity: 0.6,
   },
   mockupCard: {
     position: 'absolute',
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
-    ...(Platform.OS === 'web' && { backdropFilter: 'blur(8px)' } as any),
+    ...(Platform.OS === 'web'
+      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 360ms ease' } as any)
+      : {}),
   },
   mockupHeader: {
     flexDirection: 'row',
@@ -239,7 +346,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: 4,
+    borderRadius: 8,
   },
   timeText: {
     ...Typography.labelLg,

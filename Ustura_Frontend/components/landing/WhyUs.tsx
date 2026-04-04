@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, useWindowDimensions, Pressable, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
+import { hexToRgba } from '@/utils/color';
 
 export default function WhyUs() {
   const { width } = useWindowDimensions();
@@ -15,9 +18,11 @@ export default function WhyUs() {
   const primary = useThemeColor({}, 'primary');
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
+  const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surface = useThemeColor({}, 'surface');
   const outlineVariant = useThemeColor({}, 'outlineVariant');
+  const { theme } = useAppTheme();
 
   const advantages = [
     { icon: 'event-available' as const, title: '7/24 Rezervasyon', desc: 'Istediginiz zaman, her yerden randevu alin.' },
@@ -31,6 +36,7 @@ export default function WhyUs() {
       style={[
         styles.container,
         {
+          backgroundColor: surface,
           paddingVertical: layout.sectionPaddingVertical,
           paddingHorizontal: layout.horizontalPadding,
         },
@@ -76,34 +82,101 @@ export default function WhyUs() {
               },
             ]}>
             {advantages.map((adv, index) => (
-              <View
+              <Pressable
                 key={index}
                 style={[
-                  styles.advCard,
+                  styles.advCardPressable,
                   {
-                    backgroundColor: surfaceContainerLow,
                     width: isTablet ? '48%' : '100%',
                   },
                 ]}>
-                <MaterialIcons name={adv.icon} size={24} color={primary} style={{ marginBottom: 16 }} />
-                <Text style={[styles.advTitle, { color: onSurface }]}>{adv.title}</Text>
-                <Text style={[styles.advDesc, { color: onSurfaceVariant }]}>{adv.desc}</Text>
-              </View>
+                {({ hovered, pressed }) => (
+                  <View
+                    style={[
+                      styles.advCard,
+                      {
+                        backgroundColor: surfaceContainerLowest,
+                        borderColor: hovered ? hexToRgba(primary, 0.22) : outlineVariant,
+                        borderBottomColor: hovered ? primary : 'transparent',
+                        transform: [{ translateY: hovered ? -4 : pressed ? -1 : 0 }],
+                      },
+                      Platform.OS === 'web'
+                        ? ({
+                            boxShadow: hovered
+                              ? `0 16px 32px ${hexToRgba(primary, 0.10)}`
+                              : '0 8px 24px rgba(27, 27, 32, 0.05)',
+                          } as any)
+                        : {
+                            shadowColor: '#000000',
+                            shadowOpacity: hovered ? 0.10 : 0.05,
+                            shadowRadius: hovered ? 16 : 10,
+                            shadowOffset: { width: 0, height: hovered ? 10 : 5 },
+                            elevation: hovered ? 7 : 3,
+                          },
+                    ]}>
+                    <View
+                      style={[
+                        styles.advIconWrap,
+                        { backgroundColor: hovered ? hexToRgba(primary, 0.14) : surfaceContainerLow },
+                      ]}>
+                      <MaterialIcons name={adv.icon} size={24} color={primary} />
+                    </View>
+                    <Text style={[styles.advTitle, { color: onSurface }]}>{adv.title}</Text>
+                    <Text style={[styles.advDesc, { color: onSurfaceVariant }]}>{adv.desc}</Text>
+                  </View>
+                )}
+              </Pressable>
             ))}
           </View>
         </View>
 
         {isWide && (
           <View style={[styles.imageContainer, { flex: 0.95 }]}>
-            <Image
-              source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBO-zbTEblsfldl_Pculz_hOVdNwn5KRBopi_dNgZ1xGoqGbgpezo9HuFntCOoNaT3fAzEDyQ4v0f2yPzI6-DEsNpHFDqa_atm-SqhXvMPhYxLykHPnr-H2pfvIWJX7k1uLyao4iwT1ZU06GiwsHnoRXg2oODcykYkrWUUaBCW0_992qqpvvqbfFwS9Ml3PnmdsKV7KBzdc209F9EKwUT8vAShNbXfqaf5hl8KAh5KUIEvgrO3NXCCSZSEcT9Zun5H8Gnoi9_2PbqM' }}
-              style={styles.image}
-              resizeMode="cover"
-            />
+            <View
+              style={[
+                styles.imageFrame,
+                { backgroundColor: surfaceContainerLow, borderColor: outlineVariant },
+                Platform.OS === 'web'
+                  ? ({
+                      boxShadow:
+                        theme === 'light'
+                          ? '0 24px 54px rgba(27, 27, 32, 0.10)'
+                          : '0 24px 54px rgba(0, 0, 0, 0.30)',
+                    } as any)
+                  : {
+                      shadowColor: '#000000',
+                      shadowOpacity: theme === 'light' ? 0.12 : 0.22,
+                      shadowRadius: 24,
+                      shadowOffset: { width: 0, height: 12 },
+                      elevation: 10,
+                    },
+              ]}>
+              <Image
+                source={require('../../assets/images/landing/landing_why.png')}
+                style={[styles.image, { opacity: theme === 'light' ? 0.92 : 0.62 }]}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={
+                  theme === 'light'
+                    ? ['rgba(253, 251, 255, 0)', 'rgba(253, 251, 255, 0.18)', 'rgba(253, 251, 255, 0.82)']
+                    : ['rgba(17, 17, 24, 0)', 'rgba(17, 17, 24, 0.16)', 'rgba(17, 17, 24, 0.92)']
+                }
+                style={StyleSheet.absoluteFillObject}
+              />
+            </View>
             <View style={[styles.outlineBox, { borderColor: primary, opacity: 0.2 }]} />
-            <View style={[styles.quoteCard, { backgroundColor: surface, borderColor: outlineVariant }]}>
+            <View
+              style={[
+                styles.quoteCard,
+                {
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.94)' : 'rgba(24, 24, 30, 0.92)',
+                  borderColor: outlineVariant,
+                },
+                Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px)' } as any) : null,
+              ]}>
               <Text style={[styles.quoteText, { color: onSurface }]}>
-                "Ustura, kaliteyi ve kolayligi bir araya getiren tek platform."
+                Ustura, kaliteyi ve kolayligi bir araya getiren tek platform.
               </Text>
             </View>
           </View>
@@ -141,9 +214,27 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 16,
   },
+  advCardPressable: {
+    width: '100%',
+  },
   advCard: {
     padding: 24,
-    borderRadius: 4,
+    borderRadius: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    ...(Platform.OS === 'web'
+      ? ({
+          transition: 'background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, transform 220ms ease',
+        } as any)
+      : {}),
+  },
+  advIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
   advTitle: {
@@ -158,11 +249,15 @@ const styles = StyleSheet.create({
     position: 'relative',
     minHeight: 600,
   },
+  imageFrame: {
+    flex: 1,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
-    opacity: 0.4,
   },
   outlineBox: {
     position: 'absolute',
@@ -175,17 +270,16 @@ const styles = StyleSheet.create({
   },
   quoteCard: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: '-50%' }, { translateY: '-50%' }],
-    padding: 48,
+    left: 48,
+    right: 48,
+    bottom: 40,
+    padding: 32,
     borderWidth: 1,
-    width: '80%',
+    borderRadius: 18,
   },
   quoteText: {
     ...Typography.headlineLg,
     fontSize: 24,
     fontStyle: 'italic',
-    textAlign: 'center',
   },
 });

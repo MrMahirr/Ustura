@@ -1,73 +1,102 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Typography } from '@/constants/typography';
-import { MaterialIcons } from '@expo/vector-icons';
+import { getLandingLayout } from '@/components/landing/layout';
+import { hexToRgba } from '@/utils/color';
 
 export default function PromoBanner() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const layout = getLandingLayout(width);
 
   const primary = useThemeColor({}, 'primary');
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surface = useThemeColor({}, 'surface');
+  const outlineVariant = useThemeColor({}, 'outlineVariant');
 
   const features = [
     {
       icon: 'schedule' as const,
       title: 'Zaman Kaybetme',
-      desc: 'Sıra beklemeden, dilediğin saatte randevunu saniyeler içinde oluştur.'
+      desc: 'Sira beklemeden, diledigin saatte randevunu saniyeler icinde olustur.',
     },
     {
       icon: 'content-cut' as const,
-      title: 'Berberini Seç',
-      desc: 'Uzman kadroyu incele, yorumları oku ve sana en uygun ustayı seç.'
+      title: 'Berberini Sec',
+      desc: 'Uzman kadroyu incele, yorumlari oku ve sana en uygun ustayi sec.',
     },
     {
       icon: 'verified' as const,
-      title: 'Anında Onayla',
-      desc: 'Telefon trafiğine girmeden onaylı randevunun keyfini çıkar.'
-    }
+      title: 'Aninda Onayla',
+      desc: 'Telefon trafigine girmeden onayli randevunun keyfini cikar.',
+    },
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: surfaceContainerLow }]}>
-      
-      {/* Decorative Blur blob - approximate native styling */}
-      <View style={[styles.blurBlob, { backgroundColor: primary }]} />
+    <View
+      style={[
+        styles.section,
+        {
+          backgroundColor: surface,
+          paddingHorizontal: layout.horizontalPadding,
+        },
+      ]}>
+      <View style={[styles.container, { backgroundColor: surfaceContainerLow, borderColor: outlineVariant }]}>
+        <View style={[styles.blurBlob, { backgroundColor: primary }]} />
 
-      <View style={styles.content}>
-        
-        <View style={styles.header}>
-          <Text style={[styles.headline, { color: onSurface }]}>Neden Ustura Kullanmalısın?</Text>
-          <Text style={[styles.description, { color: onSurfaceVariant }]}>Bakımlı olmanın en modern ve hızlı yoluyla tanışın.</Text>
-        </View>
+        <View style={[styles.content, { maxWidth: layout.contentMaxWidth }]}>
+          <View style={styles.header}>
+            <Text style={[styles.headline, { color: onSurface }]}>Neden Ustura Kullanmalisin?</Text>
+            <Text style={[styles.description, { color: onSurfaceVariant }]}>
+              Bakimli olmanin en modern ve hizli yoluyla tanisin.
+            </Text>
+          </View>
 
-        <View style={[styles.grid, { flexDirection: isDesktop ? 'row' : 'column' }]}>
-          {features.map((feat, index) => (
-            <View key={index} style={[styles.featureCard, { flex: isDesktop ? 1 : undefined }]}>
-              <View style={[styles.iconWrapper, { backgroundColor: surface }]}>
-                <MaterialIcons name={feat.icon} size={32} color={primary} />
+          <View style={[styles.grid, { flexDirection: isDesktop ? 'row' : 'column' }]}>
+            {features.map((feat, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.featureCard,
+                  {
+                    flex: isDesktop ? 1 : undefined,
+                    borderColor: outlineVariant,
+                    backgroundColor: surface,
+                  },
+                ]}>
+                <View style={[styles.iconWrapper, { backgroundColor: hexToRgba(primary, 0.08) }]}>
+                  <MaterialIcons name={feat.icon} size={32} color={primary} />
+                </View>
+                <Text style={[styles.featTitle, { color: onSurface }]}>{feat.title}</Text>
+                <Text style={[styles.featDesc, { color: onSurfaceVariant }]}>{feat.desc}</Text>
               </View>
-              <Text style={[styles.featTitle, { color: onSurface }]}>{feat.title}</Text>
-              <Text style={[styles.featDesc, { color: onSurfaceVariant }]}>{feat.desc}</Text>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
-
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  section: {
+    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
+  },
   container: {
     position: 'relative',
     paddingVertical: 80,
     paddingHorizontal: 32,
     overflow: 'hidden',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    ...(Platform.OS === 'web'
+      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease' } as any)
+      : {}),
   },
   blurBlob: {
     position: 'absolute',
@@ -77,10 +106,8 @@ const styles = StyleSheet.create({
     height: 256,
     borderRadius: 128,
     opacity: 0.05,
-    // Note: CSS blur is not easily supported natively without expo-blur or dedicated libraries overlaying images, simulating fading blob here
   },
   content: {
-    maxWidth: 896,
     width: '100%',
     alignSelf: 'center',
     position: 'relative',
@@ -105,11 +132,14 @@ const styles = StyleSheet.create({
   featureCard: {
     alignItems: 'center',
     textAlign: 'center',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 24,
   },
   iconWrapper: {
     width: 64,
     height: 64,
-    borderRadius: 4,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,

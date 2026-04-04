@@ -1,5 +1,7 @@
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Platform } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import HowItWorks from '@/components/landing/HowItWorks';
@@ -10,19 +12,46 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function LandingPage() {
   const surface = useThemeColor({}, 'surface');
+  const router = useRouter();
+  const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const [registrationOffset, setRegistrationOffset] = React.useState<number | null>(null);
+
+  const scrollToRegistration = React.useCallback(() => {
+    if (registrationOffset === null) {
+      return;
+    }
+
+    scrollViewRef.current?.scrollTo?.({
+      y: Math.max(0, registrationOffset - 96),
+      animated: true,
+    });
+  }, [registrationOffset]);
+
+  React.useEffect(() => {
+    if (scrollTo !== 'register') {
+      return;
+    }
+
+    scrollToRegistration();
+
+    if (registrationOffset !== null) {
+      router.replace('/(public)');
+    }
+  }, [registrationOffset, router, scrollTo, scrollToRegistration]);
 
   return (
     <>
-      <Navbar />
-      <ScrollView 
+      <Navbar onRegisterPress={scrollToRegistration} />
+      <ScrollView
+        ref={scrollViewRef}
         style={[styles.container, { backgroundColor: surface }]}
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <HeroSection />
+        showsVerticalScrollIndicator={false}>
+        <HeroSection onRegisterPress={scrollToRegistration} />
         <HowItWorks />
         <WhyUs />
-        <RegistrationForm />
+        <RegistrationForm onLayout={(event) => setRegistrationOffset(event.nativeEvent.layout.y)} />
         <Footer />
       </ScrollView>
     </>
@@ -32,9 +61,9 @@ export default function LandingPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
   },
   content: {
     flexGrow: 1,
   },
 });
-

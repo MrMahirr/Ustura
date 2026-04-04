@@ -24,7 +24,7 @@ export interface ButtonProps {
   title: string;
   onPress?: () => void;
   variant?: 'primary' | 'outline' | 'ghost';
-  interactionPreset?: 'default' | 'cta' | 'outlineCta';
+  interactionPreset?: 'default' | 'subtle' | 'cta' | 'outlineCta';
   icon?: keyof typeof MaterialIcons.glyphMap;
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -52,10 +52,11 @@ export default function Button({
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const translateYAnim = React.useRef(new Animated.Value(0)).current;
   const isHovered = React.useRef(false);
+  const isSubtle = interactionPreset === 'subtle';
   const isInteractiveCta = interactionPreset === 'cta' || interactionPreset === 'outlineCta';
 
   const getRestState = () => ({
-    scale: isHovered.current ? (isInteractiveCta ? 1.02 : 1.03) : 1,
+    scale: isHovered.current ? (isInteractiveCta ? 1.02 : isSubtle ? 1.008 : 1.03) : 1,
     translateY: isHovered.current && isInteractiveCta ? -2 : 0,
   });
 
@@ -78,7 +79,7 @@ export default function Button({
 
   const handleHoverIn = () => {
     isHovered.current = true;
-    animateTransform(isInteractiveCta ? 1.02 : 1.03, isInteractiveCta ? -2 : 0, 12, 6);
+    animateTransform(isInteractiveCta ? 1.02 : isSubtle ? 1.008 : 1.03, isInteractiveCta ? -2 : 0, 12, 6);
   };
 
   const handleHoverOut = () => {
@@ -87,7 +88,7 @@ export default function Button({
   };
 
   const handlePressIn = () => {
-    animateTransform(isInteractiveCta ? 0.99 : 0.96, 0, 20, 4);
+    animateTransform(isInteractiveCta ? 0.99 : isSubtle ? 0.995 : 0.96, 0, 20, 4);
   };
 
   const handlePressOut = () => {

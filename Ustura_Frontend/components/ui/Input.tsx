@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Animated, TextInputProps } from 'react-native';
+import { View, TextInput, StyleSheet, Animated, TextInputProps, Platform } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Typography } from '@/constants/typography';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -118,6 +118,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     ...Typography.bodyLg,
     zIndex: 2,
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineWidth: 0,
+          outlineStyle: 'none',
+          boxShadow: 'none',
+        } as any)
+      : null),
   },
   icon: {
     position: 'absolute',
