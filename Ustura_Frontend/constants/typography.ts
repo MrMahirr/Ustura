@@ -14,7 +14,7 @@ export const Typography = {
   },
   headlineLg: {
     fontFamily: 'NotoSerif-Bold',
-    fontSize:42,
+    fontSize: 36,
     letterSpacing: -0.56,
   },
 

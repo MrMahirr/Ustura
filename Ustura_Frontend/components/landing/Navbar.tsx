@@ -1,14 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Platform, Pressable } from 'react-native';
 import { Link, usePathname, useRouter, type Href } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
-
 import Button from '@/components/ui/Button';
+import ThemeToggleButton from '@/components/ui/ThemeToggleButton';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
-import { hexToRgba } from '@/utils/color';
 
 type NavbarLinkProps = {
   href: Href;
@@ -64,10 +62,9 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
 
   const primary = useThemeColor({}, 'primary');
   const surface = useThemeColor({}, 'surface');
-  const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
   const outlineVariant = useThemeColor({}, 'outlineVariant');
-  const { theme, toggleTheme } = useAppTheme();
+  const { theme } = useAppTheme();
 
   const isAnasayfa = pathname === '/' || pathname === '/(public)' || pathname === '/(public)/index';
   const isKuaforler = pathname === '/kuaforler' || pathname === '/(public)/kuaforler';
@@ -172,32 +169,7 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
             onPress={() => router.push('/(public)/kuaforler')}
             style={{ marginRight: 12 }}
           />
-          <Pressable
-            onPress={toggleTheme}
-            accessibilityRole="button"
-            style={({ hovered, pressed }) => [
-              styles.themeToggle,
-              {
-                backgroundColor: hovered ? surfaceContainerLow : surface,
-                borderColor: hovered ? hexToRgba(primary, 0.38) : outlineVariant,
-                transform: [{ scale: pressed ? 0.96 : hovered ? 1.02 : 1 }],
-              },
-              Platform.OS === 'web'
-                ? ({
-                    boxShadow: hovered
-                      ? `0 12px 24px ${hexToRgba(primary, 0.14)}`
-                      : '0 6px 16px rgba(27, 27, 32, 0.08)',
-                  } as any)
-                : {
-                    shadowColor: primary,
-                    shadowOpacity: hovered ? 0.16 : 0.08,
-                    shadowRadius: hovered ? 14 : 8,
-                    shadowOffset: { width: 0, height: hovered ? 8 : 4 },
-                    elevation: hovered ? 8 : 3,
-                  },
-            ]}>
-            <MaterialIcons name={theme === 'light' ? 'dark-mode' : 'light-mode'} size={20} color={primary} />
-          </Pressable>
+          <ThemeToggleButton />
         </View>
       </View>
     </View>
@@ -271,18 +243,4 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  themeToggle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, transform 200ms ease',
-          cursor: 'pointer',
-        } as any)
-      : {}),
-  } as any,
 });

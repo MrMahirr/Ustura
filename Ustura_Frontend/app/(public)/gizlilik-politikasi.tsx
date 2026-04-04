@@ -6,10 +6,10 @@ import { Typography } from '@/constants/typography';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { jsPDF } from 'jspdf';
 
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
+import { downloadLegalPdf } from '@/utils/legal-pdf';
 
 // Document content variables
 const DOC_TITLE = "GIZLILIK POLITIKASI"; // Angilized for basic pdf font support
@@ -40,47 +40,12 @@ export default function GizlilikPolitikasiPage() {
       setIsGeneratingPdf(true);
 
       if (Platform.OS === 'web') {
-        // Direct PDF Export for web using jsPDF
-        const doc = new jsPDF();
-        
-        const margin = 20;
-        let y = 20;
-        const maxWidth = 170;
-        
-        doc.setFontSize(22);
-        doc.text(DOC_TITLE, margin, y);
-        y += 10;
-        
-        doc.setFontSize(10);
-        doc.setTextColor(150);
-        doc.text(DOC_DATE, margin, y);
-        y += 15;
-        
-        doc.setTextColor(0);
-        DOC_PARAGRAPHS.forEach((p) => {
-          // Check for page break
-          if (y > 270) {
-            doc.addPage();
-            y = 20;
-          }
-          
-          doc.setFontSize(14);
-          doc.text(p.title, margin, y);
-          y += 8;
-          
-          doc.setFontSize(11);
-          const lines = doc.splitTextToSize(p.content, maxWidth);
-          
-          if (y + (lines.length * 6) > 280) {
-            doc.addPage();
-            y = 20;
-          }
-          
-          doc.text(lines, margin, y);
-          y += (lines.length * 5.5) + 12;
+        await downloadLegalPdf({
+          title: DOC_TITLE,
+          date: DOC_DATE,
+          fileName: 'ustura-gizlilik-politikasi.pdf',
+          paragraphs: DOC_PARAGRAPHS,
         });
-        
-        doc.save('ustura-gizlilik-politikasi.pdf');
       } else {
         // Native printing logic
         const htmlContent = `

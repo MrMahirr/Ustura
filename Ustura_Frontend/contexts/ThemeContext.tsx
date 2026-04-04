@@ -12,7 +12,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
+  theme: 'dark',
   toggleTheme: () => {},
 });
 
@@ -38,23 +38,18 @@ function syncWebTheme(theme: Theme) {
   document.body.style.transition = 'background-color 360ms ease, color 360ms ease';
 }
 
+function readStoredTheme(): Theme {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (isTheme(stored)) {
+      return stored;
+    }
+  }
+  return 'dark';
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') {
-      return;
-    }
-
-    const storedTheme = window.localStorage.getItem(STORAGE_KEY);
-
-    if (isTheme(storedTheme)) {
-      setTheme(storedTheme);
-      return;
-    }
-
-    syncWebTheme('light');
-  }, []);
+  const [theme, setTheme] = useState<Theme>(readStoredTheme);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {

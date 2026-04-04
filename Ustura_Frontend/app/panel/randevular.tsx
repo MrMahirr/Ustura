@@ -2,19 +2,17 @@ import React from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
+import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import ReservationTable from '@/components/panel/ReservationTable';
 import { recentAppointments } from '@/components/panel/super-admin/data';
 import { Typography } from '@/constants/typography';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { matchesQuery } from '@/utils/matches-query';
 
 export default function RandevularPage() {
   const { width } = useWindowDimensions();
   const [query, setQuery] = React.useState('');
 
-  const neutral = useThemeColor({}, 'neutral');
-  const onSurface = useThemeColor({}, 'onSurface');
-  const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
+  const adminTheme = useSuperAdminTheme();
 
   const paddingH = width < 768 ? 16 : 32;
 
@@ -23,8 +21,17 @@ export default function RandevularPage() {
   );
 
   return (
-    <View style={[styles.page, { backgroundColor: neutral }]}>
-      <View style={styles.gridOverlay} />
+    <View style={[styles.page, { backgroundColor: adminTheme.pageBackground }]}>
+      <View
+        style={[
+          styles.gridOverlay,
+          Platform.OS === 'web'
+            ? ({
+                backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)`,
+              } as any)
+            : null,
+        ]}
+      />
 
       <PanelTopBar query={query} onQueryChange={setQuery} />
 
@@ -34,8 +41,8 @@ export default function RandevularPage() {
         showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: onSurface }]}>Randevu Yonetimi</Text>
-            <Text style={[styles.description, { color: onSurfaceVariant }]}>
+            <Text style={[styles.title, { color: adminTheme.onSurface }]}>Randevu Yonetimi</Text>
+            <Text style={[styles.description, { color: adminTheme.onSurfaceVariant }]}>
               Tum platform randevularinin ozeti. Takvim ve durum aksiyonlari API baglantisi ile genisletilecek.
             </Text>
           </View>
@@ -56,7 +63,6 @@ const styles = StyleSheet.create({
   gridOverlay: {
     ...StyleSheet.absoluteFillObject,
     opacity: Platform.OS === 'web' ? 1 : 0,
-    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(230, 195, 100, 0.05) 1px, transparent 0)',
     backgroundSize: '40px 40px',
     pointerEvents: 'none',
   } as any,
