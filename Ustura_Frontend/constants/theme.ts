@@ -1,26 +1,42 @@
-// Ustura — "The Obsidian Atelier" Design System Colors
-
 export const Colors = {
-  // Surface hierarchy
-  surface: '#131318',
-  surfaceContainerLowest: '#0E0E14',
-  surfaceContainerLow: '#1B1B20',
-  surfaceContainer: '#201F25',
-  surfaceContainerHigh: '#2B2A30',
-  surfaceContainerHighest: '#35343A',
-
-  // Primary (Gold)
-  primary: '#E6C364',
-  primaryContainer: '#C9A84C',
-  onPrimary: '#3D2E00',
-
-  // Text
-  onSurface: '#E8E8F0',
-  onSurfaceVariant: '#B0B0C8',
-
-  // Utility
-  outlineVariant: 'rgba(176, 176, 200, 0.15)',
-  error: '#F09595',
-  success: '#68D391',
-  warning: '#EF9F27',
+  light: {
+    primary: '#C9A84C',
+    secondary: '#5D5E6A',
+    tertiary: '#2E3B77',
+    neutral: '#1B1B20',
+    surface: '#FDFBFF',
+    surfaceContainerLowest: '#FFFFFF',
+    surfaceContainerLow: '#F7F6F9',
+    surfaceContainer: '#F4F3F6',
+    surfaceContainerHigh: '#EBE9ED',
+    surfaceContainerHighest: '#E4E2E6',
+    primaryContainer: '#FFE08F',
+    onPrimary: '#FFFFFF',
+    onSurface: '#1B1B20',
+    onSurfaceVariant: '#4D4637',
+    outlineVariant: '#D0C5B2',
+    error: '#BA1A1A',
+    success: '#2E8B57',
+    warning: '#C88417',
+  },
+  dark: {
+    primary: '#E6C364',
+    secondary: '#C7C5D2',
+    tertiary: '#B9C4FF',
+    neutral: '#050508',
+    surface: '#131318',
+    surfaceContainerLowest: '#0E0E13',
+    surfaceContainerLow: '#1B1B20',
+    surfaceContainer: '#1F1F25',
+    surfaceContainerHigh: '#2A292F',
+    surfaceContainerHighest: '#35343A',
+    primaryContainer: '#C9A84C',
+    onPrimary: '#3D2E00',
+    onSurface: '#E4E1E9',
+    onSurfaceVariant: '#D0C5B2',
+    outlineVariant: 'rgba(255, 255, 255, 0.06)',
+    error: '#FFB4AB',
+    success: '#4ADE80',
+    warning: '#FB923C',
+  },
 };

@@ -3,6 +3,11 @@ Thumbs.db
 .DS_Store
 *.log
 
+# Root environment
+.env
+.env.local
+.env.*.local
+
 # Backend
 /ustura_backend/node_modules/
 /ustura_backend/dist/
