@@ -7,7 +7,7 @@ import type { UserRecord } from '@/components/panel/super-admin/user-management.
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import { salonGroupedStyles as styles } from './salon-grouped.styles';
+import { userClassNames } from './presentation';
 import { getStatusPalette } from './utils';
 
 export default function UserSalonMemberCard({
@@ -26,40 +26,35 @@ export default function UserSalonMemberCard({
   return (
     <Pressable
       onPress={onPress}
+      className={userClassNames.memberCard}
       style={({ hovered }) => [
-        styles.memberCard,
-        Platform.OS === 'web' ? styles.webInteractiveCard : null,
         {
           width: basis as any,
           opacity: user.status === 'Aktif' ? 1 : user.status === 'Mesgul' ? 0.92 : 0.74,
           backgroundColor: hovered ? adminTheme.cardBackgroundStrong : adminTheme.cardBackground,
           borderColor: hovered ? adminTheme.borderStrong : adminTheme.borderSubtle,
-          ...(Platform.OS === 'web' && onPress ? ({ cursor: 'pointer' } as any) : null),
           ...(Platform.OS === 'web'
             ? ({
                 boxShadow: hovered
                   ? `0 18px 34px ${hexToRgba('#000000', 0.18)}`
                   : `0 10px 24px ${hexToRgba('#000000', 0.12)}`,
+                transition: 'transform 220ms ease, background-color 220ms ease, border-color 220ms ease, opacity 220ms ease, box-shadow 220ms ease',
+                cursor: onPress ? 'pointer' : 'default',
               } as any)
             : null),
         },
       ]}>
       {({ hovered }) => (
         <>
-          <View style={styles.memberCardTop}>
-            <View style={styles.memberAvatarWrap}>
+          <View className={userClassNames.memberCardTop}>
+            <View className={userClassNames.memberAvatarWrap}>
               <View
-                style={[
-                  styles.memberAvatarFrame,
-                  {
-                    borderColor: adminTheme.borderSubtle,
-                    backgroundColor: adminTheme.cardBackgroundStrong,
-                  },
-                ]}>
+                className={userClassNames.memberAvatarFrame}
+                style={{ borderColor: adminTheme.borderSubtle, backgroundColor: adminTheme.cardBackgroundStrong }}>
                 <Image
                   source={{ uri: user.avatarUrl }}
                   style={[
-                    styles.memberAvatar,
+                    { width: '100%', height: '100%' },
                     Platform.OS === 'web' && (user.mutedImage || isMuted)
                       ? ({ filter: hovered ? 'grayscale(0.2)' : 'grayscale(1)' } as any)
                       : null,
@@ -68,13 +63,8 @@ export default function UserSalonMemberCard({
                 />
               </View>
               <View
-                style={[
-                  styles.memberStatusDot,
-                  {
-                    backgroundColor: statusPalette.accent,
-                    borderColor: adminTheme.cardBackground,
-                  },
-                ]}
+                className={userClassNames.memberStatusDot}
+                style={{ backgroundColor: statusPalette.accent, borderColor: adminTheme.cardBackground }}
               />
             </View>
 
@@ -82,12 +72,18 @@ export default function UserSalonMemberCard({
               onPress={(event) => event.stopPropagation()}
               accessibilityRole="button"
               accessibilityLabel={`${user.name} diger islemler`}
+              className={userClassNames.memberMenuButton}
               style={({ pressed }) => [
-                styles.memberMenuButton,
                 {
                   backgroundColor: hovered ? hexToRgba(adminTheme.primary, 0.08) : 'transparent',
                   transform: [{ scale: pressed ? 0.94 : 1 }],
                 },
+                Platform.OS === 'web'
+                  ? ({
+                      transition: 'background-color 160ms ease, transform 160ms ease',
+                      cursor: 'pointer',
+                    } as any)
+                  : null,
               ]}>
               <MaterialIcons
                 name="more-vert"
@@ -97,24 +93,22 @@ export default function UserSalonMemberCard({
             </Pressable>
           </View>
 
-          <View style={styles.memberCopy}>
-            <Text style={[styles.memberName, { color: hovered ? adminTheme.primary : adminTheme.onSurface }]} numberOfLines={1}>
+          <View className={userClassNames.memberCopy}>
+            <Text className={userClassNames.memberName} style={{ color: hovered ? adminTheme.primary : adminTheme.onSurface }} numberOfLines={1}>
               {user.name}
             </Text>
-            <Text style={[styles.memberTitle, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.8) }]} numberOfLines={1}>
+            <Text className={userClassNames.memberTitle} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.8) }} numberOfLines={1}>
               {user.title}
             </Text>
           </View>
 
-          <View style={[styles.memberSpecialtiesWrap, { borderTopColor: adminTheme.borderSubtle }]}>
+          <View className={userClassNames.memberSpecialtiesWrap} style={{ borderTopColor: adminTheme.borderSubtle }}>
             {user.specialties.map((specialty) => (
               <View
                 key={`${user.id}-${specialty}`}
-                style={[
-                  styles.memberSpecialtyPill,
-                  { backgroundColor: adminTheme.cardBackgroundStrong },
-                ]}>
-                <Text style={[styles.memberSpecialtyText, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.9) }]}>
+                className={userClassNames.memberSpecialtyPill}
+                style={{ backgroundColor: adminTheme.cardBackgroundStrong }}>
+                <Text className={userClassNames.memberSpecialtyText} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.9) }}>
                   {specialty}
                 </Text>
               </View>

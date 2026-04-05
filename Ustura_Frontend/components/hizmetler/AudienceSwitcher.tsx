@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
+import { View, Text, Pressable, Animated } from 'react-native';
+
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
 
 export type Audience = 'customers' | 'owners';
 
@@ -29,54 +29,30 @@ export default function AudienceSwitcher({ active, onSwitch }: AudienceSwitcherP
   };
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.wrapper, { backgroundColor: surfaceContainerLow }]}>
+    <View className="mb-16 items-center">
+      <View className="flex-row gap-2 rounded-xl p-1.5" style={{ backgroundColor: surfaceContainerLow }}>
         <Animated.View style={{ transform: [{ scale: scaleCustomer }] }}>
           <Pressable
+            className="rounded-xl px-8 py-3.5"
             onPress={() => onSwitch('customers')}
             onHoverIn={() => animateHover(scaleCustomer, true)}
             onHoverOut={() => animateHover(scaleCustomer, false)}
-            style={[
-              styles.tab,
-              active === 'customers'
-                ? { backgroundColor: primary }
-                : {},
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                {
-                  color: active === 'customers' ? onPrimary : onSurfaceVariant,
-                },
-              ]}
-            >
-              Müşteriler İçin
+            style={active === 'customers' ? { backgroundColor: primary } : undefined}>
+            <Text className="font-body text-base font-bold" style={{ color: active === 'customers' ? onPrimary : onSurfaceVariant }}>
+              Musteriler Icin
             </Text>
           </Pressable>
         </Animated.View>
 
         <Animated.View style={{ transform: [{ scale: scaleOwner }] }}>
           <Pressable
+            className="rounded-xl px-8 py-3.5"
             onPress={() => onSwitch('owners')}
             onHoverIn={() => animateHover(scaleOwner, true)}
             onHoverOut={() => animateHover(scaleOwner, false)}
-            style={[
-              styles.tab,
-              active === 'owners'
-                ? { backgroundColor: primary }
-                : {},
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                {
-                  color: active === 'owners' ? onPrimary : onSurfaceVariant,
-                },
-              ]}
-            >
-              Kuaförler İçin
+            style={active === 'owners' ? { backgroundColor: primary } : undefined}>
+            <Text className="font-body text-base font-bold" style={{ color: active === 'owners' ? onPrimary : onSurfaceVariant }}>
+              Kuaforler Icin
             </Text>
           </Pressable>
         </Animated.View>
@@ -84,27 +60,3 @@ export default function AudienceSwitcher({ active, onSwitch }: AudienceSwitcherP
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    marginBottom: 64,
-  },
-  wrapper: {
-    flexDirection: 'row',
-    padding: 6,
-    borderRadius: 12,
-    gap: 8,
-  },
-  tab: {
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    transition: 'all 0.3s',
-  } as any,
-  tabText: {
-    ...Typography.bodyMd,
-    fontFamily: 'Manrope-Bold',
-    transition: 'color 0.3s',
-  } as any,
-});

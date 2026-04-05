@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Animated, TextInputProps, Platform } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
+import { View, TextInput, Animated, Platform, type TextInputProps } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 export interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
@@ -11,9 +11,19 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   style?: import('react-native').TextStyle;
 }
 
-export default function Input({ label, value, onChangeText, onFocus, onBlur, iconLeft, containerStyle, style, ...props }: InputProps) {
+export default function Input({
+  label,
+  value,
+  onChangeText,
+  onFocus,
+  onBlur,
+  iconLeft,
+  containerStyle,
+  style,
+  ...props
+}: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  
+
   const primary = useThemeColor({}, 'primary');
   const outlineVariant = useThemeColor({}, 'outlineVariant');
   const onSurface = useThemeColor({}, 'onSurface');
@@ -21,8 +31,6 @@ export default function Input({ label, value, onChangeText, onFocus, onBlur, ico
 
   const hasValue = value && value.length > 0;
   const isFloating = isFocused || hasValue;
-
-  // Animation values
   const floatAnim = useRef(new Animated.Value(isFloating ? 1 : 0)).current;
 
   useEffect(() => {
@@ -35,12 +43,12 @@ export default function Input({ label, value, onChangeText, onFocus, onBlur, ico
 
   const handleFocus = (e: any) => {
     setIsFocused(true);
-    onFocus && onFocus(e);
+    onFocus?.(e);
   };
 
   const handleBlur = (e: any) => {
     setIsFocused(false);
-    onBlur && onBlur(e);
+    onBlur?.(e);
   };
 
   const labelTop = floatAnim.interpolate({
@@ -56,80 +64,55 @@ export default function Input({ label, value, onChangeText, onFocus, onBlur, ico
   const iconWidth = 24;
   const iconSpacing = 12;
   const paddingLeft = iconLeft ? iconWidth + iconSpacing : 0;
-
   const labelColor = isFocused ? primary : onSurfaceVariant;
   const borderColor = isFocused ? primary : outlineVariant;
 
   return (
-    <View style={[styles.container, { borderBottomColor: borderColor }, containerStyle]}>
-      {iconLeft && (
-        <MaterialIcons 
-          name={iconLeft} 
-          size={iconWidth} 
-          color={isFocused ? primary : onSurfaceVariant} 
-          style={styles.icon} 
-        />
-      )}
-      {label && (
+    <View className="relative mt-2 w-full border-b-2" style={[{ borderBottomColor: borderColor }, containerStyle]}>
+      {iconLeft ? (
+        <MaterialIcons name={iconLeft} size={iconWidth} color={isFocused ? primary : onSurfaceVariant} style={{ position: 'absolute', left: 0, top: 10, zIndex: 2 }} />
+      ) : null}
+
+      {label ? (
         <Animated.Text
-          style={[
-            styles.label,
-            {
-              top: labelTop,
-              left: paddingLeft,
-              transform: [{ scale: labelScale }, { translateX: isFloating ? -8 : 0 }],
-              color: labelColor,
-            },
-          ]}
-        >
+          className="absolute left-0 z-10 text-sm uppercase tracking-[1.4px]"
+          style={{
+            top: labelTop,
+            left: paddingLeft,
+            transform: [{ scale: labelScale }, { translateX: isFloating ? -8 : 0 }],
+            color: labelColor,
+            fontFamily: 'Manrope-Regular',
+          }}>
           {label}
         </Animated.Text>
-      )}
+      ) : null}
+
       <TextInput
-        style={[styles.input, { color: onSurface, paddingLeft }]}
+        className="w-full py-3 text-base"
+        style={[
+          {
+            color: onSurface,
+            paddingLeft,
+            zIndex: 2,
+            fontFamily: 'Manrope-Regular',
+          },
+          Platform.OS === 'web'
+            ? ({
+                outlineWidth: 0,
+                outlineStyle: 'none',
+                boxShadow: 'none',
+              } as any)
+            : null,
+          style,
+        ]}
         value={value}
         onChangeText={onChangeText}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        placeholderTextColor={isFocused ? "transparent" : onSurfaceVariant}
+        placeholderTextColor={isFocused ? 'transparent' : onSurfaceVariant}
         selectionColor={primary}
         {...props}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    position: 'relative',
-    borderBottomWidth: 2,
-    marginTop: 8,
-  },
-  label: {
-    position: 'absolute',
-    left: 0,
-    ...Typography.labelLg,
-    fontFamily: 'Manrope-Regular',
-    zIndex: 1, // keep label behind input or disable pointer events
-  },
-  input: {
-    width: '100%',
-    paddingVertical: 12,
-    ...Typography.bodyLg,
-    zIndex: 2,
-    ...(Platform.OS === 'web'
-      ? ({
-          outlineWidth: 0,
-          outlineStyle: 'none',
-          boxShadow: 'none',
-        } as any)
-      : null),
-  },
-  icon: {
-    position: 'absolute',
-    left: 0,
-    top: 10,
-    zIndex: 2,
-  },
-});

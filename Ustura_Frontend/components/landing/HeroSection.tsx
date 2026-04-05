@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, Image, useWindowDimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import Button from '@/components/ui/Button';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
 import { hexToRgba } from '@/utils/color';
 
@@ -35,44 +34,49 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
 
   return (
     <View
+      className="relative min-h-[700px] justify-center overflow-hidden"
       style={[
-        styles.container,
         {
           backgroundColor: surface,
           paddingHorizontal: layout.horizontalPadding,
           paddingTop: isTablet ? 120 : 104,
           paddingBottom: width < 768 ? 56 : 72,
         },
+        Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease, color 360ms ease' } as any) : null,
       ]}>
-      <View style={[styles.glowPrimary, { backgroundColor: hexToRgba(primary, theme === 'light' ? 0.12 : 0.08) }]} />
-      <View style={[styles.glowSecondary, { backgroundColor: hexToRgba(primary, theme === 'light' ? 0.06 : 0.05) }]} />
+      <View
+        className="absolute right-[-80px] top-[-120px] h-[420px] w-[420px] rounded-full"
+        style={{ backgroundColor: hexToRgba(primary, theme === 'light' ? 0.12 : 0.08) }}
+      />
+      <View
+        className="absolute bottom-20 left-[-100px] h-[260px] w-[260px] rounded-full"
+        style={{ backgroundColor: hexToRgba(primary, theme === 'light' ? 0.06 : 0.05) }}
+      />
 
       <View
-        style={[
-          styles.content,
-          {
-            maxWidth: layout.contentMaxWidth,
-            flexDirection: isDesktop ? 'row' : 'column',
-            gap: isDesktop ? 48 : 40,
-            alignItems: isDesktop ? 'center' : 'stretch',
-          },
-        ]}>
+        className="w-full self-center"
+        style={{
+          maxWidth: layout.contentMaxWidth,
+          flexDirection: isDesktop ? 'row' : 'column',
+          gap: isDesktop ? 48 : 40,
+          alignItems: isDesktop ? 'center' : 'stretch',
+        }}>
         <View
-          style={[
-            styles.textContent,
-            {
-              flex: isDesktop ? 7 : undefined,
-              paddingRight: isDesktop ? 32 : 0,
-              alignItems: isCompact ? 'center' : 'flex-start',
-            },
-          ]}>
-          <Text style={[styles.eyebrow, { color: primary, textAlign: isCompact ? 'center' : 'left' }]}>
+          className="z-10 w-full"
+          style={{
+            flex: isDesktop ? 7 : undefined,
+            paddingRight: isDesktop ? 32 : 0,
+            alignItems: isCompact ? 'center' : 'flex-start',
+          }}>
+          <Text
+            className="mb-[18px] font-label text-base uppercase tracking-[4px]"
+            style={{ color: primary, textAlign: isCompact ? 'center' : 'left' }}>
             MODERN BAKIM
           </Text>
 
           <Text
+            className="mb-8 font-headline font-bold tracking-tighterest"
             style={[
-              styles.headline,
               {
                 color: onSurface,
                 textAlign: isCompact ? 'center' : 'left',
@@ -86,8 +90,8 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
           </Text>
 
           <Text
+            className="mb-12 font-body"
             style={[
-              styles.description,
               {
                 color: onSurfaceVariant,
                 textAlign: isCompact ? 'center' : 'left',
@@ -100,15 +104,13 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
           </Text>
 
           <View
-            style={[
-              styles.actionButtons,
-              {
-                flexDirection: isDesktop ? 'row' : 'column',
-                alignSelf: isCompact ? 'center' : 'flex-start',
-                width: isDesktop ? 'auto' : '100%',
-                maxWidth: isDesktop ? undefined : 420,
-              },
-            ]}>
+            className="w-full"
+            style={{
+              flexDirection: isDesktop ? 'row' : 'column',
+              alignSelf: isCompact ? 'center' : 'flex-start',
+              width: isDesktop ? 'auto' : '100%',
+              maxWidth: isDesktop ? undefined : 420,
+            }}>
             <Button
               title="Randevu Al"
               icon="calendar-month"
@@ -126,18 +128,23 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
         </View>
 
         <View
-          style={[
-            styles.imageContainer,
-            {
-              flex: isDesktop ? 5 : undefined,
-              width: '100%',
-              maxWidth: isDesktop ? undefined : 760,
-              alignSelf: 'center',
-            },
-          ]}>
+          className="relative"
+          style={{
+            flex: isDesktop ? 5 : undefined,
+            width: '100%',
+            maxWidth: isDesktop ? undefined : 760,
+            alignSelf: 'center',
+          }}>
           <View
             style={[
-              styles.imageWrapper,
+              {
+                width: '100%',
+                aspectRatio: 1,
+                borderRadius: 20,
+                overflow: 'hidden',
+                position: 'relative',
+                borderWidth: 1,
+              },
               {
                 backgroundColor: surfaceContainerLow,
                 borderColor: outlineVariant,
@@ -159,7 +166,8 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
             ]}>
             <Image
               source={require('../../assets/images/landing/hero-barber.png')}
-              style={[styles.mainImage, { opacity: theme === 'light' ? 0.96 : 0.72 }]}
+              className="h-full w-full"
+              style={{ opacity: theme === 'light' ? 0.96 : 0.72 }}
               resizeMode="cover"
             />
 
@@ -169,12 +177,16 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
                   ? ['rgba(253, 251, 255, 0)', 'rgba(253, 251, 255, 0.14)', 'rgba(253, 251, 255, 0.78)']
                   : ['rgba(17, 17, 24, 0)', 'rgba(17, 17, 24, 0.18)', 'rgba(17, 17, 24, 0.92)']
               }
-              style={StyleSheet.absoluteFillObject}
+              style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
             />
 
             <View
               style={[
-                styles.mockupCard,
+                {
+                  position: 'absolute',
+                  borderRadius: 16,
+                  borderWidth: 1,
+                },
                 {
                   backgroundColor:
                     theme === 'light'
@@ -204,34 +216,40 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
                       elevation: 10,
                     },
               ]}>
-              <View style={styles.mockupHeader}>
+              <View className="mb-4 flex-row items-center">
                 <Image
                   source={require('../../assets/images/landing/landing_avatar.png')}
-                  style={styles.mockupAvatar}
+                  className="mr-4 h-12 w-12 rounded-full"
                 />
                 <View>
-                  <Text style={[styles.mockupLabel, { color: primary }]}>MASTER BARBER</Text>
-                  <Text style={[styles.mockupName, { color: onSurface }]}>Murat Yilmaz</Text>
+                  <Text className="font-label text-xs uppercase tracking-[1.2px]" style={{ color: primary }}>
+                    MASTER BARBER
+                  </Text>
+                  <Text className="font-body text-lg font-bold" style={{ color: onSurface }}>
+                    Murat Yilmaz
+                  </Text>
                 </View>
               </View>
 
-              <View style={styles.timeSlots}>
-                <View style={[styles.timeSlot, { backgroundColor: primary }]}>
-                  <Text style={[styles.timeText, { color: onPrimary, fontFamily: 'Manrope-Bold' }]}>10:30</Text>
+              <View className="flex-row justify-between gap-2">
+                <View className="flex-1 items-center rounded-md py-2" style={{ backgroundColor: primary }}>
+                  <Text className="font-label text-xs uppercase tracking-[1.2px]" style={{ color: onPrimary, fontFamily: 'Manrope-Bold' }}>
+                    10:30
+                  </Text>
                 </View>
                 <View
-                  style={[
-                    styles.timeSlot,
-                    { backgroundColor: theme === 'light' ? surfaceContainerLowest : surfaceContainerLow },
-                  ]}>
-                  <Text style={[styles.timeText, { color: onSurfaceVariant }]}>11:00</Text>
+                  className="flex-1 items-center rounded-md py-2"
+                  style={{ backgroundColor: theme === 'light' ? surfaceContainerLowest : surfaceContainerLow }}>
+                  <Text className="font-label text-xs uppercase tracking-[1.2px]" style={{ color: onSurfaceVariant }}>
+                    11:00
+                  </Text>
                 </View>
                 <View
-                  style={[
-                    styles.timeSlot,
-                    { backgroundColor: theme === 'light' ? surfaceContainerLowest : surfaceContainerLow },
-                  ]}>
-                  <Text style={[styles.timeText, { color: onSurfaceVariant }]}>11:30</Text>
+                  className="flex-1 items-center rounded-md py-2"
+                  style={{ backgroundColor: theme === 'light' ? surfaceContainerLowest : surfaceContainerLow }}>
+                  <Text className="font-label text-xs uppercase tracking-[1.2px]" style={{ color: onSurfaceVariant }}>
+                    11:30
+                  </Text>
                 </View>
               </View>
             </View>
@@ -241,115 +259,3 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    minHeight: 700,
-    justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? ({ transition: 'background-color 360ms ease, color 360ms ease' } as any)
-      : {}),
-  },
-  content: {
-    width: '100%',
-    alignSelf: 'center',
-  },
-  glowPrimary: {
-    position: 'absolute',
-    width: 420,
-    height: 420,
-    borderRadius: 210,
-    top: -120,
-    right: -80,
-  },
-  glowSecondary: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    bottom: 80,
-    left: -100,
-  },
-  textContent: {
-    width: '100%',
-    zIndex: 10,
-  },
-  eyebrow: {
-    ...Typography.labelLg,
-    letterSpacing: 4,
-    marginBottom: 18,
-  },
-  headline: {
-    ...Typography.displayLg,
-    marginBottom: 32,
-  },
-  description: {
-    ...Typography.titleLg,
-    fontFamily: 'Manrope-Regular',
-    marginBottom: 48,
-  },
-  actionButtons: {
-    width: '100%',
-  },
-  imageContainer: {
-    position: 'relative',
-  },
-  imageWrapper: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 360ms ease' } as any)
-      : {}),
-  },
-  mainImage: {
-    width: '100%',
-    height: '100%',
-  },
-  mockupCard: {
-    position: 'absolute',
-    borderRadius: 16,
-    borderWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 360ms ease' } as any)
-      : {}),
-  },
-  mockupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  mockupAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 16,
-  },
-  mockupLabel: {
-    ...Typography.labelSm,
-  },
-  mockupName: {
-    ...Typography.bodyLg,
-    fontFamily: 'Manrope-Bold',
-  },
-  timeSlots: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  timeSlot: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  timeText: {
-    ...Typography.labelLg,
-    fontSize: 12,
-  },
-});

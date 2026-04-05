@@ -8,10 +8,10 @@ import SalonFilters from '@/components/panel/super-admin/salons/SalonFilters';
 import SalonInsightsSection from '@/components/panel/super-admin/salons/SalonInsightsSection';
 import SalonListSection from '@/components/panel/super-admin/salons/SalonListSection';
 import SalonPageHeader from '@/components/panel/super-admin/salons/SalonPageHeader';
-import { styles } from '@/components/panel/super-admin/salons/styles';
+import { salonClassNames } from '@/components/panel/super-admin/salons/presentation';
 import { useSalonManagement } from '@/components/panel/super-admin/salons/use-salon-management';
-import { buildPanelSalonDetailRoute } from '@/constants/routes';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
+import { buildPanelSalonDetailRoute } from '@/constants/routes';
 
 export default function SuperAdminSalons() {
   const { width } = useWindowDimensions();
@@ -24,27 +24,30 @@ export default function SuperAdminSalons() {
   const paddingH = width < 768 ? 16 : 32;
   const filterBasis = width >= 1320 ? '23.6%' : width >= 860 ? '48.5%' : '100%';
 
+  const overlayStyle =
+    Platform.OS === 'web'
+      ? ({
+          backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)`,
+          backgroundSize: '40px 40px',
+          opacity: 1,
+          pointerEvents: 'none',
+        } as any)
+      : ({
+          opacity: 0,
+          pointerEvents: 'none',
+        } as const);
+
   return (
-    <View style={[styles.page, { backgroundColor: adminTheme.pageBackground }]}>
-      <View
-        style={[
-          styles.gridOverlay,
-          Platform.OS === 'web'
-            ? ({ backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)` } as any)
-            : null,
-        ]}
-      />
+    <View className={salonClassNames.page} style={{ backgroundColor: adminTheme.pageBackground }}>
+      <View className="absolute inset-0" style={overlayStyle} />
 
       <PanelTopBar query={salonManagement.query} onQueryChange={salonManagement.setQuery} />
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingHorizontal: paddingH, paddingTop: 24, paddingBottom: 40 },
-        ]}
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: paddingH, paddingTop: 24, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+        <View className={salonClassNames.content}>
           <SalonPageHeader isWide={isWide} />
 
           <SalonFilters

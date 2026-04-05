@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, useWindowDimensions, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { hexToRgba } from '@/utils/color';
 
 export default function PromoBanner() {
@@ -40,40 +39,48 @@ export default function PromoBanner() {
   return (
     <View
       style={[
-        styles.section,
-        {
-          backgroundColor: surface,
-          paddingHorizontal: layout.horizontalPadding,
-        },
+        { backgroundColor: surface, paddingHorizontal: layout.horizontalPadding },
+        Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : null,
       ]}>
-      <View style={[styles.container, { backgroundColor: surfaceContainerLow, borderColor: outlineVariant }]}>
-        <View style={[styles.blurBlob, { backgroundColor: primary }]} />
+      <View
+        className="relative overflow-hidden border-y px-8 py-20"
+        style={[
+          { backgroundColor: surfaceContainerLow, borderColor: outlineVariant },
+          Platform.OS === 'web'
+            ? ({ transition: 'background-color 360ms ease, border-color 360ms ease' } as any)
+            : null,
+        ]}>
+        <View className="absolute right-[-128px] top-[-128px] h-64 w-64 rounded-full opacity-5" style={{ backgroundColor: primary }} />
 
-        <View style={[styles.content, { maxWidth: layout.contentMaxWidth }]}>
-          <View style={styles.header}>
-            <Text style={[styles.headline, { color: onSurface }]}>Neden Ustura Kullanmalisin?</Text>
-            <Text style={[styles.description, { color: onSurfaceVariant }]}>
+        <View className="relative z-10 w-full self-center" style={{ maxWidth: layout.contentMaxWidth }}>
+          <View className="mb-16 items-center">
+            <Text className="mb-4 text-center font-headline text-5xl font-bold" style={{ color: onSurface }}>
+              Neden Ustura Kullanmalisin?
+            </Text>
+            <Text className="text-center font-body text-lg" style={{ color: onSurfaceVariant }}>
               Bakimli olmanin en modern ve hizli yoluyla tanisin.
             </Text>
           </View>
 
-          <View style={[styles.grid, { flexDirection: isDesktop ? 'row' : 'column' }]}>
-            {features.map((feat, index) => (
+          <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 48 }}>
+            {features.map((feature) => (
               <View
-                key={index}
-                style={[
-                  styles.featureCard,
-                  {
-                    flex: isDesktop ? 1 : undefined,
-                    borderColor: outlineVariant,
-                    backgroundColor: surface,
-                  },
-                ]}>
-                <View style={[styles.iconWrapper, { backgroundColor: hexToRgba(primary, 0.08) }]}>
-                  <MaterialIcons name={feat.icon} size={32} color={primary} />
+                key={feature.title}
+                className="items-center rounded-xl border p-6"
+                style={{
+                  flex: isDesktop ? 1 : undefined,
+                  borderColor: outlineVariant,
+                  backgroundColor: surface,
+                }}>
+                <View className="mb-4 h-16 w-16 items-center justify-center rounded-xl" style={{ backgroundColor: hexToRgba(primary, 0.08) }}>
+                  <MaterialIcons name={feature.icon} size={32} color={primary} />
                 </View>
-                <Text style={[styles.featTitle, { color: onSurface }]}>{feat.title}</Text>
-                <Text style={[styles.featDesc, { color: onSurfaceVariant }]}>{feat.desc}</Text>
+                <Text className="mb-4 text-center font-body text-2xl font-bold" style={{ color: onSurface }}>
+                  {feature.title}
+                </Text>
+                <Text className="text-center font-body text-base" style={{ color: onSurfaceVariant, lineHeight: 22 }}>
+                  {feature.desc}
+                </Text>
               </View>
             ))}
           </View>
@@ -82,77 +89,3 @@ export default function PromoBanner() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
-  },
-  container: {
-    position: 'relative',
-    paddingVertical: 80,
-    paddingHorizontal: 32,
-    overflow: 'hidden',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease' } as any)
-      : {}),
-  },
-  blurBlob: {
-    position: 'absolute',
-    top: -128,
-    right: -128,
-    width: 256,
-    height: 256,
-    borderRadius: 128,
-    opacity: 0.05,
-  },
-  content: {
-    width: '100%',
-    alignSelf: 'center',
-    position: 'relative',
-    zIndex: 1,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 64,
-  },
-  headline: {
-    ...Typography.displayMd,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  description: {
-    ...Typography.bodyLg,
-    textAlign: 'center',
-  },
-  grid: {
-    gap: 48,
-  },
-  featureCard: {
-    alignItems: 'center',
-    textAlign: 'center',
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 24,
-  },
-  iconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  featTitle: {
-    ...Typography.titleLg,
-    fontFamily: 'Manrope-Bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  featDesc: {
-    ...Typography.bodyMd,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});

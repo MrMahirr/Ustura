@@ -4,7 +4,6 @@ import { View } from 'react-native';
 import type { UserProfileMetric } from '@/components/panel/super-admin/user-profile/data';
 
 import UserMetricCard from './UserMetricCard';
-import { styles } from './styles';
 
 export default function UserMetricsSection({
   metrics,
@@ -14,7 +13,7 @@ export default function UserMetricsSection({
   metricBasis: string;
 }) {
   return (
-    <View style={styles.metricsGrid}>
+    <View className="flex-row flex-wrap gap-4">
       {metrics.map((metric) => (
         <UserMetricCard key={metric.id} metric={metric} basis={metricBasis} />
       ))}

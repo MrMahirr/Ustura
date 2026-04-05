@@ -3,7 +3,7 @@ import { View, useWindowDimensions } from 'react-native';
 
 import type { GroupedSalonRecord } from '@/components/panel/super-admin/user-management.data';
 
-import { salonGroupedStyles as styles } from './salon-grouped.styles';
+import { userClassNames } from './presentation';
 import UserSalonGroupSection from './UserSalonGroupSection';
 
 export default function UserSalonGroupedView({
@@ -23,7 +23,7 @@ export default function UserSalonGroupedView({
   const memberCardBasis = width >= 1440 ? '24%' : width >= 1040 ? '31.7%' : width >= 760 ? '48.7%' : '100%';
 
   return (
-    <View style={styles.container}>
+    <View className={userClassNames.groupedContainer}>
       {groupedSalons.map((group) => (
         <UserSalonGroupSection
           key={group.id}

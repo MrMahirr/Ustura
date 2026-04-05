@@ -3,12 +3,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, Text, View } from 'react-native';
 
 import type { SalonRecord } from '@/components/panel/super-admin/salon-management.data';
+import { getSalonPanelShadow, salonClassNames } from '@/components/panel/super-admin/salons/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
 import SalonMobileCard from './SalonMobileCard';
 import SalonRow from './SalonRow';
-import { styles } from './styles';
 
 interface SalonListSectionProps {
   salons: SalonRecord[];
@@ -26,14 +26,12 @@ function EmptyState() {
   const adminTheme = useSuperAdminTheme();
 
   return (
-    <View
-      style={[
-        styles.emptyState,
-        { backgroundColor: adminTheme.cardBackgroundMuted, borderColor: adminTheme.borderSubtle },
-      ]}>
+    <View className="m-5 min-h-[260px] items-center justify-center gap-3 rounded-[10px] border px-6" style={{ backgroundColor: adminTheme.cardBackgroundMuted, borderColor: adminTheme.borderSubtle }}>
       <MaterialIcons name="search-off" size={32} color={hexToRgba(adminTheme.onSurfaceVariant, 0.8)} />
-      <Text style={[styles.emptyTitle, { color: adminTheme.onSurface }]}>Filtrelere gore salon bulunamadi</Text>
-      <Text style={[styles.emptyDescription, { color: adminTheme.onSurfaceVariant }]}>
+      <Text className={salonClassNames.emptyTitle} style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
+        Filtrelere gore salon bulunamadi
+      </Text>
+      <Text className={salonClassNames.emptyDescription} style={{ color: adminTheme.onSurfaceVariant }}>
         Arama kelimesini veya filtre secimlerini degistirerek listeyi genisletebilirsiniz.
       </Text>
     </View>
@@ -45,44 +43,29 @@ function DesktopTable({ salons, onOpenSalon }: { salons: SalonRecord[]; onOpenSa
 
   return (
     <>
-      <View
-        style={[
-          styles.headerRow,
-          {
-            backgroundColor: adminTheme.tableHeaderBackground,
-            borderBottomColor: adminTheme.borderSubtle,
-          },
-        ]}>
-        <Text style={[styles.headerText, styles.cellSalon, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+      <View className="min-h-[58px] flex-row items-center border-b px-6" style={{ backgroundColor: adminTheme.tableHeaderBackground, borderBottomColor: adminTheme.borderSubtle }}>
+        <Text className={salonClassNames.headerText} style={{ flex: 2.4, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), fontFamily: 'Manrope-Bold' }}>
           Salon Bilgisi
         </Text>
-        <Text style={[styles.headerText, styles.cellOwner, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={salonClassNames.headerText} style={{ flex: 1.6, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), fontFamily: 'Manrope-Bold' }}>
           Isletmeci
         </Text>
-        <Text
-          style={[styles.headerText, styles.cellLocation, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={salonClassNames.headerText} style={{ flex: 1.45, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), fontFamily: 'Manrope-Bold' }}>
           Konum
         </Text>
-        <Text style={[styles.headerText, styles.cellStatus, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={salonClassNames.headerText} style={{ flex: 1.05, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), fontFamily: 'Manrope-Bold' }}>
           Durum
         </Text>
-        <Text style={[styles.headerText, styles.cellPlan, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={salonClassNames.headerText} style={{ flex: 0.95, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), fontFamily: 'Manrope-Bold' }}>
           Paket
         </Text>
-        <Text
-          style={[
-            styles.headerText,
-            styles.cellActions,
-            { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), textAlign: 'right' },
-          ]}>
+        <Text className={salonClassNames.headerText} style={{ flex: 1.1, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), textAlign: 'right', fontFamily: 'Manrope-Bold' }}>
           Islemler
         </Text>
       </View>
       <View>
         {salons.map((salon, index) => (
-          <View
-            key={salon.id}
-            style={index < salons.length - 1 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 } : null}>
+          <View key={salon.id} style={index < salons.length - 1 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 } : undefined}>
             <SalonRow salon={salon} onPress={() => onOpenSalon(salon.id)} />
           </View>
         ))}
@@ -103,30 +86,27 @@ function Pagination({
 
   return (
     <View
-      style={[
-        styles.paginationBar,
-        {
-          backgroundColor: hexToRgba(adminTheme.tableHeaderBackground, 0.6),
-          borderTopColor: adminTheme.borderSubtle,
-        },
-      ]}>
-      <Text style={[styles.paginationText, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.78) }]}>
+      className="min-h-[68px] flex-row flex-wrap items-center justify-between gap-3 border-t px-5 py-[14px]"
+      style={{ backgroundColor: hexToRgba(adminTheme.tableHeaderBackground, 0.6), borderTopColor: adminTheme.borderSubtle }}>
+      <Text className="font-label text-[10px] uppercase tracking-[1.8px]" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.78), fontFamily: 'Manrope-Bold' }}>
         {filteredSalonsCount === 0
           ? 'Kayit bulunamadi'
           : `${new Intl.NumberFormat('tr-TR').format(filteredSalonsCount)} kayittan ${startRow}-${endRow} gosteriliyor`}
       </Text>
 
-      <View style={styles.paginationControls}>
+      <View className="flex-row items-center gap-1.5">
         <Pressable
           onPress={() => onPageChange(Math.max(1, page - 1))}
           disabled={page === 1}
+          className="h-[34px] w-[34px] items-center justify-center rounded-md"
           style={({ hovered }) => [
-            styles.paginationButton,
             {
               opacity: page === 1 ? 0.38 : 1,
               backgroundColor: hovered && page !== 1 ? adminTheme.cardBackgroundStrong : 'transparent',
             },
-            Platform.OS === 'web' ? styles.webInteractiveButton : null,
+            Platform.OS === 'web'
+              ? ({ transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease', cursor: 'pointer' } as any)
+              : null,
           ]}>
           <MaterialIcons name="chevron-left" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
         </Pressable>
@@ -139,15 +119,17 @@ function Pagination({
             <Pressable
               key={`page-${targetPage}`}
               onPress={() => onPageChange(targetPage)}
+              className="h-[34px] min-w-[34px] items-center justify-center rounded-md border px-2.5"
               style={({ hovered }) => [
-                styles.pageButton,
                 {
                   backgroundColor: isActive ? adminTheme.primary : hovered ? adminTheme.cardBackgroundStrong : 'transparent',
                   borderColor: isActive ? adminTheme.primary : adminTheme.borderSubtle,
                 },
-                Platform.OS === 'web' ? styles.webInteractiveButton : null,
+                Platform.OS === 'web'
+                  ? ({ transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease', cursor: 'pointer' } as any)
+                  : null,
               ]}>
-              <Text style={[styles.pageButtonText, { color: isActive ? adminTheme.onPrimary : adminTheme.onSurface }]}>
+              <Text className="font-body text-xs" style={{ color: isActive ? adminTheme.onPrimary : adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
                 {targetPage}
               </Text>
             </Pressable>
@@ -157,13 +139,15 @@ function Pagination({
         <Pressable
           onPress={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page === totalPages}
+          className="h-[34px] w-[34px] items-center justify-center rounded-md"
           style={({ hovered }) => [
-            styles.paginationButton,
             {
               opacity: page === totalPages ? 0.38 : 1,
               backgroundColor: hovered && page !== totalPages ? adminTheme.cardBackgroundStrong : 'transparent',
             },
-            Platform.OS === 'web' ? styles.webInteractiveButton : null,
+            Platform.OS === 'web'
+              ? ({ transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease', cursor: 'pointer' } as any)
+              : null,
           ]}>
           <MaterialIcons name="chevron-right" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
         </Pressable>
@@ -187,33 +171,20 @@ export default function SalonListSection({
 
   return (
     <View
+      className={salonClassNames.tableShell}
       style={[
-        styles.tableShell,
         {
           backgroundColor: adminTheme.cardBackground,
           borderColor: adminTheme.borderSubtle,
-          ...(Platform.OS === 'web'
-            ? ({
-                boxShadow:
-                  adminTheme.theme === 'dark'
-                    ? '0 26px 60px rgba(0, 0, 0, 0.34)'
-                    : '0 24px 54px rgba(27, 27, 32, 0.08)',
-              } as any)
-            : {
-                shadowColor: '#000000',
-                shadowOpacity: adminTheme.theme === 'dark' ? 0.22 : 0.08,
-                shadowRadius: 20,
-                shadowOffset: { width: 0, height: 12 },
-                elevation: 8,
-              }),
         },
+        getSalonPanelShadow(adminTheme.theme),
       ]}>
       {salons.length === 0 ? (
         <EmptyState />
       ) : useDesktopTable ? (
         <DesktopTable salons={salons} onOpenSalon={onOpenSalon} />
       ) : (
-        <View style={styles.mobileList}>
+        <View className="gap-[14px] p-4">
           {salons.map((salon) => (
             <SalonMobileCard key={salon.id} salon={salon} onPress={() => onOpenSalon(salon.id)} />
           ))}

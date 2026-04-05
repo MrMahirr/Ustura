@@ -8,8 +8,14 @@ import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
 import SalonActionIcon from './SalonActionIcon';
-import { styles } from './styles';
 import { getPlanPalette, getRowActions, getStatusPalette } from './utils';
+
+const cellSalonStyle = { flex: 2.4 } as const;
+const cellOwnerStyle = { flex: 1.6, paddingRight: 20 } as const;
+const cellLocationStyle = { flex: 1.45, paddingRight: 16 } as const;
+const cellStatusStyle = { flex: 1.05, paddingRight: 16 } as const;
+const cellPlanStyle = { flex: 0.95, paddingRight: 16 } as const;
+const cellActionsStyle = { flex: 1.1, alignItems: 'flex-end' as const } as const;
 
 export default function SalonRow({ salon, onPress }: { salon: SalonRecord; onPress?: () => void }) {
   const adminTheme = useSuperAdminTheme();
@@ -20,102 +26,90 @@ export default function SalonRow({ salon, onPress }: { salon: SalonRecord; onPre
   return (
     <Pressable
       onPress={onPress}
+      className="min-h-[88px] flex-row items-center px-6"
       style={({ hovered }) => [
-        styles.row,
         { backgroundColor: hovered ? adminTheme.cardBackgroundStrong : 'transparent' },
         Platform.OS === 'web'
-          ? [styles.webRowTransition, { cursor: onPress ? 'pointer' : 'default' } as any]
+          ? ({
+              transition: 'background-color 180ms ease',
+              cursor: onPress ? 'pointer' : 'default',
+            } as any)
           : null,
       ]}>
       {({ hovered }) => (
         <>
-          <View style={[styles.cell, styles.cellSalon]}>
-            <View style={styles.salonInfo}>
+          <View className="min-w-0 justify-center py-[18px]" style={cellSalonStyle}>
+            <View className="min-w-0 flex-row items-center gap-3.5">
               <View
-                style={[
-                  styles.salonThumbFrame,
-                  {
-                    borderColor: adminTheme.borderSubtle,
-                    backgroundColor: adminTheme.cardBackgroundStrong,
-                  },
-                ]}>
+                className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md border"
+                style={{ borderColor: adminTheme.borderSubtle, backgroundColor: adminTheme.cardBackgroundStrong }}>
                 <Image
                   source={{ uri: salon.imageUrl }}
                   style={[
-                    styles.salonThumb,
+                    { width: '100%', height: '100%' },
                     Platform.OS === 'web' && salon.mutedImage ? ({ filter: 'grayscale(1)' } as any) : null,
                   ]}
                   contentFit="cover"
                 />
               </View>
-              <View style={styles.salonCopy}>
-                <Text style={[styles.salonName, { color: adminTheme.onSurface }]} numberOfLines={1}>
+              <View className="min-w-0 flex-1 gap-1">
+                <Text className="font-body text-sm" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }} numberOfLines={1}>
                   {salon.name}
                 </Text>
-                <Text style={[styles.salonId, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }]}>
+                <Text className="font-body text-xs leading-[18px]" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }}>
                   ID: {salon.reference}
                 </Text>
               </View>
             </View>
           </View>
 
-          <View style={[styles.cell, styles.cellOwner]}>
-            <Text style={[styles.ownerName, { color: adminTheme.onSurface }]} numberOfLines={1}>
+          <View className="min-w-0 justify-center py-[18px]" style={cellOwnerStyle}>
+            <Text className="font-body text-sm" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-SemiBold' }} numberOfLines={1}>
               {salon.owner}
             </Text>
-            <Text style={[styles.ownerEmail, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.8) }]} numberOfLines={1}>
+            <Text className="mt-0.5 font-body text-[11px] leading-[18px]" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.8) }} numberOfLines={1}>
               {salon.ownerEmail}
             </Text>
           </View>
 
-          <View style={[styles.cell, styles.cellLocation]}>
-            <View style={styles.locationRow}>
+          <View className="min-w-0 justify-center py-[18px]" style={cellLocationStyle}>
+            <View className="flex-row items-center gap-1">
               <MaterialIcons name="location-on" size={16} color={hexToRgba(adminTheme.onSurfaceVariant, 0.74)} />
-              <Text style={[styles.locationText, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.92) }]} numberOfLines={1}>
+              <Text className="shrink font-body text-xs leading-[18px]" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.92) }} numberOfLines={1}>
                 {salon.location}
               </Text>
             </View>
           </View>
 
-          <View style={[styles.cell, styles.cellStatus]}>
+          <View className="min-w-0 justify-center py-[18px]" style={cellStatusStyle}>
             <View
-              style={[
-                styles.statusBadge,
-                {
-                  backgroundColor: statusPalette.backgroundColor,
-                  borderColor: statusPalette.borderColor,
-                },
-              ]}>
-              <Text style={[styles.statusText, { color: statusPalette.color }]}>{salon.status}</Text>
+              className="self-start rounded-full border px-2.5 py-1.5"
+              style={{ backgroundColor: statusPalette.backgroundColor, borderColor: statusPalette.borderColor }}>
+              <Text className="font-label text-[10px] uppercase tracking-wide" style={{ color: statusPalette.color, fontFamily: 'Manrope-Bold' }}>
+                {salon.status}
+              </Text>
             </View>
           </View>
 
-          <View style={[styles.cell, styles.cellPlan]}>
-            <View style={styles.planRow}>
+          <View className="min-w-0 justify-center py-[18px]" style={cellPlanStyle}>
+            <View className="flex-row items-center gap-2">
               <View
+                className="h-2 w-2 rounded-full"
                 style={[
-                  styles.planDot,
-                  {
-                    backgroundColor: planPalette.dot,
-                    ...(Platform.OS === 'web' && planPalette.glow !== 'transparent'
-                      ? ({ boxShadow: `0 0 12px ${planPalette.glow}` } as any)
-                      : null),
-                  },
+                  { backgroundColor: planPalette.dot },
+                  Platform.OS === 'web' && planPalette.glow !== 'transparent' ? ({ boxShadow: `0 0 12px ${planPalette.glow}` } as any) : null,
                 ]}
               />
-              <Text style={[styles.planText, { color: planPalette.text }]}>{salon.plan}</Text>
+              <Text className="font-body text-xs" style={{ color: planPalette.text, fontFamily: 'Manrope-Bold' }}>
+                {salon.plan}
+              </Text>
             </View>
           </View>
 
-          <View style={[styles.cell, styles.cellActions]}>
-            <View style={[styles.actionsRow, { opacity: hovered ? 1 : 0.18 }]}>
+          <View className="min-w-0 justify-center py-[18px]" style={cellActionsStyle}>
+            <View className="flex-row items-center gap-1" style={{ opacity: hovered ? 1 : 0.18 }}>
               {actions.map((action) => (
-                <SalonActionIcon
-                  key={`${salon.id}-${action.icon}`}
-                  icon={action.icon}
-                  label={action.label}
-                  color={action.color}
-                />
+                <SalonActionIcon key={`${salon.id}-${action.icon}`} icon={action.icon} label={action.label} color={action.color} />
               ))}
             </View>
           </View>

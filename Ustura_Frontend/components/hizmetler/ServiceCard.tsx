@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
+import { View, Text, Pressable, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface ServiceCardProps {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -45,56 +45,27 @@ export default function ServiceCard({ icon, title, description }: ServiceCardPro
     <Pressable onHoverIn={handleHoverIn} onHoverOut={handleHoverOut}>
       <Animated.View
         style={[
-          styles.card,
+          {
+            padding: 32,
+            borderRadius: 12,
+            borderLeftWidth: 2,
+            transform: [{ scale: scaleAnim }],
+          },
           {
             backgroundColor: isHovered ? surfaceContainerHigh : surfaceContainer,
             borderLeftColor: isHovered ? primary : 'transparent',
-            transform: [{ scale: scaleAnim }],
           },
-        ]}
-      >
-        <View
-          style={[
-            styles.iconBox,
-            {
-              backgroundColor: isHovered
-                ? `${primary}33` // 20% opacity
-                : surfaceContainerHighest,
-            },
-          ]}
-        >
+        ]}>
+        <View className="mb-6 h-12 w-12 items-center justify-center rounded-md" style={{ backgroundColor: isHovered ? `${primary}33` : surfaceContainerHighest }}>
           <MaterialIcons name={icon} size={24} color={primary} />
         </View>
-        <Text style={[styles.title, { color: onSurface }]}>{title}</Text>
-        <Text style={[styles.description, { color: onSurfaceVariant }]}>{description}</Text>
+        <Text className="mb-3 font-body text-2xl font-bold" style={{ color: onSurface }}>
+          {title}
+        </Text>
+        <Text className="font-body text-base" style={{ color: onSurfaceVariant, lineHeight: 22 }}>
+          {description}
+        </Text>
       </Animated.View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    padding: 32,
-    borderRadius: 12,
-    borderLeftWidth: 2,
-    transition: 'all 0.3s',
-  } as any,
-  iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-    transition: 'background-color 0.3s',
-  } as any,
-  title: {
-    ...Typography.titleLg,
-    fontFamily: 'Manrope-Bold',
-    marginBottom: 12,
-  },
-  description: {
-    ...Typography.bodyMd,
-    lineHeight: 22,
-  },
-});

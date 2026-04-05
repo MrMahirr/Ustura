@@ -1,51 +1,37 @@
 import React from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { getUserProfilePanelShadow, userProfileClassNames } from '@/components/panel/super-admin/user-profile/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
-
-import { styles } from './styles';
 
 export default function UserExpertiseCard({ expertise }: { expertise: string[] }) {
   const adminTheme = useSuperAdminTheme();
-  const cardShadowStyle =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow:
-            adminTheme.theme === 'dark'
-              ? '0 18px 40px rgba(0, 0, 0, 0.24)'
-              : '0 18px 40px rgba(27, 27, 32, 0.08)',
-        } as any)
-      : {
-          shadowColor: '#000000',
-          shadowOpacity: adminTheme.theme === 'dark' ? 0.18 : 0.08,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        };
 
   return (
     <View
+      className={userProfileClassNames.panelCard}
       style={[
-        styles.panelCard,
         {
           backgroundColor: adminTheme.cardBackground,
-          ...cardShadowStyle,
         },
+        getUserProfilePanelShadow(adminTheme.theme),
       ]}>
-      <Text style={[styles.panelTitleSm, { color: adminTheme.onSurface }]}>Expertise</Text>
+      <Text className={userProfileClassNames.panelTitleSm} style={{ color: adminTheme.onSurface }}>
+        Expertise
+      </Text>
 
-      <View style={styles.tagWrap}>
+      <View className="flex-row flex-wrap gap-2.5">
         {expertise.map((item) => (
           <View
             key={item}
-            style={[
-              styles.tagPill,
-              {
-                backgroundColor: adminTheme.surfaceContainerHighest,
-                borderColor: adminTheme.borderSubtle,
-              },
-            ]}>
-            <Text style={[styles.tagText, { color: adminTheme.onSurface }]}>{item}</Text>
+            className="min-h-9 border px-4 py-2.5"
+            style={{
+              backgroundColor: adminTheme.surfaceContainerHighest,
+              borderColor: adminTheme.borderSubtle,
+            }}>
+            <Text className="font-label text-[10px] uppercase tracking-[1.8px]" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
+              {item}
+            </Text>
           </View>
         ))}
       </View>

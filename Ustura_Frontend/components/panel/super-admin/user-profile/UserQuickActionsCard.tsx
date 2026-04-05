@@ -1,11 +1,10 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import type { UserProfileQuickAction } from '@/components/panel/super-admin/user-profile/data';
+import { getUserProfilePanelShadow, userProfileClassNames } from '@/components/panel/super-admin/user-profile/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
-
-import { styles } from './styles';
 
 export default function UserQuickActionsCard({
   actions,
@@ -13,43 +12,30 @@ export default function UserQuickActionsCard({
   actions: UserProfileQuickAction[];
 }) {
   const adminTheme = useSuperAdminTheme();
-  const cardShadowStyle =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow:
-            adminTheme.theme === 'dark'
-              ? '0 18px 40px rgba(0, 0, 0, 0.24)'
-              : '0 18px 40px rgba(27, 27, 32, 0.08)',
-        } as any)
-      : {
-          shadowColor: '#000000',
-          shadowOpacity: adminTheme.theme === 'dark' ? 0.18 : 0.08,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        };
 
   return (
     <View
+      className={userProfileClassNames.panelCard}
       style={[
-        styles.panelCard,
         {
           backgroundColor: adminTheme.cardBackground,
           borderTopWidth: 2,
           borderTopColor: adminTheme.borderStrong,
-          ...cardShadowStyle,
         },
+        getUserProfilePanelShadow(adminTheme.theme),
       ]}>
-      <Text style={[styles.panelTitleSm, { color: adminTheme.onSurface }]}>Quick Actions</Text>
+      <Text className={userProfileClassNames.panelTitleSm} style={{ color: adminTheme.onSurface }}>
+        Quick Actions
+      </Text>
 
-      <View style={styles.quickActionsList}>
+      <View className="gap-2.5">
         {actions.map((action) => (
           <Pressable
             key={action.id}
             accessibilityRole="button"
             onPress={() => undefined}
+            className="min-h-12 flex-row items-center justify-between gap-3 border px-4"
             style={({ hovered, pressed }) => [
-              styles.quickActionButton,
               {
                 backgroundColor: hovered ? adminTheme.primary : adminTheme.surfaceContainerHighest,
                 borderColor: hovered ? adminTheme.primary : adminTheme.borderSubtle,
@@ -58,18 +44,10 @@ export default function UserQuickActionsCard({
             ]}>
             {({ hovered }) => (
               <>
-                <Text
-                  style={[
-                    styles.quickActionText,
-                    { color: hovered ? adminTheme.onPrimary : adminTheme.onSurface },
-                  ]}>
+                <Text className="font-label text-[10px] uppercase tracking-[2.1px]" style={{ color: hovered ? adminTheme.onPrimary : adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
                   {action.label}
                 </Text>
-                <MaterialIcons
-                  name={action.icon}
-                  size={18}
-                  color={hovered ? adminTheme.onPrimary : adminTheme.onSurfaceVariant}
-                />
+                <MaterialIcons name={action.icon} size={18} color={hovered ? adminTheme.onPrimary : adminTheme.onSurfaceVariant} />
               </>
             )}
           </Pressable>

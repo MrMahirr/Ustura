@@ -2,10 +2,9 @@ import React from 'react';
 import { Platform, Text, View } from 'react-native';
 
 import type { UserProfileEarningsPoint } from '@/components/panel/super-admin/user-profile/data';
+import { getUserProfilePanelShadow, userProfileClassNames } from '@/components/panel/super-admin/user-profile/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
-
-import { styles } from './styles';
 
 export default function UserEarningsSection({
   series,
@@ -13,87 +12,76 @@ export default function UserEarningsSection({
   series: UserProfileEarningsPoint[];
 }) {
   const adminTheme = useSuperAdminTheme();
-  const cardShadowStyle =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow:
-            adminTheme.theme === 'dark'
-              ? '0 18px 40px rgba(0, 0, 0, 0.24)'
-              : '0 18px 40px rgba(27, 27, 32, 0.08)',
-        } as any)
-      : {
-          shadowColor: '#000000',
-          shadowOpacity: adminTheme.theme === 'dark' ? 0.18 : 0.08,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        };
 
   return (
     <View
+      className={userProfileClassNames.panelCard}
       style={[
-        styles.panelCard,
         {
           backgroundColor: adminTheme.cardBackground,
-          ...cardShadowStyle,
         },
+        getUserProfilePanelShadow(adminTheme.theme),
       ]}>
-      <View style={styles.panelHeaderRow}>
-        <View style={styles.panelHeaderCopy}>
-          <Text style={[styles.panelTitle, { color: adminTheme.onSurface }]}>Earnings Over Time</Text>
-          <Text style={[styles.panelSubtitle, { color: adminTheme.onSurfaceVariant }]}>
+      <View className="flex-row flex-wrap items-end justify-between gap-4">
+        <View className={userProfileClassNames.panelHeaderCopy}>
+          <Text className={userProfileClassNames.panelTitle} style={{ color: adminTheme.onSurface }}>
+            Earnings Over Time
+          </Text>
+          <Text className={userProfileClassNames.panelSubtitle} style={{ color: adminTheme.onSurfaceVariant }}>
             Revenue trends for the last 6 months
           </Text>
         </View>
 
-        <View style={styles.earningsLegend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: adminTheme.primary }]} />
-            <Text style={[styles.legendText, { color: adminTheme.primary }]}>Revenue</Text>
+        <View className="flex-row flex-wrap gap-4">
+          <View className="flex-row items-center gap-2">
+            <View className="h-2 w-2 rounded-full" style={{ backgroundColor: adminTheme.primary }} />
+            <Text className="font-label text-[10px] uppercase tracking-wide" style={{ color: adminTheme.primary, fontFamily: 'Manrope-Bold' }}>
+              Revenue
+            </Text>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: adminTheme.surfaceContainerHighest }]} />
-            <Text style={[styles.legendText, { color: adminTheme.onSurfaceVariant }]}>Average</Text>
+          <View className="flex-row items-center gap-2">
+            <View className="h-2 w-2 rounded-full" style={{ backgroundColor: adminTheme.surfaceContainerHighest }} />
+            <Text className="font-label text-[10px] uppercase tracking-wide" style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+              Average
+            </Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.chartWrap}>
+      <View className="h-[260px] flex-row items-end justify-between gap-2 pt-3">
         {series.map((point) => (
-          <View key={point.id} style={styles.chartColumn}>
-            <View style={[styles.chartTrack, { backgroundColor: adminTheme.surfaceContainerHighest }]}>
+          <View key={point.id} className="flex-1 items-center gap-3">
+            <View className="relative h-[200px] w-full justify-end overflow-hidden" style={{ backgroundColor: adminTheme.surfaceContainerHighest }}>
               <View
-                style={[
-                  styles.chartAverageFill,
-                  {
-                    height: `${point.averageLevel}%`,
-                    backgroundColor: hexToRgba(adminTheme.surfaceContainerHighest, 0.92),
-                  },
-                ]}
+                className="absolute bottom-0 left-0 right-0"
+                style={{
+                  height: `${point.averageLevel}%`,
+                  backgroundColor: hexToRgba(adminTheme.surfaceContainerHighest, 0.92),
+                }}
               />
               <View
-                style={[
-                  styles.chartRevenueFill,
-                  {
-                    height: `${point.revenueLevel}%`,
-                    backgroundColor: hexToRgba(adminTheme.primary, 0.32),
-                  },
-                ]}
+                className="absolute bottom-0 left-0 right-0"
+                style={{
+                  height: `${point.revenueLevel}%`,
+                  backgroundColor: hexToRgba(adminTheme.primary, 0.32),
+                }}
               />
               <View
+                className="absolute bottom-0 left-0 right-0"
                 style={[
-                  styles.chartRevenueFill,
                   {
                     height: `${Math.max(point.revenueLevel - 8, 20)}%`,
                     backgroundColor: adminTheme.primary,
-                    ...(adminTheme.theme === 'dark'
-                      ? ({ boxShadow: `0 0 12px ${hexToRgba(adminTheme.primary, 0.28)}` } as any)
-                      : null),
                   },
+                  adminTheme.theme === 'dark' && Platform.OS === 'web'
+                    ? ({ boxShadow: `0 0 12px ${hexToRgba(adminTheme.primary, 0.28)}` } as any)
+                    : null,
                 ]}
               />
             </View>
-            <Text style={[styles.chartMonthText, { color: adminTheme.onSurfaceVariant }]}>{point.monthLabel}</Text>
+            <Text className="font-label text-[10px] uppercase tracking-[1.8px]" style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+              {point.monthLabel}
+            </Text>
           </View>
         ))}
       </View>

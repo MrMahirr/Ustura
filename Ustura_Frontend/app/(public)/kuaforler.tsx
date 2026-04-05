@@ -1,13 +1,13 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions, Platform } from 'react-native';
+import { ScrollView, View, useWindowDimensions, Platform } from 'react-native';
 
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import FilterBar from '@/components/kuaforler/FilterBar';
-import SalonCard from '@/components/kuaforler/SalonCard';
 import PromoBanner from '@/components/kuaforler/PromoBanner';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import SalonCard from '@/components/kuaforler/SalonCard';
 import { getLandingLayout } from '@/components/landing/layout';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 const MOCK_SALONS = [
   {
@@ -55,29 +55,34 @@ export default function KuaforlerPage() {
     <>
       <Navbar />
       <ScrollView
-        style={[styles.container, { backgroundColor: surface }]}
-        contentContainerStyle={styles.scrollContent}
+        className="flex-1"
+        style={[
+          { backgroundColor: surface },
+          Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : null,
+        ]}
+        contentContainerStyle={{ flexGrow: 1, paddingTop: 80 }}
         showsVerticalScrollIndicator={false}>
         <View
+          className="pb-16"
           style={[
-            styles.mainSection,
             {
               backgroundColor: surfaceContainerLow,
               paddingHorizontal: layout.horizontalPadding,
             },
+            Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : null,
           ]}>
-          <View style={[styles.mainContent, { maxWidth: layout.contentMaxWidth }]}>
+          <View className="w-full self-center" style={{ maxWidth: layout.contentMaxWidth }}>
             <FilterBar />
 
-            <View style={[styles.grid, { flexDirection: isDesktop || isTablet ? 'row' : 'column' }]}>
+            <View className="flex-wrap justify-start gap-8" style={{ flexDirection: isDesktop || isTablet ? 'row' : 'column' }}>
               {MOCK_SALONS.map((salon) => (
                 <View
                   key={salon.id}
+                  className="mb-8"
                   style={[
-                    styles.cardWrapper,
-                    isDesktop && { width: '31.33%' },
-                    isTablet && { width: '48%' },
-                    !isDesktop && !isTablet && { width: '100%' },
+                    isDesktop ? { width: '31.33%' } : null,
+                    isTablet ? { width: '48%' } : null,
+                    !isDesktop && !isTablet ? { width: '100%' } : null,
                   ]}>
                   <SalonCard {...salon} />
                 </View>
@@ -92,30 +97,3 @@ export default function KuaforlerPage() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: 80,
-  },
-  mainSection: {
-    paddingBottom: 64,
-    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
-  },
-  mainContent: {
-    width: '100%',
-    alignSelf: 'center',
-  },
-  grid: {
-    flexWrap: 'wrap',
-    gap: 32,
-    justifyContent: 'flex-start',
-  },
-  cardWrapper: {
-    marginBottom: 32,
-  },
-});

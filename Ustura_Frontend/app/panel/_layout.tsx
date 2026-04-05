@@ -1,6 +1,6 @@
 import React from 'react';
 import { Slot } from 'expo-router';
-import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, View, useWindowDimensions } from 'react-native';
 
 import SuperAdminAside from '@/components/panel/super-admin/SuperAdminAside';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
@@ -24,46 +24,49 @@ export default function PanelLayout() {
 
   return (
     <View
+      className="flex-1"
       style={[
-        styles.container,
-        Platform.OS === 'web' ? styles.webContainer : null,
+        Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : null,
         {
           backgroundColor: adminTheme.pageBackground,
           flexDirection: isDesktop ? 'row' : 'column',
         },
       ]}>
       <View
+        className="flex-shrink-0"
         style={[
-          styles.sidebar,
-          isDesktop ? styles.sidebarDesktop : styles.sidebarMobile,
-          sidebarFixedWeb ? styles.sidebarWebFixed : null,
-          {
-            borderColor: adminTheme.borderSubtle,
-            width: sidebarWidth,
-            ...(Platform.OS === 'web'
-              ? ({
-                  boxShadow: isSidebarCollapsed
-                    ? '0 18px 42px rgba(27, 27, 32, 0.06)'
-                    : '0 24px 54px rgba(27, 27, 32, 0.1)',
-                } as any)
-              : null),
-          },
+          isDesktop ? { width: sidebarWidth, borderRightWidth: 1 } : { width: '100%', borderBottomWidth: 1 },
+          sidebarFixedWeb ? ({ position: 'fixed', left: 0, top: 0, height: '100vh', zIndex: 50 } as any) : null,
+          { borderColor: adminTheme.borderSubtle },
+          Platform.OS === 'web'
+            ? ({
+                transition: 'width 480ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 480ms cubic-bezier(0.22, 1, 0.36, 1)',
+                willChange: 'width',
+                boxShadow: isSidebarCollapsed ? '0 18px 42px rgba(27, 27, 32, 0.06)' : '0 24px 54px rgba(27, 27, 32, 0.1)',
+              } as any)
+            : null,
         ]}>
         <SuperAdminAside
           collapsed={isDesktop ? isSidebarCollapsed : false}
           onToggleCollapse={
             isDesktop
               ? () => {
-                  setIsSidebarCollapsed((prev) => !prev);
+                  setIsSidebarCollapsed((previous) => !previous);
                 }
               : undefined
           }
         />
       </View>
       <View
+        className="min-w-0 flex-1"
         style={[
-          styles.content,
-          Platform.OS === 'web' ? styles.webContent : null,
+          Platform.OS === 'web'
+            ? ({
+                minHeight: '100vh',
+                transition: 'margin-left 480ms cubic-bezier(0.22, 1, 0.36, 1)',
+                willChange: 'margin-left',
+              } as any)
+            : null,
           { backgroundColor: adminTheme.pageBackground },
           sidebarFixedWeb ? { marginLeft: sidebarWidth } : null,
         ]}>
@@ -72,50 +75,3 @@ export default function PanelLayout() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  webContainer: {
-    minHeight: '100vh',
-  } as any,
-  sidebar: {
-    flexShrink: 0,
-    borderRightWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'width 480ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 480ms cubic-bezier(0.22, 1, 0.36, 1)',
-          willChange: 'width',
-        } as any)
-      : {}),
-  },
-  sidebarDesktop: {
-    width: SIDEBAR_WIDTH,
-  },
-  sidebarMobile: {
-    width: '100%',
-    borderRightWidth: 0,
-    borderBottomWidth: 1,
-  },
-  sidebarWebFixed: {
-    position: 'fixed',
-    left: 0,
-    top: 0,
-    height: '100vh',
-    zIndex: 50,
-  } as any,
-  content: {
-    flex: 1,
-    minWidth: 0,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'margin-left 480ms cubic-bezier(0.22, 1, 0.36, 1)',
-          willChange: 'margin-left',
-        } as any)
-      : {}),
-  },
-  webContent: {
-    minHeight: '100vh',
-  } as any,
-});

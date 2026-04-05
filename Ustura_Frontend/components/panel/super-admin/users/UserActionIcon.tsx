@@ -4,7 +4,7 @@ import { Platform, Pressable, type GestureResponderEvent } from 'react-native';
 
 import { hexToRgba } from '@/utils/color';
 
-import { styles } from './styles';
+import { userClassNames } from './presentation';
 
 export default function UserActionIcon({
   icon,
@@ -22,13 +22,18 @@ export default function UserActionIcon({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
+      className={userClassNames.iconAction}
       style={({ hovered, pressed }) => [
-        styles.iconAction,
         {
           backgroundColor: hovered ? hexToRgba(color, 0.12) : 'transparent',
           transform: [{ scale: pressed ? 0.94 : 1 }],
         },
-        Platform.OS === 'web' ? styles.webInteractiveButton : null,
+        Platform.OS === 'web'
+          ? ({
+              transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
+              cursor: 'pointer',
+            } as any)
+          : null,
       ]}>
       {({ hovered }) => <MaterialIcons name={icon} size={18} color={hovered ? color : hexToRgba(color, 0.96)} />}
     </Pressable>

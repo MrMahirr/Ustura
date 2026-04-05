@@ -1,87 +1,90 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import type { UserProfile } from '@/components/panel/super-admin/user-profile/data';
+import { getUserProfilePanelShadow, userProfileClassNames } from '@/components/panel/super-admin/user-profile/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import { styles } from './styles';
-
 export default function UserWorkInfoCard({ profile }: { profile: UserProfile }) {
   const adminTheme = useSuperAdminTheme();
-  const cardShadowStyle =
-    Platform.OS === 'web'
-      ? ({
-          boxShadow:
-            adminTheme.theme === 'dark'
-              ? '0 18px 40px rgba(0, 0, 0, 0.24)'
-              : '0 18px 40px rgba(27, 27, 32, 0.08)',
-        } as any)
-      : {
-          shadowColor: '#000000',
-          shadowOpacity: adminTheme.theme === 'dark' ? 0.18 : 0.08,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        };
 
   return (
     <View
+      className={userProfileClassNames.panelCard}
       style={[
-        styles.panelCard,
         {
           backgroundColor: adminTheme.cardBackground,
-          ...cardShadowStyle,
         },
+        getUserProfilePanelShadow(adminTheme.theme),
       ]}>
-      <View style={styles.panelHeaderRow}>
-        <Text style={[styles.panelTitle, { color: adminTheme.onSurface }]}>Personal & Work Info</Text>
-        <Pressable style={styles.panelIconButton}>
+      <View className={userProfileClassNames.panelHeaderRow}>
+        <Text className={userProfileClassNames.panelTitle} style={{ color: adminTheme.onSurface }}>
+          Personal & Work Info
+        </Text>
+        <Pressable
+          className={userProfileClassNames.panelIconButton}
+          style={({ hovered, pressed }) => [
+            hovered ? { backgroundColor: adminTheme.cardBackgroundStrong } : null,
+            { transform: [{ scale: pressed ? 0.96 : hovered ? 1.02 : 1 }] },
+          ]}>
           <MaterialIcons name="more-horiz" size={20} color={adminTheme.onSurfaceVariant} />
         </Pressable>
       </View>
 
-      <View style={styles.infoGrid}>
-        <View style={styles.infoColumn}>
-          <View style={styles.infoItem}>
-            <Text style={[styles.infoLabel, { color: adminTheme.onSurfaceVariant }]}>Phone Number</Text>
-            <Text style={[styles.infoValue, { color: adminTheme.onSurface }]}>{profile.phoneNumber}</Text>
+      <View className="flex-row flex-wrap gap-6">
+        <View className="min-w-[280px] flex-1 gap-[18px]">
+          <View className="gap-1.5">
+            <Text className={userProfileClassNames.labelText} style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+              Phone Number
+            </Text>
+            <Text className="text-lg leading-[26px]" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-SemiBold' }}>
+              {profile.phoneNumber}
+            </Text>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={[styles.infoLabel, { color: adminTheme.onSurfaceVariant }]}>Email Address</Text>
-            <Text style={[styles.infoValue, { color: adminTheme.onSurface }]}>{profile.user.email}</Text>
+          <View className="gap-1.5">
+            <Text className={userProfileClassNames.labelText} style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+              Email Address
+            </Text>
+            <Text className="text-lg leading-[26px]" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-SemiBold' }}>
+              {profile.user.email}
+            </Text>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={[styles.infoLabel, { color: adminTheme.onSurfaceVariant }]}>Assigned Salon</Text>
-            <Text style={[styles.infoValue, { color: adminTheme.onSurface }]}>{profile.assignedSalonLabel}</Text>
+          <View className="gap-1.5">
+            <Text className={userProfileClassNames.labelText} style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+              Assigned Salon
+            </Text>
+            <Text className="text-lg leading-[26px]" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-SemiBold' }}>
+              {profile.assignedSalonLabel}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.infoColumn}>
-          <Text style={[styles.infoLabel, { color: adminTheme.onSurfaceVariant }]}>Weekly Schedule</Text>
-          <View style={styles.scheduleList}>
+        <View className="min-w-[280px] flex-1 gap-[18px]">
+          <Text className={userProfileClassNames.labelText} style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+            Weekly Schedule
+          </Text>
+          <View className="gap-2">
             {profile.weeklySchedule.map((item) => (
-              <View key={item.id} style={[styles.scheduleRow, { borderBottomColor: hexToRgba(adminTheme.outlineVariant, 0.18) }]}>
-                <Text
-                  style={[
-                    styles.scheduleRowLabel,
-                    { color: item.tone === 'muted' ? adminTheme.onSurfaceVariant : adminTheme.onSurface },
-                  ]}>
+              <View
+                key={item.id}
+                className="min-h-[42px] flex-row items-center justify-between gap-4 border-b py-2"
+                style={{ borderBottomColor: hexToRgba(adminTheme.outlineVariant, 0.18) }}>
+                <Text className="font-body text-sm" style={{ color: item.tone === 'muted' ? adminTheme.onSurfaceVariant : adminTheme.onSurface }}>
                   {item.label}
                 </Text>
                 <Text
-                  style={[
-                    styles.scheduleRowValue,
-                    {
-                      color:
-                        item.tone === 'error'
-                          ? hexToRgba(adminTheme.error, 0.8)
-                          : item.tone === 'primary'
-                            ? adminTheme.primary
-                            : adminTheme.onSurfaceVariant,
-                    },
-                  ]}>
+                  className="font-body text-sm"
+                  style={{
+                    color:
+                      item.tone === 'error'
+                        ? hexToRgba(adminTheme.error, 0.8)
+                        : item.tone === 'primary'
+                          ? adminTheme.primary
+                          : adminTheme.onSurfaceVariant,
+                    fontFamily: 'Manrope-Bold',
+                  }}>
                   {item.hoursLabel}
                 </Text>
               </View>
