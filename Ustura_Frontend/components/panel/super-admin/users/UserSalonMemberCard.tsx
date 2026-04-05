@@ -13,9 +13,11 @@ import { getStatusPalette } from './utils';
 export default function UserSalonMemberCard({
   user,
   basis,
+  onPress,
 }: {
   user: UserRecord;
   basis: string;
+  onPress?: () => void;
 }) {
   const adminTheme = useSuperAdminTheme();
   const statusPalette = getStatusPalette(user.status, adminTheme);
@@ -23,6 +25,7 @@ export default function UserSalonMemberCard({
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ hovered }) => [
         styles.memberCard,
         Platform.OS === 'web' ? styles.webInteractiveCard : null,
@@ -31,6 +34,7 @@ export default function UserSalonMemberCard({
           opacity: user.status === 'Aktif' ? 1 : user.status === 'Mesgul' ? 0.92 : 0.74,
           backgroundColor: hovered ? adminTheme.cardBackgroundStrong : adminTheme.cardBackground,
           borderColor: hovered ? adminTheme.borderStrong : adminTheme.borderSubtle,
+          ...(Platform.OS === 'web' && onPress ? ({ cursor: 'pointer' } as any) : null),
           ...(Platform.OS === 'web'
             ? ({
                 boxShadow: hovered
@@ -75,6 +79,7 @@ export default function UserSalonMemberCard({
             </View>
 
             <Pressable
+              onPress={(event) => event.stopPropagation()}
               accessibilityRole="button"
               accessibilityLabel={`${user.name} diger islemler`}
               style={({ pressed }) => [

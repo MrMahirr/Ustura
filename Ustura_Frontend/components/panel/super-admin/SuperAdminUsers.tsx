@@ -11,7 +11,7 @@ import UserOverviewBar from '@/components/panel/super-admin/users/UserOverviewBa
 import UserPageHeader from '@/components/panel/super-admin/users/UserPageHeader';
 import { styles } from '@/components/panel/super-admin/users/styles';
 import { useUserManagement } from '@/components/panel/super-admin/users/use-user-management';
-import { buildPanelSalonDetailRoute } from '@/constants/routes';
+import { buildPanelSalonDetailRoute, buildPanelUserDetailRoute } from '@/constants/routes';
 
 export default function SuperAdminUsers() {
   const { width } = useWindowDimensions();
@@ -75,6 +75,7 @@ export default function SuperAdminUsers() {
             useDesktopTable={useDesktopTable}
             onPageChange={userManagement.setPage}
             onOpenSalon={(salonId) => router.push(buildPanelSalonDetailRoute(salonId))}
+            onOpenUser={(userId) => router.push(buildPanelUserDetailRoute(userId))}
             onAddUser={() => undefined}
           />
 

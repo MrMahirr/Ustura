@@ -44,6 +44,7 @@ export default function UserSalonGroupSection({
   collapsed,
   onToggle,
   onOpenSalon,
+  onOpenUser,
   onAddUser,
 }: {
   group: GroupedSalonRecord;
@@ -51,6 +52,7 @@ export default function UserSalonGroupSection({
   collapsed: boolean;
   onToggle: () => void;
   onOpenSalon?: (salonId: string) => void;
+  onOpenUser?: (userId: string) => void;
   onAddUser: () => void;
 }) {
   const adminTheme = useSuperAdminTheme();
@@ -158,7 +160,12 @@ export default function UserSalonGroupSection({
         <View style={styles.sectionBody}>
           <View style={styles.membersGrid}>
             {group.users.map((user) => (
-              <UserSalonMemberCard key={user.id} user={user} basis={memberCardBasis} />
+              <UserSalonMemberCard
+                key={user.id}
+                user={user}
+                basis={memberCardBasis}
+                onPress={() => onOpenUser?.(user.id)}
+              />
             ))}
             <UserSalonAddCard basis={memberCardBasis} onPress={onAddUser} />
           </View>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform, Pressable } from 'react-native';
+import { Platform, Pressable, type GestureResponderEvent } from 'react-native';
 
 import { hexToRgba } from '@/utils/color';
 
@@ -10,13 +10,16 @@ export default function UserActionIcon({
   icon,
   label,
   color,
+  onPress,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   color: string;
+  onPress?: (event: GestureResponderEvent) => void;
 }) {
   return (
     <Pressable
+      onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ hovered, pressed }) => [

@@ -23,6 +23,7 @@ interface UserListSectionProps {
   useDesktopTable: boolean;
   onPageChange: (page: number) => void;
   onOpenSalon?: (salonId: string) => void;
+  onOpenUser?: (userId: string) => void;
   onAddUser?: (salonId?: string) => void;
 }
 
@@ -48,7 +49,13 @@ function EmptyState({
   );
 }
 
-function DesktopTable({ users }: { users: UserRecord[] }) {
+function DesktopTable({
+  users,
+  onOpenUser,
+}: {
+  users: UserRecord[];
+  onOpenUser?: (userId: string) => void;
+}) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -89,7 +96,7 @@ function DesktopTable({ users }: { users: UserRecord[] }) {
       <View>
         {users.map((user, index) => (
           <View key={user.id} style={index < users.length - 1 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 } : null}>
-            <UserRow user={user} />
+            <UserRow user={user} onPress={() => onOpenUser?.(user.id)} />
           </View>
         ))}
       </View>
@@ -190,6 +197,7 @@ export default function UserListSection({
   useDesktopTable,
   onPageChange,
   onOpenSalon,
+  onOpenUser,
   onAddUser,
 }: UserListSectionProps) {
   const adminTheme = useSuperAdminTheme();
@@ -201,7 +209,12 @@ export default function UserListSection({
         description="Filtrelere gore gosterilecek kullanici grubu olusmadi."
       />
     ) : (
-      <UserSalonGroupedView groupedSalons={groupedSalons} onOpenSalon={onOpenSalon} onAddUser={onAddUser} />
+      <UserSalonGroupedView
+        groupedSalons={groupedSalons}
+        onOpenSalon={onOpenSalon}
+        onOpenUser={onOpenUser}
+        onAddUser={onAddUser}
+      />
     );
   }
 
@@ -234,11 +247,11 @@ export default function UserListSection({
           description="Arama terimini veya secili filtreleri degistirerek listeyi genisletebilirsiniz."
         />
       ) : useDesktopTable ? (
-        <DesktopTable users={users} />
+        <DesktopTable users={users} onOpenUser={onOpenUser} />
       ) : (
         <View style={styles.mobileList}>
           {users.map((user) => (
-            <UserMobileCard key={user.id} user={user} />
+            <UserMobileCard key={user.id} user={user} onPress={() => onOpenUser?.(user.id)} />
           ))}
         </View>
       )}

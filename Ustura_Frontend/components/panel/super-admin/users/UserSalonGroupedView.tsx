@@ -9,10 +9,12 @@ import UserSalonGroupSection from './UserSalonGroupSection';
 export default function UserSalonGroupedView({
   groupedSalons,
   onOpenSalon,
+  onOpenUser,
   onAddUser,
 }: {
   groupedSalons: GroupedSalonRecord[];
   onOpenSalon?: (salonId: string) => void;
+  onOpenUser?: (userId: string) => void;
   onAddUser?: (salonId?: string) => void;
 }) {
   const { width } = useWindowDimensions();
@@ -35,6 +37,7 @@ export default function UserSalonGroupedView({
             }))
           }
           onOpenSalon={onOpenSalon}
+          onOpenUser={onOpenUser}
           onAddUser={() => onAddUser?.(group.salonId)}
         />
       ))}

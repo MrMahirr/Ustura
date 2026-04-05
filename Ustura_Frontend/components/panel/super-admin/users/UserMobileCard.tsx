@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image } from 'expo-image';
-import { Platform, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
 
 import type { UserRecord } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
@@ -10,17 +10,26 @@ import { styles } from './styles';
 import UserActionIcon from './UserActionIcon';
 import { formatOccupancy, getRolePalette, getStatusPalette, getUserActions } from './utils';
 
-export default function UserMobileCard({ user }: { user: UserRecord }) {
+export default function UserMobileCard({ user, onPress }: { user: UserRecord; onPress?: () => void }) {
   const adminTheme = useSuperAdminTheme();
   const rolePalette = getRolePalette(user.role, adminTheme);
   const statusPalette = getStatusPalette(user.status, adminTheme);
   const actions = getUserActions(user.role, user.status, adminTheme);
+  const handleActionPress = (event: GestureResponderEvent, isDetailAction: boolean) => {
+    event.stopPropagation();
+
+    if (isDetailAction) {
+      onPress?.();
+    }
+  };
 
   return (
-    <View
+    <Pressable
+      onPress={onPress}
       style={[
         styles.mobileCard,
         { backgroundColor: adminTheme.cardBackground, borderColor: adminTheme.borderSubtle },
+        Platform.OS === 'web' && onPress ? ({ cursor: 'pointer' } as any) : null,
       ]}>
       <View style={styles.mobileCardTop}>
         <View style={styles.userInfo}>
@@ -92,9 +101,15 @@ export default function UserMobileCard({ user }: { user: UserRecord }) {
 
       <View style={styles.mobileActions}>
         {actions.map((action) => (
-          <UserActionIcon key={`${user.id}-${action.icon}`} icon={action.icon} label={action.label} color={action.color} />
+          <UserActionIcon
+            key={`${user.id}-${action.icon}`}
+            icon={action.icon}
+            label={action.label}
+            color={action.color}
+            onPress={(event) => handleActionPress(event, action.icon === 'visibility')}
+          />
         ))}
       </View>
-    </View>
+    </Pressable>
   );
 }
