@@ -7,7 +7,6 @@ import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
 import SalonActionIcon from './SalonActionIcon';
-import { styles } from './styles';
 import { formatCurrency, getPlanPalette, getRowActions, getStatusPalette } from './utils';
 
 export default function SalonMobileCard({ salon, onPress }: { salon: SalonRecord; onPress?: () => void }) {
@@ -19,95 +18,94 @@ export default function SalonMobileCard({ salon, onPress }: { salon: SalonRecord
   return (
     <Pressable
       onPress={onPress}
+      className="gap-4 rounded-[10px] border p-4"
       style={[
-        styles.mobileCard,
         { backgroundColor: adminTheme.cardBackground, borderColor: adminTheme.borderSubtle },
         Platform.OS === 'web' && onPress ? ({ cursor: 'pointer' } as any) : null,
       ]}>
-      <View style={styles.mobileCardTop}>
-        <View style={styles.salonInfo}>
+      <View className="flex-row items-start justify-between gap-3">
+        <View className="min-w-0 flex-1 flex-row items-center gap-3.5">
           <View
-            style={[
-              styles.salonThumbFrame,
-              {
-                borderColor: adminTheme.borderSubtle,
-                backgroundColor: adminTheme.cardBackgroundStrong,
-              },
-            ]}>
+            className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-md border"
+            style={{ borderColor: adminTheme.borderSubtle, backgroundColor: adminTheme.cardBackgroundStrong }}>
             <Image
               source={{ uri: salon.imageUrl }}
               style={[
-                styles.salonThumb,
+                { width: '100%', height: '100%' },
                 Platform.OS === 'web' && salon.mutedImage ? ({ filter: 'grayscale(1)' } as any) : null,
               ]}
               contentFit="cover"
             />
           </View>
-          <View style={styles.salonCopy}>
-            <Text style={[styles.salonName, { color: adminTheme.onSurface }]} numberOfLines={1}>
+          <View className="min-w-0 flex-1 gap-1">
+            <Text className="font-body text-sm" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }} numberOfLines={1}>
               {salon.name}
             </Text>
-            <Text style={[styles.salonId, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }]}>ID: {salon.reference}</Text>
+            <Text className="font-body text-xs leading-[18px]" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }}>
+              ID: {salon.reference}
+            </Text>
           </View>
         </View>
 
         <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: statusPalette.backgroundColor,
-              borderColor: statusPalette.borderColor,
-            },
-          ]}>
-          <Text style={[styles.statusText, { color: statusPalette.color }]}>{salon.status}</Text>
+          className="self-start rounded-full border px-2.5 py-1.5"
+          style={{ backgroundColor: statusPalette.backgroundColor, borderColor: statusPalette.borderColor }}>
+          <Text className="font-label text-[10px] uppercase tracking-wide" style={{ color: statusPalette.color, fontFamily: 'Manrope-Bold' }}>
+            {salon.status}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.mobileMetaGrid}>
-        <View style={styles.mobileMetaItem}>
-          <Text style={[styles.mobileMetaLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }]}>Isletmeci</Text>
-          <Text style={[styles.mobileMetaValue, { color: adminTheme.onSurface }]}>{salon.owner}</Text>
-          <Text style={[styles.mobileMetaSubValue, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }]}>
+      <View className="flex-row flex-wrap gap-3.5">
+        <View className="min-w-[150px] flex-1 gap-1">
+          <Text className="font-label text-[10px] uppercase tracking-widest" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72), fontFamily: 'Manrope-Bold' }}>
+            Isletmeci
+          </Text>
+          <Text className="font-body text-[13px]" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-SemiBold' }}>
+            {salon.owner}
+          </Text>
+          <Text className="font-body text-[11px] leading-4" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }}>
             {salon.ownerEmail}
           </Text>
         </View>
-        <View style={styles.mobileMetaItem}>
-          <Text style={[styles.mobileMetaLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }]}>Konum</Text>
-          <Text style={[styles.mobileMetaValue, { color: adminTheme.onSurface }]}>{salon.location}</Text>
+        <View className="min-w-[150px] flex-1 gap-1">
+          <Text className="font-label text-[10px] uppercase tracking-widest" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72), fontFamily: 'Manrope-Bold' }}>
+            Konum
+          </Text>
+          <Text className="font-body text-[13px]" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-SemiBold' }}>
+            {salon.location}
+          </Text>
         </View>
-        <View style={styles.mobileMetaItem}>
-          <Text style={[styles.mobileMetaLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }]}>Paket</Text>
-          <View style={styles.planRow}>
+        <View className="min-w-[150px] flex-1 gap-1">
+          <Text className="font-label text-[10px] uppercase tracking-widest" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72), fontFamily: 'Manrope-Bold' }}>
+            Paket
+          </Text>
+          <View className="flex-row items-center gap-2">
             <View
+              className="h-2 w-2 rounded-full"
               style={[
-                styles.planDot,
-                {
-                  backgroundColor: planPalette.dot,
-                  ...(Platform.OS === 'web' && planPalette.glow !== 'transparent'
-                    ? ({ boxShadow: `0 0 12px ${planPalette.glow}` } as any)
-                    : null),
-                },
+                { backgroundColor: planPalette.dot },
+                Platform.OS === 'web' && planPalette.glow !== 'transparent' ? ({ boxShadow: `0 0 12px ${planPalette.glow}` } as any) : null,
               ]}
             />
-            <Text style={[styles.planText, { color: planPalette.text }]}>{salon.plan}</Text>
+            <Text className="font-body text-xs" style={{ color: planPalette.text, fontFamily: 'Manrope-Bold' }}>
+              {salon.plan}
+            </Text>
           </View>
         </View>
-        <View style={styles.mobileMetaItem}>
-          <Text style={[styles.mobileMetaLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }]}>Aylik Ciro</Text>
-          <Text style={[styles.mobileMetaValue, { color: adminTheme.primary }]}>
+        <View className="min-w-[150px] flex-1 gap-1">
+          <Text className="font-label text-[10px] uppercase tracking-widest" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72), fontFamily: 'Manrope-Bold' }}>
+            Aylik Ciro
+          </Text>
+          <Text className="font-body text-[13px]" style={{ color: adminTheme.primary, fontFamily: 'Manrope-SemiBold' }}>
             {formatCurrency(salon.monthlyRevenue)}
           </Text>
         </View>
       </View>
 
-      <View style={styles.mobileActions}>
+      <View className="flex-row justify-end gap-1.5">
         {actions.map((action) => (
-          <SalonActionIcon
-            key={`${salon.id}-${action.icon}`}
-            icon={action.icon}
-            label={action.label}
-            color={action.color}
-          />
+          <SalonActionIcon key={`${salon.id}-${action.icon}`} icon={action.icon} label={action.label} color={action.color} />
         ))}
       </View>
     </Pressable>

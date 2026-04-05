@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Platform, Pressable } from 'react-native';
+import { View, Text, useWindowDimensions, Platform, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
 
 export default function Footer() {
@@ -23,43 +22,46 @@ export default function Footer() {
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: surfaceContainerLow,
-          borderTopColor: outlineVariant,
-          paddingHorizontal: layout.horizontalPadding,
-        },
-      ]}>
+      className="border-t py-7"
+      style={{
+        backgroundColor: surfaceContainerLow,
+        borderTopColor: outlineVariant,
+        paddingHorizontal: layout.horizontalPadding,
+      }}>
       <View
-        style={[
-          styles.content,
-          {
-            maxWidth: layout.contentMaxWidth,
-            flexDirection: isWide ? 'row' : 'column',
-            alignItems: isWide ? 'center' : 'flex-start',
-          },
-        ]}>
+        className="w-full self-center justify-between gap-10"
+        style={{
+          maxWidth: layout.contentMaxWidth,
+          flexDirection: isWide ? 'row' : 'column',
+          alignItems: isWide ? 'center' : 'flex-start',
+        }}>
         <View
-          style={[
-            styles.brandSection,
-            {
-              alignItems: isWide ? 'center' : 'flex-start',
-              flexDirection: isWide ? 'row' : 'column',
-            },
-          ]}>
-          <Text style={[styles.logo, { color: primary }]}>Ustura</Text>
-          <Text style={[styles.description, { color: onSurface }]}>
+          className="flex-1"
+          style={{
+            alignItems: isWide ? 'center' : 'flex-start',
+            flexDirection: isWide ? 'row' : 'column',
+          }}>
+          <Text className="mb-3 mr-5 font-headline text-4xl" style={{ color: primary }}>
+            Ustura
+          </Text>
+          <Text className="max-w-[360px] font-body text-base" style={{ color: onSurface }}>
             Geleneksel berberligi dijital kolaylikla birlestiren modern bakim platformu.
           </Text>
         </View>
 
-        <View style={[styles.linksSection, { justifyContent: isWide ? 'center' : 'flex-start' }]}>
+        <View
+          className="flex-2 flex-row flex-wrap gap-6"
+          style={{ justifyContent: isWide ? 'center' : 'flex-start' }}>
           {footerLinks.map((linkItem) => (
             <Link key={linkItem.href} href={linkItem.href} asChild>
-              <Pressable style={styles.footerLinkPressable}>
+              <Pressable className="py-1">
                 {({ hovered }) => (
-                  <Text style={[styles.link, { color: hovered ? primary : onSurfaceVariant }]}>
+                  <Text
+                    className="font-body text-lg"
+                    style={[
+                      { color: hovered ? primary : onSurfaceVariant },
+                      Platform.OS === 'web' ? ({ cursor: 'pointer', transition: 'color 220ms ease' } as any) : null,
+                    ]}>
                     {linkItem.label}
                   </Text>
                 )}
@@ -68,8 +70,10 @@ export default function Footer() {
           ))}
         </View>
 
-        <View style={[styles.copySection, { alignItems: isWide ? 'flex-end' : 'flex-start' }]}>
-          <Text style={[styles.copyright, { color: onSurfaceVariant, textAlign: isWide ? 'right' : 'left' }]}>
+        <View className="flex-1" style={{ alignItems: isWide ? 'flex-end' : 'flex-start' }}>
+          <Text
+            className="font-label text-sm uppercase tracking-[1.2px]"
+            style={{ color: onSurfaceVariant, textAlign: isWide ? 'right' : 'left' }}>
             (c) 2026 Ustura. Tum haklari saklidir.
           </Text>
         </View>
@@ -77,50 +81,3 @@ export default function Footer() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderTopWidth: 1,
-    paddingVertical: 28,
-  },
-  content: {
-    width: '100%',
-    alignSelf: 'center',
-    justifyContent: 'space-between',
-    gap: 40,
-  },
-  brandSection: {
-    flex: 1,
-  },
-  logo: {
-    ...Typography.headlineLg,
-    fontSize: 36,
-    marginRight: 20,
-    marginBottom: 12,
-  },
-  description: {
-    ...Typography.bodyMd,
-    maxWidth: 360,
-  },
-  linksSection: {
-    flex: 2,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 24,
-  },
-  footerLinkPressable: {
-    paddingVertical: 4,
-  },
-  link: {
-    ...Typography.bodyLg,
-    ...(Platform.OS === 'web'
-      ? ({ cursor: 'pointer', transition: 'color 220ms ease' } as any)
-      : {}),
-  },
-  copySection: {
-    flex: 1,
-  },
-  copyright: {
-    ...Typography.labelMd,
-  },
-});

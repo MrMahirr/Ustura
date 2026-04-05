@@ -6,7 +6,7 @@ import type { GroupedSalonRecord } from '@/components/panel/super-admin/user-man
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import { salonGroupedStyles as styles } from './salon-grouped.styles';
+import { userClassNames } from './presentation';
 import UserSalonActionButton from './UserSalonActionButton';
 import UserSalonAddCard from './UserSalonAddCard';
 import UserSalonMemberCard from './UserSalonMemberCard';
@@ -61,48 +61,42 @@ export default function UserSalonGroupSection({
 
   return (
     <View
-      style={[
-        styles.section,
-        {
-          opacity: group.salonStatus === 'Askiya Alindi' ? 0.86 : 1,
-          backgroundColor: hexToRgba(adminTheme.cardBackground, 0.92),
-          borderColor: adminTheme.borderSubtle,
-          ...(Platform.OS === 'web'
-            ? ({
-                backdropFilter: 'blur(12px)',
-                boxShadow:
-                  adminTheme.theme === 'dark'
-                    ? '0 22px 54px rgba(0, 0, 0, 0.26)'
-                    : '0 22px 48px rgba(27, 27, 32, 0.08)',
-                filter: isMutedSection ? 'grayscale(0.14)' : 'none',
-              } as any)
-            : {
-                shadowColor: '#000000',
-                shadowOpacity: adminTheme.theme === 'dark' ? 0.2 : 0.08,
-                shadowRadius: 18,
-                shadowOffset: { width: 0, height: 10 },
-                elevation: 7,
-              }),
-        },
-      ]}>
+      className={userClassNames.groupedSection}
+      style={{
+        opacity: group.salonStatus === 'Askiya Alindi' ? 0.86 : 1,
+        backgroundColor: hexToRgba(adminTheme.cardBackground, 0.92),
+        borderColor: adminTheme.borderSubtle,
+        ...(Platform.OS === 'web'
+          ? ({
+              backdropFilter: 'blur(12px)',
+              boxShadow:
+                adminTheme.theme === 'dark'
+                  ? '0 22px 54px rgba(0, 0, 0, 0.26)'
+                  : '0 22px 48px rgba(27, 27, 32, 0.08)',
+              filter: isMutedSection ? 'grayscale(0.14)' : 'none',
+            } as any)
+          : {
+              shadowColor: '#000000',
+              shadowOpacity: adminTheme.theme === 'dark' ? 0.2 : 0.08,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 10 },
+              elevation: 7,
+            }),
+      }}>
       <View
-        style={[
-          styles.sectionHeader,
-          {
-            borderBottomColor: adminTheme.borderSubtle,
-            backgroundColor: hexToRgba('#FFFFFF', adminTheme.theme === 'dark' ? 0.03 : 0.55),
-          },
-        ]}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionIdentity}>
+        className={userClassNames.sectionHeader}
+        style={{
+          borderBottomColor: adminTheme.borderSubtle,
+          backgroundColor: hexToRgba('#FFFFFF', adminTheme.theme === 'dark' ? 0.03 : 0.55),
+        }}>
+        <View className={userClassNames.sectionHeaderRow}>
+          <View className={userClassNames.sectionIdentity}>
             <View
-              style={[
-                styles.sectionIconFrame,
-                {
-                  backgroundColor: adminTheme.cardBackgroundStrong,
-                  borderColor: group.plan === 'Premium' ? hexToRgba(adminTheme.primary, 0.22) : adminTheme.borderSubtle,
-                },
-              ]}>
+              className={userClassNames.sectionIconFrame}
+              style={{
+                backgroundColor: adminTheme.cardBackgroundStrong,
+                borderColor: group.plan === 'Premium' ? hexToRgba(adminTheme.primary, 0.22) : adminTheme.borderSubtle,
+              }}>
               <MaterialIcons
                 name="storefront"
                 size={24}
@@ -110,35 +104,32 @@ export default function UserSalonGroupSection({
               />
             </View>
 
-            <View style={styles.sectionTitleWrap}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={[styles.sectionTitle, { color: adminTheme.onSurface }]} numberOfLines={1}>
+            <View className={userClassNames.sectionTitleWrap}>
+              <View className={userClassNames.sectionTitleRow}>
+                <Text className={userClassNames.sectionTitle} style={{ color: adminTheme.onSurface }} numberOfLines={1}>
                   {group.salonName}
                 </Text>
                 {group.plan ? (
                   <View
-                    style={[
-                      styles.planPill,
-                      {
-                        backgroundColor: planColors.backgroundColor,
-                        borderColor: planColors.borderColor,
-                      },
-                    ]}>
-                    <Text style={[styles.planPillText, { color: planColors.color }]}>{group.plan}</Text>
+                    className={userClassNames.planPill}
+                    style={{ backgroundColor: planColors.backgroundColor, borderColor: planColors.borderColor }}>
+                    <Text className={userClassNames.planPillText} style={{ color: planColors.color }}>
+                      {group.plan}
+                    </Text>
                   </View>
                 ) : null}
               </View>
 
-              <View style={styles.sectionMetaRow}>
+              <View className={userClassNames.sectionMetaRow}>
                 <MaterialIcons name="location-on" size={14} color={hexToRgba(adminTheme.onSurfaceVariant, 0.74)} />
-                <Text style={[styles.sectionMetaText, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.8) }]}>
-                  {group.salonLocation} • {group.totalUsers} Personel
+                <Text className={userClassNames.sectionMetaText} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.8) }}>
+                  {group.salonLocation} - {group.totalUsers} Personel
                 </Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.sectionActions}>
+          <View className={userClassNames.sectionActions}>
             <UserSalonActionButton
               icon="storefront"
               label="Salon Detayi"
@@ -157,8 +148,8 @@ export default function UserSalonGroupSection({
       </View>
 
       {!collapsed ? (
-        <View style={styles.sectionBody}>
-          <View style={styles.membersGrid}>
+        <View className={userClassNames.sectionBody}>
+          <View className={userClassNames.membersGrid}>
             {group.users.map((user) => (
               <UserSalonMemberCard
                 key={user.id}

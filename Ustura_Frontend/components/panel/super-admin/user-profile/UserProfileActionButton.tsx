@@ -5,8 +5,6 @@ import { Pressable, Text, View } from 'react-native';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import { styles } from './styles';
-
 export default function UserProfileActionButton({
   icon,
   label,
@@ -23,9 +21,9 @@ export default function UserProfileActionButton({
   return (
     <Pressable
       accessibilityRole="button"
+      className="min-h-[46px] overflow-hidden rounded-sm border"
       onPress={onPress}
       style={({ hovered, pressed }) => [
-        styles.actionButton,
         {
           backgroundColor:
             variant === 'danger'
@@ -44,17 +42,14 @@ export default function UserProfileActionButton({
           transform: [{ scale: pressed ? 0.985 : hovered ? 1.01 : 1 }],
         },
       ]}>
-      <View style={styles.actionButtonInner}>
-        <MaterialIcons
-          name={icon}
-          size={18}
-          color={variant === 'danger' ? adminTheme.error : adminTheme.onSurface}
-        />
+      <View className="min-h-[46px] flex-row items-center justify-center gap-2 px-[18px]">
+        <MaterialIcons name={icon} size={18} color={variant === 'danger' ? adminTheme.error : adminTheme.onSurface} />
         <Text
-          style={[
-            styles.actionButtonText,
-            { color: variant === 'danger' ? adminTheme.error : adminTheme.onSurface },
-          ]}>
+          className="text-[11px] uppercase tracking-ui"
+          style={{
+            color: variant === 'danger' ? adminTheme.error : adminTheme.onSurface,
+            fontFamily: 'Manrope-Bold',
+          }}>
           {label}
         </Text>
       </View>

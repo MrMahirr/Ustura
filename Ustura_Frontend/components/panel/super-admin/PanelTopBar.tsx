@@ -1,11 +1,10 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
 import NotificationsMenu from '@/components/panel/super-admin/NotificationsMenu';
 import ThemeToggleButton from '@/components/ui/ThemeToggleButton';
-import { Typography } from '@/constants/typography';
 import { hexToRgba } from '@/utils/color';
 
 import { useSuperAdminTheme } from './theme';
@@ -27,7 +26,7 @@ function TopBarIconButton({
   return (
     <Pressable
       onPress={onPress}
-      style={styles.iconButton}>
+      className="relative h-10 w-10 items-center justify-center">
       {({ hovered }) => (
         <>
           <MaterialIcons
@@ -37,10 +36,8 @@ function TopBarIconButton({
           />
           {showIndicator ? (
             <View
-              style={[
-                styles.iconIndicator,
-                { backgroundColor: adminTheme.primary, borderColor: adminTheme.surface },
-              ]}
+              className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2"
+              style={{ backgroundColor: adminTheme.primary, borderColor: adminTheme.surface }}
             />
           ) : null}
         </>
@@ -59,7 +56,6 @@ export default function PanelTopBar({ query, onQueryChange }: PanelTopBarProps) 
   const adminTheme = useSuperAdminTheme();
 
   const headerChrome = [
-    styles.header,
     {
       backgroundColor: Platform.OS === 'web' ? adminTheme.topBarBackground : adminTheme.surface,
       borderBottomColor: adminTheme.borderSubtle,
@@ -73,33 +69,49 @@ export default function PanelTopBar({ query, onQueryChange }: PanelTopBarProps) 
   ];
 
   return (
-    <View style={headerChrome}>
-      <View style={[styles.searchWrap, { maxWidth: width < 768 ? undefined : 560, flex: width < 768 ? undefined : 1 }]}>
-        <View style={[styles.searchInner, { backgroundColor: adminTheme.searchBackground }]}>
-          <MaterialIcons name="search" size={20} color={adminTheme.onSurfaceVariant} style={styles.searchIcon} />
+    <View
+      className="z-40 min-h-16 flex-row flex-wrap items-center justify-between gap-4 border-b px-6 py-3"
+      style={headerChrome}>
+      <View className="min-w-[200px] grow" style={{ maxWidth: width < 768 ? undefined : 560, flex: width < 768 ? undefined : 1 }}>
+        <View className="min-h-10 flex-row items-center rounded-sm pl-3 pr-[14px]" style={{ backgroundColor: adminTheme.searchBackground }}>
+          <MaterialIcons name="search" size={20} color={adminTheme.onSurfaceVariant} style={{ marginRight: 8 }} />
           <TextInput
             value={query}
             onChangeText={onQueryChange}
             placeholder="Salon, kullanici veya islem ara..."
             placeholderTextColor={hexToRgba(adminTheme.onSurfaceVariant, 0.65)}
             selectionColor={adminTheme.primary}
-            style={[styles.searchInput, { color: adminTheme.onSurface }]}
+            className="flex-1 font-body text-sm"
+            style={[
+              { color: adminTheme.onSurface, paddingVertical: Platform.OS === 'web' ? 8 : 6 },
+              Platform.OS === 'web'
+                ? ({
+                    outlineWidth: 0,
+                    outlineStyle: 'none',
+                    borderWidth: 0,
+                  } as any)
+                : null,
+            ]}
           />
         </View>
       </View>
 
-      <View style={styles.actions}>
+      <View className="shrink-0 flex-row items-center gap-5">
         <ThemeToggleButton />
         <NotificationsMenu />
         <TopBarIconButton icon="dns" />
-        <View style={styles.profile}>
-          <View style={styles.profileText}>
-            <Text style={[styles.profileName, { color: adminTheme.onSurface }]}>Super Admin</Text>
-            <Text style={[styles.profileRole, { color: adminTheme.onSurfaceVariant }]}>Sistem Yoneticisi</Text>
+        <View className="ml-2 flex-row items-center gap-3">
+          <View className="items-end">
+            <Text className="font-body text-xs font-bold" style={{ color: adminTheme.onSurface }}>
+              Super Admin
+            </Text>
+            <Text className="mt-0.5 font-label text-[10px]" style={{ color: adminTheme.onSurfaceVariant, opacity: 0.85 }}>
+              Sistem Yoneticisi
+            </Text>
           </View>
           <Image
             source={{ uri: AVATAR_URI }}
-            style={[styles.avatarImg, { borderColor: hexToRgba(adminTheme.primary, 0.2) }]}
+            style={{ width: 40, height: 40, borderRadius: 4, borderWidth: 1, borderColor: hexToRgba(adminTheme.primary, 0.2) }}
             contentFit="cover"
           />
         </View>
@@ -107,93 +119,3 @@ export default function PanelTopBar({ query, onQueryChange }: PanelTopBarProps) 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    minHeight: 64,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
-    flexWrap: 'wrap',
-    zIndex: 40,
-  },
-  searchWrap: {
-    minWidth: 200,
-    flexGrow: 1,
-  },
-  searchInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 4,
-    paddingLeft: 12,
-    paddingRight: 14,
-    minHeight: 40,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    ...Typography.bodyMd,
-    paddingVertical: Platform.OS === 'web' ? 8 : 6,
-    ...(Platform.OS === 'web'
-      ? ({
-          outlineWidth: 0,
-          outlineStyle: 'none',
-          borderWidth: 0,
-        } as any)
-      : {}),
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-    flexShrink: 0,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
-  },
-  iconIndicator: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    borderWidth: 2,
-  },
-  profile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginLeft: 8,
-  },
-  profileText: {
-    alignItems: 'flex-end',
-  },
-  profileName: {
-    fontSize: 12,
-    fontFamily: 'Manrope-Bold',
-  },
-  profileRole: {
-    ...Typography.labelSm,
-    fontSize: 10,
-    marginTop: 2,
-    opacity: 0.85,
-  },
-  avatarImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-});

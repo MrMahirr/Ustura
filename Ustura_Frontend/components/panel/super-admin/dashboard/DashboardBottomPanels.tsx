@@ -5,8 +5,9 @@ import PendingApprovalsPanel from '@/components/panel/super-admin/PendingApprova
 import RecentSalonsPanel from '@/components/panel/super-admin/RecentSalonsPanel';
 import SystemLogsPanel from '@/components/panel/super-admin/SystemLogsPanel';
 import type { ApprovalRequest, LogEntry, RecentSalon } from '@/components/panel/super-admin/data';
+import { cn } from '@/utils/cn';
 
-import { styles } from './styles';
+import { dashboardClassNames } from './presentation';
 
 export default function DashboardBottomPanels({
   isRowLayout,
@@ -20,7 +21,7 @@ export default function DashboardBottomPanels({
   logs: LogEntry[];
 }) {
   return (
-    <View style={[styles.bottomGrid, { flexDirection: isRowLayout ? 'row' : 'column' }]}>
+    <View className={cn(dashboardClassNames.bottomGrid, isRowLayout ? 'flex-row' : 'flex-col')}>
       <RecentSalonsPanel salons={salons} />
       <PendingApprovalsPanel approvals={approvals} />
       <SystemLogsPanel logs={logs} />

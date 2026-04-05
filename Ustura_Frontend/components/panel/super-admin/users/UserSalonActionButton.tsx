@@ -6,8 +6,6 @@ import { Pressable, Text, View } from 'react-native';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import { salonGroupedStyles as styles } from './salon-grouped.styles';
-
 type IconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
 interface UserSalonActionButtonProps {
@@ -32,9 +30,9 @@ export default function UserSalonActionButton({
     <Pressable
       accessibilityRole="button"
       disabled={!onPress}
+      className={isIconOnly ? 'h-10 w-10 items-center justify-center rounded-sm border' : 'min-h-10 overflow-hidden rounded-sm border'}
       onPress={onPress}
       style={({ hovered, pressed }) => [
-        isIconOnly ? styles.actionIconButton : styles.actionButton,
         {
           opacity: onPress ? 1 : 0.48,
           backgroundColor:
@@ -53,7 +51,7 @@ export default function UserSalonActionButton({
         },
       ]}>
       {({ hovered }) => (
-        <View style={isIconOnly ? undefined : styles.actionButtonInner}>
+        <View className={isIconOnly ? undefined : 'min-h-10 flex-row items-center justify-center gap-2 px-4'}>
           {variant === 'primary' ? (
             <LinearGradient
               colors={adminTheme.goldGradient as [string, string]}
@@ -66,22 +64,17 @@ export default function UserSalonActionButton({
           <MaterialIcons
             name={icon}
             size={isIconOnly ? 20 : 16}
-            color={
-              variant === 'primary'
-                ? adminTheme.onPrimary
-                : hovered
-                  ? adminTheme.primary
-                  : adminTheme.onSurfaceVariant
-            }
+            color={variant === 'primary' ? adminTheme.onPrimary : hovered ? adminTheme.primary : adminTheme.onSurfaceVariant}
             style={rotationDeg ? ({ transform: [{ rotate: `${rotationDeg}deg` }] } as any) : undefined}
           />
 
           {!isIconOnly && label ? (
             <Text
-              style={[
-                styles.actionButtonText,
-                { color: variant === 'primary' ? adminTheme.onPrimary : hovered ? adminTheme.primary : adminTheme.onSurfaceVariant },
-              ]}>
+              className="text-[10px] uppercase tracking-[0.15em]"
+              style={{
+                color: variant === 'primary' ? adminTheme.onPrimary : hovered ? adminTheme.primary : adminTheme.onSurfaceVariant,
+                fontFamily: 'Manrope-Bold',
+              }}>
               {label}
             </Text>
           ) : null}

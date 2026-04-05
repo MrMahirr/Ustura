@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
+import { colorScheme } from 'nativewind';
 
 import { Colors } from '@/constants/theme';
 
@@ -28,6 +29,7 @@ function syncWebTheme(theme: Theme) {
   const palette = Colors[theme];
 
   document.documentElement.dataset.theme = theme;
+  document.documentElement.classList.toggle('dark', theme === 'dark');
   document.documentElement.style.colorScheme = theme;
   document.documentElement.style.backgroundColor = palette.surface;
   document.documentElement.style.color = palette.onSurface;
@@ -52,6 +54,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(readStoredTheme);
 
   useEffect(() => {
+    colorScheme.set(theme);
+
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return;
     }

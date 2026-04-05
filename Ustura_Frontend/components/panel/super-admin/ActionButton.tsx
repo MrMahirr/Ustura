@@ -1,8 +1,7 @@
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { Typography } from '@/constants/typography';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
@@ -23,48 +22,53 @@ export default function ActionButton({
 
   return (
     <Pressable
+      className="min-h-[42px] overflow-hidden rounded-sm border"
       onPress={onPress}
       style={({ hovered, pressed }) => [
-        styles.button,
         variant === 'secondary' && {
-          backgroundColor: hovered ? adminTheme.cardBackgroundStrong : adminTheme.cardBackgroundStrong,
+          backgroundColor: adminTheme.cardBackgroundStrong,
           borderColor: hovered ? adminTheme.borderStrong : adminTheme.borderSubtle,
         },
         variant === 'danger' && {
           backgroundColor: hovered ? hexToRgba(adminTheme.error, 0.14) : hexToRgba(adminTheme.error, 0.1),
           borderColor: hexToRgba(adminTheme.error, 0.22),
         },
+        Platform.OS === 'web'
+          ? ({
+              cursor: 'pointer',
+              transition: 'transform 180ms ease, border-color 180ms ease, background-color 180ms ease',
+            } as any)
+          : null,
         {
           transform: [{ scale: pressed ? 0.985 : hovered ? 1.01 : 1 }],
         },
         style,
       ]}>
       {({ hovered }) => (
-        <View style={styles.inner}>
+        <View className="min-h-[42px] items-center justify-center px-5">
           {variant === 'primary' ? (
             <LinearGradient
               colors={adminTheme.goldGradient as [string, string]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
+              style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
             />
           ) : null}
 
           <Text
-            style={[
-              styles.label,
-              {
-                color:
-                  variant === 'primary'
-                    ? adminTheme.onPrimary
-                    : variant === 'danger'
-                      ? adminTheme.error
-                      : hovered
-                        ? adminTheme.onSurface
-                        : adminTheme.onSurface,
-                fontFamily: adminTheme.bodyFont,
-              },
-            ]}>
+            className="text-[11px] uppercase tracking-ui"
+            style={{
+              color:
+                variant === 'primary'
+                  ? adminTheme.onPrimary
+                  : variant === 'danger'
+                    ? adminTheme.error
+                    : hovered
+                      ? adminTheme.onSurface
+                      : adminTheme.onSurface,
+              fontFamily: adminTheme.bodyFont,
+              fontWeight: '800',
+            }}>
             {label}
           </Text>
         </View>
@@ -72,29 +76,3 @@ export default function ActionButton({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    minHeight: 42,
-    borderRadius: 4,
-    borderWidth: 1,
-    overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? ({
-          cursor: 'pointer',
-          transition: 'transform 180ms ease, border-color 180ms ease, background-color 180ms ease',
-        } as any)
-      : {}),
-  },
-  inner: {
-    minHeight: 42,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    ...Typography.labelSm,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-});

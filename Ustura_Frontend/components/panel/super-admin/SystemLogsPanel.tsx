@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 
 import type { LogEntry } from '@/components/panel/super-admin/data';
 import { hexToRgba } from '@/utils/color';
@@ -7,22 +7,20 @@ import { useSuperAdminTheme } from './theme';
 
 export default function SystemLogsPanel({ logs }: { logs: LogEntry[] }) {
   const adminTheme = useSuperAdminTheme();
+  const monoFont = Platform.select({ web: 'monospace', ios: 'Courier', android: 'monospace' });
 
   return (
     <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: adminTheme.logBackground,
-          borderColor: adminTheme.borderSubtle,
-        },
-      ]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: adminTheme.onSurface }]}>Sistem Loglari</Text>
-        <View style={[styles.liveDot, { backgroundColor: adminTheme.success }]} />
+      className="min-h-[260px] flex-1 rounded-sm border p-7"
+      style={{ backgroundColor: adminTheme.logBackground, borderColor: adminTheme.borderSubtle }}>
+      <View className="mb-[22px] flex-row items-center justify-between">
+        <Text className="font-headline text-lg" style={{ color: adminTheme.onSurface }}>
+          Sistem Loglari
+        </Text>
+        <View className="h-2 w-2 rounded-full" style={{ backgroundColor: adminTheme.success }} />
       </View>
 
-      <View style={styles.logList}>
+      <View className="gap-2.5">
         {logs.map((log) => {
           const color =
             log.tone === 'success'
@@ -34,58 +32,23 @@ export default function SystemLogsPanel({ logs }: { logs: LogEntry[] }) {
                   : adminTheme.onSurfaceVariant;
 
           return (
-            <Text key={log.id} style={[styles.logLine, { color }]}>
-              <Text style={[styles.logTime, { color: adminTheme.onSurfaceVariant }]}>{`[${log.time}] `}</Text>
+            <Text key={log.id} style={{ color, fontFamily: monoFont, fontSize: 11, lineHeight: 17 }}>
+              <Text style={{ color: adminTheme.onSurfaceVariant, fontFamily: monoFont }}>{`[${log.time}] `}</Text>
               {log.message}
             </Text>
           );
         })}
 
-        <Text style={[styles.fetching, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.5) }]}>
+        <Text
+          style={{
+            color: hexToRgba(adminTheme.onSurfaceVariant, 0.5),
+            fontFamily: monoFont,
+            fontSize: 11,
+            marginTop: 4,
+          }}>
           Fetching more logs...
         </Text>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    minHeight: 260,
-    flex: 1,
-    borderRadius: 4,
-    padding: 28,
-    borderWidth: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 22,
-  },
-  title: {
-    fontFamily: 'NotoSerif-Bold',
-    fontSize: 18,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-  },
-  logList: {
-    gap: 10,
-  },
-  logLine: {
-    fontFamily: Platform.select({ web: 'monospace', ios: 'Courier', android: 'monospace' }),
-    fontSize: 11,
-    lineHeight: 17,
-  },
-  logTime: {
-    fontFamily: Platform.select({ web: 'monospace', ios: 'Courier', android: 'monospace' }),
-  },
-  fetching: {
-    fontFamily: Platform.select({ web: 'monospace', ios: 'Courier', android: 'monospace' }),
-    fontSize: 11,
-    marginTop: 4,
-  },
-});

@@ -9,7 +9,7 @@ import UserInsightsSection from '@/components/panel/super-admin/users/UserInsigh
 import UserListSection from '@/components/panel/super-admin/users/UserListSection';
 import UserOverviewBar from '@/components/panel/super-admin/users/UserOverviewBar';
 import UserPageHeader from '@/components/panel/super-admin/users/UserPageHeader';
-import { styles } from '@/components/panel/super-admin/users/styles';
+import { userClassNames } from '@/components/panel/super-admin/users/presentation';
 import { useUserManagement } from '@/components/panel/super-admin/users/use-user-management';
 import { buildPanelSalonDetailRoute, buildPanelUserDetailRoute } from '@/constants/routes';
 
@@ -21,28 +21,30 @@ export default function SuperAdminUsers() {
   const isWide = width >= 1080;
   const useDesktopTable = width >= 1180;
   const paddingH = width < 768 ? 16 : 32;
+  const overlayStyle =
+    Platform.OS === 'web'
+      ? ({
+          backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)`,
+          backgroundSize: '40px 40px',
+          opacity: 1,
+          pointerEvents: 'none',
+        } as any)
+      : ({
+          opacity: 0,
+          pointerEvents: 'none',
+        } as const);
 
   return (
-    <View style={[styles.page, { backgroundColor: adminTheme.pageBackground }]}>
-      <View
-        style={[
-          styles.gridOverlay,
-          Platform.OS === 'web'
-            ? ({ backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)` } as any)
-            : null,
-        ]}
-      />
+    <View className={userClassNames.page} style={{ backgroundColor: adminTheme.pageBackground }}>
+      <View className="absolute inset-0" style={overlayStyle} />
 
       <PanelTopBar query={userManagement.query} onQueryChange={userManagement.setQuery} />
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingHorizontal: paddingH, paddingTop: 24, paddingBottom: 40 },
-        ]}
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: paddingH, paddingTop: 24, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+        <View className={userClassNames.content}>
           <UserPageHeader isWide={isWide} selectedViewMode={userManagement.viewMode} />
 
           <UserOverviewBar

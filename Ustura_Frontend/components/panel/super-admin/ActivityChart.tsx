@@ -1,9 +1,8 @@
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import type { ActivitySnapshot } from '@/components/panel/super-admin/data';
-import { Typography } from '@/constants/typography';
 import { hexToRgba } from '@/utils/color';
 
 import { useSuperAdminTheme } from './theme';
@@ -19,22 +18,22 @@ export default function ActivityChart({ snapshots }: { snapshots: ActivitySnapsh
   const trackHeight = 220;
 
   return (
-    <View style={[styles.card, { backgroundColor: adminTheme.cardBackground }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: adminTheme.onSurface }]}>Platform Aktivitesi</Text>
-        <View style={styles.tabs}>
+    <View className="overflow-hidden rounded-sm p-7" style={{ backgroundColor: adminTheme.cardBackground }}>
+      <View className="mb-7 flex-row flex-wrap items-center justify-between gap-3">
+        <Text className="font-headline text-xl" style={{ color: adminTheme.onSurface }}>
+          Platform Aktivitesi
+        </Text>
+        <View className="flex-row gap-5">
           {snapshots.map((snapshot) => {
             const active = snapshot.key === selectedKey;
             return (
               <Pressable key={snapshot.key} onPress={() => setSelectedKey(snapshot.key)}>
                 <Text
-                  style={[
-                    styles.tab,
-                    {
-                      color: active ? adminTheme.primary : adminTheme.onSurfaceVariant,
-                      fontFamily: active ? 'Manrope-Bold' : 'Manrope-SemiBold',
-                    },
-                  ]}>
+                  className="font-label text-[10px] uppercase tracking-wide"
+                  style={{
+                    color: active ? adminTheme.primary : adminTheme.onSurfaceVariant,
+                    fontFamily: active ? 'Manrope-Bold' : 'Manrope-SemiBold',
+                  }}>
                   {snapshot.label}
                 </Text>
               </Pressable>
@@ -43,7 +42,7 @@ export default function ActivityChart({ snapshots }: { snapshots: ActivitySnapsh
         </View>
       </View>
 
-      <View style={[styles.chartRow, { height: trackHeight }]}>
+      <View className="flex-row items-end gap-2" style={{ height: trackHeight }}>
         {current.points.map((point, index) => {
           const pct = point.value / maxValue;
           const barH = Math.max(28, pct * (trackHeight - 8));
@@ -52,31 +51,23 @@ export default function ActivityChart({ snapshots }: { snapshots: ActivitySnapsh
           return (
             <Pressable
               key={`${current.key}-${point.label}`}
-              style={styles.barColumn}
+              className="flex-1 items-stretch"
               onHoverIn={Platform.OS === 'web' ? () => setHoveredIndex(index) : undefined}
               onHoverOut={Platform.OS === 'web' ? () => setHoveredIndex(null) : undefined}>
               <View
-                style={[
-                  styles.track,
-                  {
-                    backgroundColor: hexToRgba(
-                      adminTheme.surfaceContainerHighest,
-                      adminTheme.theme === 'dark' ? 0.2 : 0.42
-                    ),
-                    height: trackHeight,
-                  },
-                ]}>
+                className="w-full justify-end overflow-hidden rounded-sm"
+                style={{
+                  backgroundColor: hexToRgba(
+                    adminTheme.surfaceContainerHighest,
+                    adminTheme.theme === 'dark' ? 0.2 : 0.42
+                  ),
+                  height: trackHeight,
+                }}>
                 <LinearGradient
                   colors={adminTheme.goldGradient as [string, string]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={[
-                    styles.barFill,
-                    {
-                      height: barH,
-                      opacity: active ? 1 : 0.42,
-                    },
-                  ]}
+                  style={{ width: '100%', height: barH, borderRadius: 4, opacity: active ? 1 : 0.42 }}
                 />
               </View>
             </Pressable>
@@ -84,9 +75,12 @@ export default function ActivityChart({ snapshots }: { snapshots: ActivitySnapsh
         })}
       </View>
 
-      <View style={styles.axis}>
+      <View className="mt-[14px] flex-row justify-between px-0.5">
         {current.points.map((point) => (
-          <Text key={point.label} style={[styles.axisLabel, { color: adminTheme.onSurfaceVariant }]}>
+          <Text
+            key={point.label}
+            className="flex-1 text-center font-label text-[10px] uppercase tracking-wide"
+            style={{ color: adminTheme.onSurfaceVariant }}>
             {point.label}
           </Text>
         ))}
@@ -94,63 +88,3 @@ export default function ActivityChart({ snapshots }: { snapshots: ActivitySnapsh
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 4,
-    padding: 28,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 28,
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  title: {
-    fontFamily: 'NotoSerif-Bold',
-    fontSize: 20,
-  },
-  tabs: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  tab: {
-    ...Typography.labelSm,
-    fontSize: 10,
-  },
-  chartRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  barColumn: {
-    flex: 1,
-    alignItems: 'stretch',
-  },
-  track: {
-    width: '100%',
-    flexDirection: 'column',
-    justifyContent: 'flex-end',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  barFill: {
-    width: '100%',
-    borderRadius: 2,
-  },
-  axis: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 14,
-    paddingHorizontal: 2,
-  },
-  axisLabel: {
-    ...Typography.labelSm,
-    fontSize: 10,
-    flex: 1,
-    textAlign: 'center',
-  },
-});

@@ -1,12 +1,12 @@
 import React from 'react';
-import { ScrollView, View, StyleSheet, useWindowDimensions, Platform } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { getLandingLayout } from '@/components/landing/layout';
+import { ScrollView, View, useWindowDimensions, Platform } from 'react-native';
 
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
-import AboutContent from '../../components/hakkimizda/AboutContent';
-import PhoneMockup from '../../components/hakkimizda/PhoneMockup';
+import AboutContent from '@/components/hakkimizda/AboutContent';
+import PhoneMockup from '@/components/hakkimizda/PhoneMockup';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { getLandingLayout } from '@/components/landing/layout';
 
 export default function HakkimizdaPage() {
   const surface = useThemeColor({}, 'surface');
@@ -18,46 +18,40 @@ export default function HakkimizdaPage() {
     <>
       <Navbar />
       <ScrollView
-        style={[styles.container, { backgroundColor: surface }]}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Split Layout */}
+        className="flex-1"
+        style={[
+          { backgroundColor: surface },
+          Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : null,
+        ]}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}>
         <View
+          className="pb-24"
           style={[
-            styles.heroSection,
             {
               backgroundColor: surfaceContainerLow,
               paddingHorizontal: layout.horizontalPadding,
               paddingTop: layout.sectionPaddingVertical + 40,
             },
-          ]}
-        >
+            Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : null,
+          ]}>
           <View
-            style={[
-              styles.heroInner,
-              {
-                maxWidth: layout.contentMaxWidth,
-                flexDirection: layout.isDesktop ? 'row' : 'column',
-              },
-            ]}
-          >
-            {/* Left: Text (2/3) */}
-            <View style={[styles.heroLeft, { flex: layout.isDesktop ? 2 : undefined, width: layout.isDesktop ? undefined : '100%' }]}>
+            className="w-full self-center items-center gap-12"
+            style={{
+              maxWidth: layout.contentMaxWidth,
+              flexDirection: layout.isDesktop ? 'row' : 'column',
+            }}>
+            <View style={{ flex: layout.isDesktop ? 2 : undefined, width: layout.isDesktop ? undefined : '100%' }}>
               <AboutContent />
             </View>
 
-            {/* Right: Phone Mockup (1/3) */}
             <View
-              style={[
-                styles.heroRight,
-                {
-                  flex: layout.isDesktop ? 1 : undefined,
-                  width: layout.isDesktop ? undefined : '100%',
-                  marginTop: layout.isDesktop ? 0 : 64,
-                },
-              ]}
-            >
+              className="items-center"
+              style={{
+                flex: layout.isDesktop ? 1 : undefined,
+                width: layout.isDesktop ? undefined : '100%',
+                marginTop: layout.isDesktop ? 0 : 64,
+              }}>
               <PhoneMockup />
             </View>
           </View>
@@ -70,27 +64,3 @@ export default function HakkimizdaPage() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  heroSection: {
-    paddingBottom: 96,
-    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
-  },
-  heroInner: {
-    width: '100%',
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: 48,
-  },
-  heroLeft: {},
-  heroRight: {
-    alignItems: 'center',
-  },
-});

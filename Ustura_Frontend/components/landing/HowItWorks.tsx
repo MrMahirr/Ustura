@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Pressable, Platform } from 'react-native';
+import { View, Text, useWindowDimensions, Pressable, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
 import { hexToRgba } from '@/utils/color';
 
@@ -41,40 +40,41 @@ export default function HowItWorks() {
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: surfaceContainerLow,
-          paddingVertical: layout.sectionPaddingVertical,
-          paddingHorizontal: layout.horizontalPadding,
-        },
-      ]}>
-      <View style={[styles.content, { maxWidth: layout.contentMaxWidth }]}>
-        <View style={[styles.header, { alignItems: layout.isCompact ? 'center' : 'flex-start' }]}>
-          <Text style={[styles.label, { color: primary, textAlign: layout.isCompact ? 'center' : 'left' }]}>
+      style={{
+        backgroundColor: surfaceContainerLow,
+        paddingVertical: layout.sectionPaddingVertical,
+        paddingHorizontal: layout.horizontalPadding,
+      }}>
+      <View className="w-full self-center" style={{ maxWidth: layout.contentMaxWidth }}>
+        <View className="mb-16" style={{ alignItems: layout.isCompact ? 'center' : 'flex-start' }}>
+          <Text
+            className="mb-4 font-label text-base uppercase tracking-[3px]"
+            style={{ color: primary, textAlign: layout.isCompact ? 'center' : 'left' }}>
             Surec
           </Text>
-          <Text style={[styles.headline, { color: onSurface, textAlign: layout.isCompact ? 'center' : 'left' }]}>
+          <Text
+            className="font-headline text-5xl font-bold"
+            style={{ color: onSurface, textAlign: layout.isCompact ? 'center' : 'left' }}>
             Nasil Calisir?
           </Text>
         </View>
 
-        <View style={[styles.grid, { flexDirection: isWide ? 'row' : 'column', gap: isWide ? 48 : 24 }]}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: isWide ? 48 : 24 }}>
           {steps.map((step, index) => (
             <Pressable
               key={index}
-              style={[
-                styles.stepPressable,
-                {
-                  flex: isWide ? 1 : undefined,
-                },
-              ]}>
+              className="w-full"
+              style={{ flex: isWide ? 1 : undefined }}>
               {({ hovered, pressed }) => (
                 <View
                   style={[
-                    styles.stepCard,
                     {
                       alignItems: layout.isCompact ? 'center' : 'flex-start',
+                      padding: 28,
+                      borderRadius: 20,
+                      borderWidth: 1,
+                    },
+                    {
                       backgroundColor: surface,
                       borderColor: hovered ? hexToRgba(primary, 0.22) : outlineVariant,
                       transform: [{ translateY: hovered ? -6 : pressed ? -2 : 0 }],
@@ -91,24 +91,21 @@ export default function HowItWorks() {
                           shadowRadius: hovered ? 18 : 12,
                           shadowOffset: { width: 0, height: hovered ? 10 : 6 },
                           elevation: hovered ? 8 : 4,
-                        },
+                      },
                   ]}>
                   <View
-                    style={[
-                      styles.iconBox,
-                      {
-                        backgroundColor: hovered ? primary : surfaceContainerHighest,
-                        borderLeftColor: primary,
-                      },
-                    ]}>
+                    className="mb-8 h-16 w-16 items-center justify-center rounded-xl border-l-4"
+                    style={{ backgroundColor: hovered ? primary : surfaceContainerHighest, borderLeftColor: primary }}>
                     <MaterialIcons name={step.icon} size={32} color={hovered ? onPrimary : primary} />
                   </View>
-                  <Text style={[styles.stepTitle, { color: onSurface, textAlign: layout.isCompact ? 'center' : 'left' }]}>
+                  <Text
+                    className="mb-4 font-headline text-2xl font-bold"
+                    style={{ color: onSurface, textAlign: layout.isCompact ? 'center' : 'left' }}>
                     {step.title}
                   </Text>
                   <Text
                     style={[
-                      styles.stepDescription,
+                      { fontFamily: 'Manrope-Regular', fontSize: 18, lineHeight: 28, maxWidth: 360 },
                       { color: onSurfaceVariant, textAlign: layout.isCompact ? 'center' : 'left' },
                     ]}>
                     {step.description}
@@ -122,56 +119,3 @@ export default function HowItWorks() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {},
-  content: {
-    width: '100%',
-    alignSelf: 'center',
-  },
-  header: {
-    marginBottom: 64,
-  },
-  label: {
-    ...Typography.labelLg,
-    letterSpacing: 3,
-    marginBottom: 16,
-  },
-  headline: {
-    ...Typography.displayMd,
-  },
-  grid: {},
-  stepPressable: {
-    width: '100%',
-  },
-  stepCard: {
-    alignItems: 'flex-start',
-    padding: 28,
-    borderRadius: 20,
-    borderWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, transform 220ms ease',
-        } as any)
-      : {}),
-  },
-  iconBox: {
-    width: 64,
-    height: 64,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
-    borderLeftWidth: 4,
-    borderRadius: 12,
-  },
-  stepTitle: {
-    ...Typography.headlineLg,
-    fontSize: 24,
-    marginBottom: 16,
-  },
-  stepDescription: {
-    ...Typography.bodyLg,
-    lineHeight: 28,
-    maxWidth: 360,
-  },
-});

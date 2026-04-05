@@ -6,8 +6,9 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import { userOverview } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
+import { cn } from '@/utils/cn';
 
-import { styles } from './styles';
+import { userClassNames } from './presentation';
 
 function GrowthMetricCard({
   label,
@@ -22,15 +23,14 @@ function GrowthMetricCard({
 
   return (
     <View
-      style={[
-        styles.insightMetricCard,
-        {
-          backgroundColor: adminTheme.cardBackgroundStrong,
-          borderColor: adminTheme.borderSubtle,
-        },
-      ]}>
-      <Text style={[styles.insightMetricLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }]}>{label}</Text>
-      <Text style={[styles.insightMetricValue, { color: valueColor }]}>{value}</Text>
+      className={userClassNames.insightMetricCard}
+      style={{ backgroundColor: adminTheme.cardBackgroundStrong, borderColor: adminTheme.borderSubtle }}>
+      <Text className={userClassNames.insightMetricLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }}>
+        {label}
+      </Text>
+      <Text className={userClassNames.insightMetricValue} style={{ color: valueColor }}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -47,16 +47,23 @@ function ExportButton({
   return (
     <Pressable
       accessibilityRole="button"
+      className={userClassNames.exportButton}
       style={({ hovered, pressed }) => [
-        styles.exportButton,
         {
           backgroundColor: hovered ? adminTheme.cardBackgroundStrong : adminTheme.cardBackground,
           borderColor: hovered ? adminTheme.borderStrong : adminTheme.borderSubtle,
           transform: [{ translateY: pressed ? 1 : hovered ? -1 : 0 }],
         },
-        Platform.OS === 'web' ? styles.webInteractiveCard : null,
+        Platform.OS === 'web'
+          ? ({
+              transition: 'transform 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 220ms ease',
+              cursor: 'pointer',
+            } as any)
+          : null,
       ]}>
-      <Text style={[styles.exportButtonText, { color: adminTheme.onSurface }]}>{label}</Text>
+      <Text className={userClassNames.exportButtonText} style={{ color: adminTheme.onSurface }}>
+        {label}
+      </Text>
       <MaterialIcons name={icon} size={20} color={adminTheme.primary} />
     </Pressable>
   );
@@ -67,33 +74,28 @@ export default function UserInsightsSection({ isWide }: { isWide: boolean }) {
 
   return (
     <View
-      style={[
-        styles.insightsGrid,
-        {
-          flexDirection: isWide ? 'row' : 'column',
-        },
-      ]}>
+      className={cn(userClassNames.insightsGrid, isWide ? 'flex-row' : 'flex-col')}>
       <View
-        style={[
-          styles.growthCard,
-          {
-            flex: isWide ? 1.85 : undefined,
-            backgroundColor: adminTheme.cardBackground,
-            borderColor: adminTheme.borderSubtle,
-          },
-        ]}>
-        <View style={styles.growthIcon}>
+        className={userClassNames.growthCard}
+        style={{
+          flex: isWide ? 1.85 : undefined,
+          backgroundColor: adminTheme.cardBackground,
+          borderColor: adminTheme.borderSubtle,
+        }}>
+        <View className={userClassNames.growthIcon}>
           <MaterialIcons name="trending-up" size={96} color={hexToRgba(adminTheme.onSurfaceVariant, 0.14)} />
         </View>
 
-        <View style={styles.growthCopy}>
-          <Text style={[styles.growthTitle, { color: adminTheme.onSurface }]}>Kullanici Buyume Analizi</Text>
-          <Text style={[styles.growthDescription, { color: adminTheme.onSurfaceVariant }]}>
+        <View className={userClassNames.growthCopy}>
+          <Text className={userClassNames.growthTitle} style={{ color: adminTheme.onSurface }}>
+            Kullanici Buyume Analizi
+          </Text>
+          <Text className={userClassNames.growthDescription} style={{ color: adminTheme.onSurfaceVariant }}>
             Son 30 gun icinde platforma katilan yeni salon sahipleri ve calisanlarda cift haneli artis devam ediyor.
           </Text>
         </View>
 
-        <View style={styles.growthMetrics}>
+        <View className={userClassNames.growthMetrics}>
           <GrowthMetricCard label="Yeni Kayit" value={userOverview.newRegistrations} valueColor={adminTheme.success} />
           <GrowthMetricCard label="Donusum" value={userOverview.conversion} valueColor={adminTheme.primary} />
         </View>
@@ -106,21 +108,18 @@ export default function UserInsightsSection({ isWide }: { isWide: boolean }) {
         ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[
-          styles.exportCard,
-          {
-            flex: isWide ? 1 : undefined,
-            borderColor: hexToRgba(adminTheme.primary, 0.18),
-          },
-        ]}>
+        className={userClassNames.exportCard}
+        style={{ flex: isWide ? 1 : undefined, borderColor: hexToRgba(adminTheme.primary, 0.18) }}>
         <View>
-          <Text style={[styles.exportTitle, { color: adminTheme.primary }]}>Hizli Raporla</Text>
-          <Text style={[styles.exportDescription, { color: adminTheme.onSurfaceVariant }]}>
+          <Text className={userClassNames.exportTitle} style={{ color: adminTheme.primary }}>
+            Hizli Raporla
+          </Text>
+          <Text className={userClassNames.exportDescription} style={{ color: adminTheme.onSurfaceVariant }}>
             Tum kullanici listesini guncel rolleri ve salon eslesmeleriyle birlikte disa aktar.
           </Text>
         </View>
 
-        <View style={styles.exportActions}>
+        <View className={userClassNames.exportActions}>
           <ExportButton label="PDF Olarak Indir" icon="picture-as-pdf" />
           <ExportButton label="Excel (XLSX) Disa Aktar" icon="table-chart" />
         </View>

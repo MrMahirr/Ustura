@@ -4,8 +4,9 @@ import { View } from 'react-native';
 import ActivityChart from '@/components/panel/super-admin/ActivityChart';
 import ActiveSalonList from '@/components/panel/super-admin/ActiveSalonList';
 import type { ActiveSalon, ActivitySnapshot } from '@/components/panel/super-admin/data';
+import { cn } from '@/utils/cn';
 
-import { styles } from './styles';
+import { dashboardClassNames } from './presentation';
 
 export default function DashboardMiddleSection({
   isLg,
@@ -17,11 +18,11 @@ export default function DashboardMiddleSection({
   salons: ActiveSalon[];
 }) {
   return (
-    <View style={[styles.middleGrid, { flexDirection: isLg ? 'row' : 'column' }]}>
-      <View style={styles.middlePrimary}>
+    <View className={cn(dashboardClassNames.middleGrid, isLg ? 'flex-row' : 'flex-col')}>
+      <View className="min-w-0" style={{ flex: 1.85 }}>
         <ActivityChart snapshots={snapshots} />
       </View>
-      <View style={styles.middleSecondary}>
+      <View className="min-w-0 flex-1">
         <ActiveSalonList salons={salons} />
       </View>
     </View>

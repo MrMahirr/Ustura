@@ -4,8 +4,9 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import { userOverview, type UserViewMode } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
+import { cn } from '@/utils/cn';
 
-import { styles } from './styles';
+import { userClassNames } from './presentation';
 import { formatCompactNumber } from './utils';
 
 interface UserOverviewBarProps {
@@ -28,8 +29,8 @@ function ViewSwitchButton({
   return (
     <Pressable
       onPress={onPress}
+      className={userClassNames.viewSwitchButton}
       style={({ hovered, pressed }) => [
-        styles.viewSwitchButton,
         {
           backgroundColor: isActive
             ? adminTheme.primary
@@ -38,13 +39,16 @@ function ViewSwitchButton({
               : 'transparent',
           transform: [{ scale: pressed ? 0.985 : 1 }],
         },
-        Platform.OS === 'web' ? styles.webInteractiveButton : null,
+        Platform.OS === 'web'
+          ? ({
+              transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
+              cursor: 'pointer',
+            } as any)
+          : null,
       ]}>
       <Text
-        style={[
-          styles.viewSwitchButtonText,
-          { color: isActive ? adminTheme.onPrimary : adminTheme.onSurfaceVariant },
-        ]}>
+        className={userClassNames.viewSwitchButtonText}
+        style={{ color: isActive ? adminTheme.onPrimary : adminTheme.onSurfaceVariant }}>
         {label}
       </Text>
     </Pressable>
@@ -60,14 +64,8 @@ export default function UserOverviewBar({
 
   return (
     <View
-      style={[
-        styles.overviewSection,
-        {
-          flexDirection: isWide ? 'row' : 'column',
-          alignItems: isWide ? 'center' : 'flex-start',
-        },
-      ]}>
-      <View style={[styles.viewSwitch, { backgroundColor: adminTheme.cardBackground }]}>
+      className={cn(userClassNames.overviewSection, isWide ? 'flex-row items-center' : 'flex-col items-start')}>
+      <View className={userClassNames.viewSwitch} style={{ backgroundColor: adminTheme.cardBackground }}>
         <ViewSwitchButton
           label="Tum Kullanicilar"
           isActive={selectedViewMode === 'all'}
@@ -80,21 +78,21 @@ export default function UserOverviewBar({
         />
       </View>
 
-      <View style={styles.overviewStats}>
-        <View style={styles.overviewStat}>
-          <Text style={[styles.overviewLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }]}>
+      <View className={userClassNames.overviewStats}>
+        <View className={userClassNames.overviewStat}>
+          <Text className={userClassNames.overviewLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }}>
             TOPLAM KULLANICI
           </Text>
-          <Text style={[styles.overviewValue, { color: adminTheme.primary }]}>
+          <Text className={userClassNames.overviewValue} style={{ color: adminTheme.primary }}>
             {formatCompactNumber(userOverview.totalUsers)}
           </Text>
         </View>
 
-        <View style={styles.overviewStat}>
-          <Text style={[styles.overviewLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }]}>
+        <View className={userClassNames.overviewStat}>
+          <Text className={userClassNames.overviewLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }}>
             AKTIF BUGUN
           </Text>
-          <Text style={[styles.overviewValue, { color: adminTheme.onSurface }]}>
+          <Text className={userClassNames.overviewValue} style={{ color: adminTheme.onSurface }}>
             {formatCompactNumber(userOverview.activeToday)}
           </Text>
         </View>

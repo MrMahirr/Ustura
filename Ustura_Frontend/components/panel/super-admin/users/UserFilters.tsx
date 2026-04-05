@@ -5,7 +5,7 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import { styles } from './styles';
+import { userClassNames } from './presentation';
 
 interface FilterFieldProps {
   value: string;
@@ -31,17 +31,22 @@ function FilterField({ value, onPress, minWidth = 140 }: FilterFieldProps) {
   return (
     <Pressable
       onPress={onPress}
+      className={userClassNames.filterField}
       style={({ hovered, pressed }) => [
-        styles.filterField,
         {
           minWidth,
           backgroundColor: hovered ? adminTheme.cardBackgroundStrong : hexToRgba(adminTheme.cardBackgroundStrong, 0.76),
           borderColor: hovered ? adminTheme.borderStrong : adminTheme.borderSubtle,
           transform: [{ translateY: pressed ? 1 : hovered ? -1 : 0 }],
         },
-        Platform.OS === 'web' ? styles.webInteractiveCard : null,
+        Platform.OS === 'web'
+          ? ({
+              transition: 'transform 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 220ms ease',
+              cursor: 'pointer',
+            } as any)
+          : null,
       ]}>
-      <Text style={[styles.filterFieldText, { color: adminTheme.onSurface }]} numberOfLines={1}>
+      <Text className={userClassNames.filterFieldText} style={{ color: adminTheme.onSurface }} numberOfLines={1}>
         {value}
       </Text>
       <MaterialIcons name="expand-more" size={18} color={adminTheme.primary} />
@@ -64,25 +69,25 @@ export default function UserFilters({
 
   return (
     <View
-      style={[
-        styles.filterShell,
-        Platform.OS === 'web' ? styles.stickyFilters : null,
-        {
-          backgroundColor: hexToRgba(adminTheme.cardBackground, 0.88),
-          borderColor: adminTheme.borderSubtle,
-          ...(Platform.OS === 'web'
-            ? ({
-                backdropFilter: 'blur(18px)',
-                WebkitBackdropFilter: 'blur(18px)',
-                boxShadow:
-                  adminTheme.theme === 'dark'
-                    ? '0 18px 44px rgba(0, 0, 0, 0.28)'
-                    : '0 18px 44px rgba(27, 27, 32, 0.08)',
-              } as any)
-            : null),
-        },
-      ]}>
-      <View style={styles.filterRow}>
+      className={userClassNames.filterShell}
+      style={{
+        backgroundColor: hexToRgba(adminTheme.cardBackground, 0.88),
+        borderColor: adminTheme.borderSubtle,
+        ...(Platform.OS === 'web'
+          ? ({
+              position: 'sticky',
+              top: 18,
+              zIndex: 30,
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+              boxShadow:
+                adminTheme.theme === 'dark'
+                  ? '0 18px 44px rgba(0, 0, 0, 0.28)'
+                  : '0 18px 44px rgba(27, 27, 32, 0.08)',
+            } as any)
+          : null),
+      }}>
+      <View className={userClassNames.filterRow}>
         <FilterField value={selectedRole} onPress={onCycleRole} />
         <FilterField value={selectedStatus} onPress={onCycleStatus} />
         <FilterField value={selectedSalon} onPress={onCycleSalon} minWidth={180} />
@@ -90,16 +95,23 @@ export default function UserFilters({
 
         <Pressable
           onPress={onReset}
+          className={userClassNames.clearButton}
           style={({ hovered, pressed }) => [
-            styles.clearButton,
             {
               backgroundColor: hovered ? hexToRgba(adminTheme.primary, 0.08) : 'transparent',
               transform: [{ scale: pressed ? 0.985 : 1 }],
             },
-            Platform.OS === 'web' ? styles.webInteractiveButton : null,
+            Platform.OS === 'web'
+              ? ({
+                  transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
+                  cursor: 'pointer',
+                } as any)
+              : null,
           ]}>
           <MaterialIcons name="filter-list-off" size={18} color={adminTheme.onSurfaceVariant} />
-          <Text style={[styles.clearButtonText, { color: adminTheme.onSurfaceVariant }]}>Temizle</Text>
+          <Text className={userClassNames.clearButtonText} style={{ color: adminTheme.onSurfaceVariant }}>
+            Temizle
+          </Text>
         </Pressable>
       </View>
     </View>

@@ -12,10 +12,11 @@ import UserMetricsSection from '@/components/panel/super-admin/user-profile/User
 import UserProfileHero from '@/components/panel/super-admin/user-profile/UserProfileHero';
 import UserQuickActionsCard from '@/components/panel/super-admin/user-profile/UserQuickActionsCard';
 import UserWorkInfoCard from '@/components/panel/super-admin/user-profile/UserWorkInfoCard';
-import { styles } from '@/components/panel/super-admin/user-profile/styles';
+import { userProfileClassNames } from '@/components/panel/super-admin/user-profile/presentation';
 import { useUserProfile } from '@/components/panel/super-admin/user-profile/use-user-profile';
-import { buildPanelSalonDetailRoute, panelRoutes } from '@/constants/routes';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
+import { buildPanelSalonDetailRoute, panelRoutes } from '@/constants/routes';
+import { cn } from '@/utils/cn';
 
 export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
   const { width } = useWindowDimensions();
@@ -28,23 +29,30 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
   const paddingH = width < 768 ? 16 : 32;
   const metricBasis = width >= 1420 ? '24%' : width >= 880 ? '48.7%' : '100%';
 
+  const overlayStyle =
+    Platform.OS === 'web'
+      ? ({
+          backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)`,
+          backgroundSize: '40px 40px',
+          opacity: 1,
+          pointerEvents: 'none',
+        } as any)
+      : ({
+          opacity: 0,
+          pointerEvents: 'none',
+        } as const);
+
   if (!profile) {
     return (
-      <View style={[styles.page, { backgroundColor: adminTheme.pageBackground }]}>
-        <View
-          style={[
-            styles.gridOverlay,
-            Platform.OS === 'web'
-              ? ({ backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)` } as any)
-              : null,
-          ]}
-        />
-
+      <View className={userProfileClassNames.page} style={{ backgroundColor: adminTheme.pageBackground }}>
+        <View className="absolute inset-0" style={overlayStyle} />
         <PanelTopBar query={query} onQueryChange={setQuery} />
 
-        <View style={styles.emptyState}>
-          <Text style={[styles.emptyTitle, { color: adminTheme.onSurface }]}>Kullanici bulunamadi</Text>
-          <Text style={[styles.emptyDescription, { color: adminTheme.onSurfaceVariant }]}>
+        <View className="min-h-[260px] items-center justify-center gap-3 px-6">
+          <Text className="text-base" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
+            Kullanici bulunamadi
+          </Text>
+          <Text className="max-w-[420px] text-center text-sm leading-5" style={{ color: adminTheme.onSurfaceVariant }}>
             Secilen kullanici kaydi mevcut degil veya silinmis olabilir.
           </Text>
           <ActionButton label="Kullanicilar Listesine Don" onPress={() => router.push(panelRoutes.kullanicilar)} />
@@ -54,23 +62,15 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
   }
 
   return (
-    <View style={[styles.page, { backgroundColor: adminTheme.pageBackground }]}>
-      <View
-        style={[
-          styles.gridOverlay,
-          Platform.OS === 'web'
-            ? ({ backgroundImage: `radial-gradient(circle at 1px 1px, ${adminTheme.gridDot} 1px, transparent 0)` } as any)
-            : null,
-        ]}
-      />
-
+    <View className={userProfileClassNames.page} style={{ backgroundColor: adminTheme.pageBackground }}>
+      <View className="absolute inset-0" style={overlayStyle} />
       <PanelTopBar query={query} onQueryChange={setQuery} />
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: paddingH, paddingTop: 24, paddingBottom: 40 }]}
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: paddingH, paddingTop: 24, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+        <View className={userProfileClassNames.content}>
           <UserProfileHero
             profile={profile}
             isWide={isWide}
@@ -81,14 +81,14 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
 
           <UserMetricsSection metrics={profile.metrics} metricBasis={metricBasis} />
 
-          <View style={[styles.contentGrid, { flexDirection: isWide ? 'row' : 'column' }]}>
-            <View style={[styles.leftColumn, { flex: isWide ? 1.8 : undefined }]}>
+          <View className={cn('gap-6', isWide ? 'flex-row' : 'flex-col')}>
+            <View className={cn(userProfileClassNames.column, isWide ? 'flex-[1.8]' : undefined)}>
               <UserWorkInfoCard profile={profile} />
               <UserAppointmentsSection appointments={profile.recentAppointments} useDesktopTable={useDesktopAppointments} />
               <UserEarningsSection series={profile.earningsSeries} />
             </View>
 
-            <View style={[styles.rightColumn, { flex: isWide ? 1 : undefined }]}>
+            <View className={cn(userProfileClassNames.column, isWide ? 'flex-1' : undefined)}>
               <UserExpertiseCard expertise={profile.expertise} />
               <UserActivityLogCard activities={profile.activities} />
               <UserQuickActionsCard actions={profile.quickActions} />

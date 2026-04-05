@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import StatsCard from '@/components/panel/StatsCard';
 import type { DashboardMetric } from '@/components/panel/super-admin/data';
 
-import { styles } from './styles';
+import { dashboardClassNames } from './presentation';
 
 export default function DashboardMetricsSection({
   metrics,
@@ -14,9 +14,9 @@ export default function DashboardMetricsSection({
   metricsBasis: string;
 }) {
   return (
-    <View style={styles.metricsGrid}>
+    <View className={dashboardClassNames.metricsGrid}>
       {metrics.map((metric) => (
-        <View key={metric.id} style={[styles.metricItem, { width: metricsBasis as any }]}>
+        <View key={metric.id} className={dashboardClassNames.metricItem} style={{ width: metricsBasis as any }}>
           <StatsCard
             label={metric.label}
             value={metric.value}

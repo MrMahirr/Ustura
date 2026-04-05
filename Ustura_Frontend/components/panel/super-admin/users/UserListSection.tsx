@@ -6,7 +6,7 @@ import type { GroupedSalonRecord, UserRecord, UserViewMode } from '@/components/
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import { styles } from './styles';
+import { getUserPanelShadow, userClassNames } from './presentation';
 import UserMobileCard from './UserMobileCard';
 import UserRow from './UserRow';
 import UserSalonGroupedView from './UserSalonGroupedView';
@@ -37,14 +37,14 @@ function EmptyState({
   const adminTheme = useSuperAdminTheme();
 
   return (
-    <View
-      style={[
-        styles.emptyState,
-        { backgroundColor: adminTheme.cardBackgroundMuted, borderColor: adminTheme.borderSubtle },
-      ]}>
+    <View className={userClassNames.emptyState} style={{ backgroundColor: adminTheme.cardBackgroundMuted, borderColor: adminTheme.borderSubtle }}>
       <MaterialIcons name="search-off" size={32} color={hexToRgba(adminTheme.onSurfaceVariant, 0.8)} />
-      <Text style={[styles.emptyTitle, { color: adminTheme.onSurface }]}>{title}</Text>
-      <Text style={[styles.emptyDescription, { color: adminTheme.onSurfaceVariant }]}>{description}</Text>
+      <Text className={userClassNames.emptyTitle} style={{ color: adminTheme.onSurface }}>
+        {title}
+      </Text>
+      <Text className={userClassNames.emptyDescription} style={{ color: adminTheme.onSurfaceVariant }}>
+        {description}
+      </Text>
     </View>
   );
 }
@@ -60,35 +60,23 @@ function DesktopTable({
 
   return (
     <>
-      <View
-        style={[
-          styles.headerRow,
-          {
-            backgroundColor: adminTheme.tableHeaderBackground,
-            borderBottomColor: adminTheme.borderSubtle,
-          },
-        ]}>
-        <Text style={[styles.headerText, styles.cellUser, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+      <View className={userClassNames.headerRow} style={{ backgroundColor: adminTheme.tableHeaderBackground, borderBottomColor: adminTheme.borderSubtle }}>
+        <Text className={userClassNames.headerText} style={{ flex: 2.55, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }}>
           Kullanici
         </Text>
-        <Text style={[styles.headerText, styles.cellRole, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={userClassNames.headerText} style={{ flex: 1.05, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }}>
           Rol
         </Text>
-        <Text style={[styles.headerText, styles.cellSalon, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={userClassNames.headerText} style={{ flex: 1.65, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }}>
           Bagli Salon
         </Text>
-        <Text style={[styles.headerText, styles.cellStatus, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={userClassNames.headerText} style={{ flex: 1, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }}>
           Durum
         </Text>
-        <Text style={[styles.headerText, styles.cellCapacity, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+        <Text className={userClassNames.headerText} style={{ flex: 1.25, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }}>
           Gunluk Randevu
         </Text>
-        <Text
-          style={[
-            styles.headerText,
-            styles.cellActions,
-            { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), textAlign: 'right' },
-          ]}>
+        <Text className={userClassNames.headerText} style={{ flex: 1.05, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), textAlign: 'right' }}>
           Islemler
         </Text>
       </View>
@@ -115,31 +103,29 @@ function Pagination({
   const adminTheme = useSuperAdminTheme();
 
   return (
-    <View
-      style={[
-        styles.paginationBar,
-        {
-          backgroundColor: hexToRgba(adminTheme.tableHeaderBackground, 0.6),
-          borderTopColor: adminTheme.borderSubtle,
-        },
-      ]}>
-      <Text style={[styles.paginationText, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.78) }]}>
+    <View className={userClassNames.paginationBar} style={{ backgroundColor: hexToRgba(adminTheme.tableHeaderBackground, 0.6), borderTopColor: adminTheme.borderSubtle }}>
+      <Text className={userClassNames.paginationText} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.78) }}>
         {filteredUsersCount === 0
           ? 'Kayit bulunamadi'
           : `${filteredUsersCount} kayittan ${startRow}-${endRow} arasi gosteriliyor`}
       </Text>
 
-      <View style={styles.paginationControls}>
+      <View className={userClassNames.paginationControls}>
         <Pressable
           onPress={() => onPageChange(Math.max(1, page - 1))}
           disabled={page === 1}
+          className={userClassNames.paginationButton}
           style={({ hovered }) => [
-            styles.paginationButton,
             {
               opacity: page === 1 ? 0.38 : 1,
               backgroundColor: hovered && page !== 1 ? adminTheme.cardBackgroundStrong : 'transparent',
             },
-            Platform.OS === 'web' ? styles.webInteractiveButton : null,
+            Platform.OS === 'web'
+              ? ({
+                  transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
+                  cursor: 'pointer',
+                } as any)
+              : null,
           ]}>
           <MaterialIcons name="chevron-left" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
         </Pressable>
@@ -152,15 +138,20 @@ function Pagination({
             <Pressable
               key={`user-page-${targetPage}`}
               onPress={() => onPageChange(targetPage)}
+              className={userClassNames.pageButton}
               style={({ hovered }) => [
-                styles.pageButton,
                 {
                   backgroundColor: isActive ? adminTheme.primary : hovered ? adminTheme.cardBackgroundStrong : 'transparent',
                   borderColor: isActive ? adminTheme.primary : adminTheme.borderSubtle,
                 },
-                Platform.OS === 'web' ? styles.webInteractiveButton : null,
+                Platform.OS === 'web'
+                  ? ({
+                      transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
+                      cursor: 'pointer',
+                    } as any)
+                  : null,
               ]}>
-              <Text style={[styles.pageButtonText, { color: isActive ? adminTheme.onPrimary : adminTheme.onSurface }]}>
+              <Text className={userClassNames.pageButtonText} style={{ color: isActive ? adminTheme.onPrimary : adminTheme.onSurface }}>
                 {targetPage}
               </Text>
             </Pressable>
@@ -170,13 +161,18 @@ function Pagination({
         <Pressable
           onPress={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page === totalPages}
+          className={userClassNames.paginationButton}
           style={({ hovered }) => [
-            styles.paginationButton,
             {
               opacity: page === totalPages ? 0.38 : 1,
               backgroundColor: hovered && page !== totalPages ? adminTheme.cardBackgroundStrong : 'transparent',
             },
-            Platform.OS === 'web' ? styles.webInteractiveButton : null,
+            Platform.OS === 'web'
+              ? ({
+                  transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
+                  cursor: 'pointer',
+                } as any)
+              : null,
           ]}>
           <MaterialIcons name="chevron-right" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
         </Pressable>
@@ -219,28 +215,7 @@ export default function UserListSection({
   }
 
   return (
-    <View
-      style={[
-        styles.tableShell,
-        {
-          backgroundColor: adminTheme.cardBackground,
-          borderColor: adminTheme.borderSubtle,
-          ...(Platform.OS === 'web'
-            ? ({
-                boxShadow:
-                  adminTheme.theme === 'dark'
-                    ? '0 26px 60px rgba(0, 0, 0, 0.34)'
-                    : '0 24px 54px rgba(27, 27, 32, 0.08)',
-              } as any)
-            : {
-                shadowColor: '#000000',
-                shadowOpacity: adminTheme.theme === 'dark' ? 0.22 : 0.08,
-                shadowRadius: 20,
-                shadowOffset: { width: 0, height: 12 },
-                elevation: 8,
-              }),
-        },
-      ]}>
+    <View className={userClassNames.tableShell} style={{ backgroundColor: adminTheme.cardBackground, borderColor: adminTheme.borderSubtle, ...getUserPanelShadow(adminTheme.theme) }}>
       {users.length === 0 ? (
         <EmptyState
           title="Filtrelere gore kullanici bulunamadi"
@@ -249,7 +224,7 @@ export default function UserListSection({
       ) : useDesktopTable ? (
         <DesktopTable users={users} onOpenUser={onOpenUser} />
       ) : (
-        <View style={styles.mobileList}>
+        <View className={userClassNames.mobileList}>
           {users.map((user) => (
             <UserMobileCard key={user.id} user={user} onPress={() => onOpenUser?.(user.id)} />
           ))}

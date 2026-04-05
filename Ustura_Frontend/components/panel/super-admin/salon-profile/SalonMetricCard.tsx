@@ -3,10 +3,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 
 import type { SalonProfileMetric } from '@/components/panel/super-admin/salon-profile/data';
+import { salonProfileClassNames } from '@/components/panel/super-admin/salon-profile/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
-
-import { styles } from './styles';
 
 export default function SalonMetricCard({ metric }: { metric: SalonProfileMetric }) {
   const adminTheme = useSuperAdminTheme();
@@ -29,41 +28,36 @@ export default function SalonMetricCard({ metric }: { metric: SalonProfileMetric
         : 'trending-flat';
 
   return (
-    <View
-      style={[
-        styles.metricCard,
-        {
-          backgroundColor: adminTheme.cardBackground,
-          borderColor: adminTheme.borderSubtle,
-        },
-      ]}>
-      <Text style={[styles.metricLabel, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.68) }]}>
+    <View className="gap-3 rounded-xl border p-[18px]" style={{ backgroundColor: adminTheme.cardBackground, borderColor: adminTheme.borderSubtle }}>
+      <Text className={salonProfileClassNames.infoLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.68), fontFamily: 'Manrope-Bold' }}>
         {metric.label}
       </Text>
 
-      <View style={styles.metricValueRow}>
-        <Text style={[styles.metricValue, { color: adminTheme.onSurface }]}>{metric.value}</Text>
+      <View className="flex-row items-center gap-2">
+        <Text className="font-headline text-[28px] tracking-[-0.6px]" style={{ color: adminTheme.onSurface }}>
+          {metric.value}
+        </Text>
         {metric.trendTone ? <MaterialIcons name={trendIcon} size={16} color={trendColor} /> : null}
       </View>
 
-      <View style={styles.sparklineRow}>
+      <View className="h-[34px] flex-row items-end gap-1">
         {metric.bars.map((bar, index) => (
           <View
             key={`${metric.id}-bar-${index}`}
-            style={[
-              styles.sparklineBar,
-              {
-                height: `${bar}%` as any,
-                backgroundColor:
-                  index === metric.bars.length - 1 ? accentColor : hexToRgba(accentColor, metric.accent === 'error' ? 0.24 : 0.18),
-              },
-            ]}
+            className="min-h-2 flex-1 rounded-full"
+            style={{
+              height: `${bar}%` as any,
+              backgroundColor:
+                index === metric.bars.length - 1 ? accentColor : hexToRgba(accentColor, metric.accent === 'error' ? 0.24 : 0.18),
+            }}
           />
         ))}
       </View>
 
       {metric.trendLabel ? (
-        <Text style={[styles.infoValueSm, { color: trendColor, fontFamily: 'Manrope-Bold' }]}>{metric.trendLabel}</Text>
+        <Text className={salonProfileClassNames.infoValueSm} style={{ color: trendColor, fontFamily: 'Manrope-Bold' }}>
+          {metric.trendLabel}
+        </Text>
       ) : null}
     </View>
   );

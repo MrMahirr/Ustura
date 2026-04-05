@@ -6,8 +6,9 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import type { UserViewMode } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
+import { cn } from '@/utils/cn';
 
-import { styles } from './styles';
+import { userClassNames } from './presentation';
 
 function HeaderCtaButton() {
   const adminTheme = useSuperAdminTheme();
@@ -15,8 +16,8 @@ function HeaderCtaButton() {
   return (
     <Pressable
       accessibilityRole="button"
+      className={userClassNames.ctaWrap}
       style={({ hovered, pressed }) => [
-        styles.ctaWrap,
         { transform: [{ scale: pressed ? 0.985 : hovered ? 1.015 : 1 }] },
         Platform.OS === 'web'
           ? ({
@@ -31,9 +32,11 @@ function HeaderCtaButton() {
         colors={adminTheme.goldGradient as [string, string]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.cta}>
+        className={userClassNames.cta}>
         <MaterialIcons name="person-add" size={18} color={adminTheme.onPrimary} />
-        <Text style={[styles.ctaText, { color: adminTheme.onPrimary }]}>Yeni Kullanici Ekle</Text>
+        <Text className={userClassNames.ctaText} style={{ color: adminTheme.onPrimary }}>
+          Yeni Kullanici Ekle
+        </Text>
       </LinearGradient>
     </Pressable>
   );
@@ -54,16 +57,14 @@ export default function UserPageHeader({
 
   return (
     <View
-      style={[
-        styles.headerSection,
-        {
-          flexDirection: isWide ? 'row' : 'column',
-          alignItems: isWide ? 'flex-end' : 'flex-start',
-        },
-      ]}>
-      <View style={styles.headerCopy}>
-        <Text style={[styles.title, { color: adminTheme.onSurface }]}>Kullanicilar</Text>
-        <Text style={[styles.description, { color: adminTheme.onSurfaceVariant }]}>{description}</Text>
+      className={cn(userClassNames.headerSection, isWide ? 'flex-row items-end' : 'flex-col items-start')}>
+      <View className={userClassNames.headerCopy}>
+        <Text className={userClassNames.title} style={{ color: adminTheme.onSurface }}>
+          Kullanicilar
+        </Text>
+        <Text className={userClassNames.description} style={{ color: adminTheme.onSurfaceVariant }}>
+          {description}
+        </Text>
       </View>
       <HeaderCtaButton />
     </View>

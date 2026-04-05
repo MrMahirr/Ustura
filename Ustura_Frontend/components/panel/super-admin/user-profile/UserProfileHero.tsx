@@ -6,10 +6,10 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import type { UserProfile } from '@/components/panel/super-admin/user-profile/data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { getRolePalette, getStatusPalette } from '@/components/panel/super-admin/users/utils';
+import { cn } from '@/utils/cn';
 import { hexToRgba } from '@/utils/color';
 
 import UserProfileActionButton from './UserProfileActionButton';
-import { styles } from './styles';
 
 export default function UserProfileHero({
   profile,
@@ -25,83 +25,84 @@ export default function UserProfileHero({
   const statusPalette = getStatusPalette(profile.user.status, adminTheme);
 
   return (
-    <View
-      style={[
-        styles.heroSection,
-        {
-          flexDirection: isWide ? 'row' : 'column',
-          alignItems: isWide ? 'flex-end' : 'flex-start',
-        },
-      ]}>
-      <View style={styles.heroMain}>
-        <View style={styles.heroAvatarWrap}>
+    <View className={cn('justify-between gap-6', isWide ? 'flex-row items-end' : 'flex-col items-start')}>
+      <View className="flex-row flex-wrap items-center gap-6">
+        <View className="relative h-44 w-44 shrink-0">
           <View
-            style={[
-              styles.heroAvatarFrame,
-              {
-                borderColor: adminTheme.surfaceContainerHigh,
-                backgroundColor: adminTheme.cardBackgroundStrong,
-              },
-            ]}>
+            className="h-full w-full overflow-hidden rounded-full border-4"
+            style={{
+              borderColor: adminTheme.surfaceContainerHigh,
+              backgroundColor: adminTheme.cardBackgroundStrong,
+            }}>
             <Image
               source={{ uri: profile.user.avatarUrl }}
               style={[
-                styles.heroAvatar,
+                { width: '100%', height: '100%' },
                 Platform.OS === 'web' && profile.user.mutedImage ? ({ filter: 'grayscale(1)' } as any) : null,
               ]}
               contentFit="cover"
             />
           </View>
           <View
-            style={[
-              styles.heroStatusDot,
-              {
-                backgroundColor: statusPalette.accent,
-                borderColor: adminTheme.surface,
-              },
-            ]}
+            className="absolute bottom-3 right-3 h-6 w-6 rounded-full border-4"
+            style={{
+              backgroundColor: statusPalette.accent,
+              borderColor: adminTheme.surface,
+            }}
           />
         </View>
 
-        <View style={styles.heroCopy}>
-          <View style={styles.heroMetaRow}>
+        <View className="min-w-[260px] flex-1 gap-2.5">
+          <View className="flex-row flex-wrap items-center gap-3">
             <View
-              style={[
-                styles.heroRoleBadge,
-                {
-                  backgroundColor: rolePalette.backgroundColor,
-                  borderColor: rolePalette.borderColor,
-                },
-              ]}>
-              <Text style={[styles.heroRoleText, { color: rolePalette.color }]}>{profile.user.role}</Text>
+              className="min-h-[30px] items-center justify-center rounded-sm border px-3 py-1.5"
+              style={{
+                backgroundColor: rolePalette.backgroundColor,
+                borderColor: rolePalette.borderColor,
+              }}>
+              <Text className="font-label text-[10px] uppercase tracking-widest" style={{ color: rolePalette.color, fontFamily: 'Manrope-Bold' }}>
+                {profile.user.role}
+              </Text>
             </View>
 
-            <View style={styles.heroLocationRow}>
+            <View className="flex-row items-center gap-1">
               <MaterialIcons name="location-on" size={16} color={hexToRgba(adminTheme.onSurfaceVariant, 0.74)} />
-              <Text style={[styles.heroLocationText, { color: adminTheme.onSurfaceVariant }]}>{profile.locationLabel}</Text>
+              <Text className="font-body text-[13px]" style={{ color: adminTheme.onSurfaceVariant }}>
+                {profile.locationLabel}
+              </Text>
             </View>
           </View>
 
-          <Text style={[styles.heroTitle, { color: adminTheme.onSurface }]}>{profile.user.name}</Text>
+          <Text className="font-headline text-[54px] leading-[60px] tracking-tighterest" style={{ color: adminTheme.onSurface }}>
+            {profile.user.name}
+          </Text>
 
           <Pressable
             accessibilityRole="button"
             disabled={!onOpenSalon}
             onPress={onOpenSalon}
+            className="self-start flex-row items-center gap-2"
             style={({ hovered, pressed }) => [
-              styles.heroSalonLink,
+              Platform.OS === 'web'
+                ? ({
+                    cursor: 'pointer',
+                    transition: 'opacity 160ms ease, transform 180ms ease',
+                  } as any)
+                : null,
               {
                 opacity: onOpenSalon ? 1 : 0.56,
                 transform: [{ scale: pressed ? 0.99 : hovered ? 1.01 : 1 }],
               },
             ]}>
-            <Text style={[styles.heroSalonText, { color: adminTheme.primary }]}>{profile.user.salonName}</Text>
+            <Text className="text-xl" style={{ color: adminTheme.primary, fontFamily: 'Manrope-SemiBold' }}>
+              {profile.user.salonName}
+            </Text>
             <MaterialIcons name="open-in-new" size={16} color={adminTheme.primary} />
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.heroActions}>
+      <View className="flex-row flex-wrap items-center gap-3">
         <UserProfileActionButton icon="edit" label="Edit" onPress={() => undefined} />
         <UserProfileActionButton icon="block" label="Disable" onPress={() => undefined} />
         <UserProfileActionButton icon="delete" label="Delete" variant="danger" onPress={() => undefined} />

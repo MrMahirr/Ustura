@@ -1,11 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Platform, Pressable } from 'react-native';
+import { View, Text, useWindowDimensions, Platform, Pressable } from 'react-native';
 import { Link, usePathname, useRouter, type Href } from 'expo-router';
 import Button from '@/components/ui/Button';
 import ThemeToggleButton from '@/components/ui/ThemeToggleButton';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
 
 type NavbarLinkProps = {
@@ -23,25 +22,34 @@ type NavbarProps = {
 function NavbarLink({ href, label, isActive, primary, onSurfaceVariant }: NavbarLinkProps) {
   return (
     <Link href={href} asChild>
-      <Pressable style={styles.linkWrapper}>
+      <Pressable className="pb-1">
         {({ hovered }: { hovered: boolean }) => {
           const isHighlighted = isActive || hovered;
 
           return (
-            <View style={[styles.linkInner, isHighlighted && styles.linkInnerHovered]}>
+            <View
+              className="relative self-start pb-2.5"
+              style={{
+                transform: [{ scale: isHighlighted ? 1.03 : 1 }],
+                transition: Platform.OS === 'web' ? 'transform 0.18s ease' : undefined,
+              } as any}>
               <Text
+                className="font-label text-[13px] uppercase tracking-[1.6px]"
                 style={[
-                  styles.link,
                   { color: isHighlighted ? primary : onSurfaceVariant },
+                  Platform.OS === 'web' ? ({ transition: 'color 0.18s ease' } as any) : null,
                 ]}>
                 {label}
               </Text>
               <View
-                style={[
-                  styles.linkUnderline,
-                  { backgroundColor: primary },
-                  isHighlighted && styles.linkUnderlineVisible,
-                ]}
+                className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                style={{
+                  backgroundColor: primary,
+                  opacity: isHighlighted ? 1 : 0,
+                  transform: [{ scaleX: isHighlighted ? 1 : 0 }],
+                  transformOrigin: 'center',
+                  transition: Platform.OS === 'web' ? 'transform 0.24s ease, opacity 0.18s ease' : undefined,
+                } as any}
               />
             </View>
           );
@@ -86,14 +94,16 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
 
   return (
     <View
+      className="absolute top-0 z-50 w-full border-b"
       style={[
-        styles.container,
         {
           backgroundColor: Platform.OS === 'web' ? navbarBackground : surface,
           borderBottomColor: outlineVariant,
         },
         Platform.OS === 'web'
           ? ({
+              backdropFilter: 'blur(20px)',
+              transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 360ms ease',
               boxShadow:
                 theme === 'light'
                   ? '0 14px 34px rgba(27, 27, 32, 0.07)'
@@ -108,20 +118,18 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
             },
       ]}>
       <View
-        style={[
-          styles.content,
-          {
-            maxWidth: layout.contentMaxWidth,
-            paddingHorizontal: layout.horizontalPadding,
-            paddingVertical: width < 768 ? 14 : 16,
-          },
-        ]}>
-        <Text style={[styles.logo, { color: primary }]} onPress={() => router.push('/(public)')}>
+        className="w-full self-center flex-row items-center justify-between"
+        style={{
+          maxWidth: layout.contentMaxWidth,
+          paddingHorizontal: layout.horizontalPadding,
+          paddingVertical: width < 768 ? 14 : 16,
+        }}>
+        <Text className="font-headline text-[34px] font-bold" style={{ color: primary }} onPress={() => router.push('/(public)')}>
           Ustura
         </Text>
 
         {isTablet && (
-          <View style={[styles.links, { gap: width < 1280 ? 24 : 32 }]}>
+          <View className="flex-row items-center" style={{ gap: width < 1280 ? 24 : 32 }}>
             <NavbarLink
               href="/(public)"
               label="ANASAYFA"
@@ -153,7 +161,7 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
           </View>
         )}
 
-        <View style={styles.actions}>
+        <View className="flex-row items-center">
           {isDesktop && (
             <Button
               title="Salonumu Kaydet"
@@ -175,72 +183,3 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    width: '100%',
-    zIndex: 50,
-    borderBottomWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({
-          backdropFilter: 'blur(20px)',
-          transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 360ms ease',
-        } as any)
-      : {}),
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    alignSelf: 'center',
-  },
-  logo: {
-    ...Typography.headlineLg,
-    fontSize: 34,
-  },
-  links: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  linkWrapper: {
-    paddingBottom: 4,
-  },
-  linkInner: {
-    position: 'relative',
-    alignSelf: 'flex-start',
-    paddingBottom: 10,
-    transform: [{ scale: 1 }],
-    transition: 'transform 0.18s ease',
-  } as any,
-  linkInnerHovered: {
-    transform: [{ scale: 1.03 }],
-  },
-  link: {
-    ...Typography.labelMd,
-    fontSize: 13,
-    transition: 'color 0.18s ease',
-  } as any,
-  linkUnderline: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 2,
-    opacity: 0,
-    borderRadius: 999,
-    transform: [{ scaleX: 0 }],
-    transformOrigin: 'center',
-    transition: 'transform 0.24s ease, opacity 0.18s ease',
-  } as any,
-  linkUnderlineVisible: {
-    opacity: 1,
-    transform: [{ scaleX: 1 }],
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
