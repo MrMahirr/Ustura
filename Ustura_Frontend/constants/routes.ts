@@ -20,6 +20,11 @@ export const buildPanelSalonDetailRoute = (salonId: string): Href => ({
   params: { salonId },
 });
 
+export const buildPanelUserDetailRoute = (userId: string): Href => ({
+  pathname: '/panel/kullanicilar/[userId]',
+  params: { userId },
+});
+
 /** Acik / pazarlama sayfalari (grup URL'de gorunmez) */
 export const publicRoutes = {
   home: '/',

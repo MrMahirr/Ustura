@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image } from 'expo-image';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
 
 import type { UserRecord } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
@@ -10,19 +10,29 @@ import { styles } from './styles';
 import UserActionIcon from './UserActionIcon';
 import { formatOccupancy, getOccupancyRatio, getRolePalette, getStatusPalette, getUserActions } from './utils';
 
-export default function UserRow({ user }: { user: UserRecord }) {
+export default function UserRow({ user, onPress }: { user: UserRecord; onPress?: () => void }) {
   const adminTheme = useSuperAdminTheme();
   const rolePalette = getRolePalette(user.role, adminTheme);
   const statusPalette = getStatusPalette(user.status, adminTheme);
   const actions = getUserActions(user.role, user.status, adminTheme);
   const occupancyRatio = getOccupancyRatio(user.dailyCapacity);
+  const handleActionPress = (event: GestureResponderEvent, isDetailAction: boolean) => {
+    event.stopPropagation();
+
+    if (isDetailAction) {
+      onPress?.();
+    }
+  };
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ hovered }) => [
         styles.row,
         { backgroundColor: hovered ? adminTheme.cardBackgroundStrong : 'transparent' },
-        Platform.OS === 'web' ? styles.webRowTransition : null,
+        Platform.OS === 'web'
+          ? [styles.webRowTransition, { cursor: onPress ? 'pointer' : 'default' } as any]
+          : null,
       ]}>
       {({ hovered }) => (
         <>
@@ -113,7 +123,13 @@ export default function UserRow({ user }: { user: UserRecord }) {
           <View style={[styles.cell, styles.cellActions]}>
             <View style={[styles.actionsRow, { opacity: hovered ? 1 : 0.18 }]}>
               {actions.map((action) => (
-                <UserActionIcon key={`${user.id}-${action.icon}`} icon={action.icon} label={action.label} color={action.color} />
+                <UserActionIcon
+                  key={`${user.id}-${action.icon}`}
+                  icon={action.icon}
+                  label={action.label}
+                  color={action.color}
+                  onPress={(event) => handleActionPress(event, action.icon === 'visibility')}
+                />
               ))}
             </View>
           </View>
