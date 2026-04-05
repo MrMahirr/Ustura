@@ -11,7 +11,7 @@ import SalonActionIcon from './SalonActionIcon';
 import { styles } from './styles';
 import { getPlanPalette, getRowActions, getStatusPalette } from './utils';
 
-export default function SalonRow({ salon }: { salon: SalonRecord }) {
+export default function SalonRow({ salon, onPress }: { salon: SalonRecord; onPress?: () => void }) {
   const adminTheme = useSuperAdminTheme();
   const statusPalette = getStatusPalette(salon.status, adminTheme);
   const planPalette = getPlanPalette(salon.plan, adminTheme);
@@ -19,10 +19,13 @@ export default function SalonRow({ salon }: { salon: SalonRecord }) {
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ hovered }) => [
         styles.row,
         { backgroundColor: hovered ? adminTheme.cardBackgroundStrong : 'transparent' },
-        Platform.OS === 'web' ? styles.webRowTransition : null,
+        Platform.OS === 'web'
+          ? [styles.webRowTransition, { cursor: onPress ? 'pointer' : 'default' } as any]
+          : null,
       ]}>
       {({ hovered }) => (
         <>

@@ -8,11 +8,17 @@ const route = (path: string) => path as Href;
 export const panelRoutes = {
   home: route('/panel'),
   salonlar: route('/panel/salonlar'),
+  kullanicilar: route('/panel/kullanicilar'),
   randevular: route('/panel/randevular'),
   berber: route('/panel/berber'),
   personel: route('/panel/personel'),
   ayarlar: route('/panel/ayarlar'),
 } as const satisfies Record<string, Href>;
+
+export const buildPanelSalonDetailRoute = (salonId: string): Href => ({
+  pathname: '/panel/salonlar/[salonId]',
+  params: { salonId },
+});
 
 /** Acik / pazarlama sayfalari (grup URL'de gorunmez) */
 export const publicRoutes = {

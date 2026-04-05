@@ -1,4 +1,5 @@
 import React from 'react';
+import { router } from 'expo-router';
 import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
@@ -9,6 +10,7 @@ import SalonListSection from '@/components/panel/super-admin/salons/SalonListSec
 import SalonPageHeader from '@/components/panel/super-admin/salons/SalonPageHeader';
 import { styles } from '@/components/panel/super-admin/salons/styles';
 import { useSalonManagement } from '@/components/panel/super-admin/salons/use-salon-management';
+import { buildPanelSalonDetailRoute } from '@/constants/routes';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 
 export default function SuperAdminSalons() {
@@ -65,6 +67,7 @@ export default function SuperAdminSalons() {
             endRow={salonManagement.endRow}
             useDesktopTable={useDesktopTable}
             onPageChange={salonManagement.setPage}
+            onOpenSalon={(salonId) => router.push(buildPanelSalonDetailRoute(salonId))}
           />
 
           <SalonInsightsSection isTablet={isTablet} overview={salonOverview} />
