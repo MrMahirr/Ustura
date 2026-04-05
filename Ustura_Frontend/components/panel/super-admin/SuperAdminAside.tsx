@@ -23,6 +23,21 @@ function normalizePath(path: string) {
   return p;
 }
 
+function isItemActive(pathname: string, item: SuperAdminAsideItem) {
+  const currentPath = normalizePath(pathname);
+  const itemPath = normalizePath(String(item.href ?? ''));
+
+  if (!itemPath) {
+    return false;
+  }
+
+  if (currentPath === itemPath) {
+    return true;
+  }
+
+  return Boolean(item.matchSubroutes && itemPath !== '/' && currentPath.startsWith(`${itemPath}/`));
+}
+
 function AsideNavRow({
   item,
   isActive,
@@ -218,7 +233,7 @@ export default function SuperAdminAside({
               <AsideNavRow
                 key={item.label}
                 item={item}
-                isActive={normalizePath(pathname) === normalizePath(String(item.href ?? ''))}
+                isActive={isItemActive(pathname, item)}
                 isDesktop
                 collapsed={collapsed}
                 primary={primary}
@@ -235,7 +250,7 @@ export default function SuperAdminAside({
             <View key={item.label} style={styles.mobileItem}>
               <AsideNavRow
                 item={item}
-                isActive={normalizePath(pathname) === normalizePath(String(item.href ?? ''))}
+                isActive={isItemActive(pathname, item)}
                 isDesktop={false}
                 collapsed={false}
                 primary={primary}

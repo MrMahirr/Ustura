@@ -2,27 +2,37 @@ import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import type { SalonRecord } from '@/components/panel/super-admin/salon-management.data';
+import type { GroupedSalonRecord, UserRecord, UserViewMode } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-import SalonMobileCard from './SalonMobileCard';
-import SalonRow from './SalonRow';
 import { styles } from './styles';
+import UserMobileCard from './UserMobileCard';
+import UserRow from './UserRow';
+import UserSalonGroupedView from './UserSalonGroupedView';
 
-interface SalonListSectionProps {
-  salons: SalonRecord[];
-  filteredSalonsCount: number;
+interface UserListSectionProps {
+  users: UserRecord[];
+  groupedSalons: GroupedSalonRecord[];
+  filteredUsersCount: number;
+  viewMode: UserViewMode;
   page: number;
   totalPages: number;
   startRow: number;
   endRow: number;
   useDesktopTable: boolean;
   onPageChange: (page: number) => void;
-  onOpenSalon: (salonId: string) => void;
+  onOpenSalon?: (salonId: string) => void;
+  onAddUser?: (salonId?: string) => void;
 }
 
-function EmptyState() {
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -32,15 +42,13 @@ function EmptyState() {
         { backgroundColor: adminTheme.cardBackgroundMuted, borderColor: adminTheme.borderSubtle },
       ]}>
       <MaterialIcons name="search-off" size={32} color={hexToRgba(adminTheme.onSurfaceVariant, 0.8)} />
-      <Text style={[styles.emptyTitle, { color: adminTheme.onSurface }]}>Filtrelere gore salon bulunamadi</Text>
-      <Text style={[styles.emptyDescription, { color: adminTheme.onSurfaceVariant }]}>
-        Arama kelimesini veya filtre secimlerini degistirerek listeyi genisletebilirsiniz.
-      </Text>
+      <Text style={[styles.emptyTitle, { color: adminTheme.onSurface }]}>{title}</Text>
+      <Text style={[styles.emptyDescription, { color: adminTheme.onSurfaceVariant }]}>{description}</Text>
     </View>
   );
 }
 
-function DesktopTable({ salons, onOpenSalon }: { salons: SalonRecord[]; onOpenSalon: (salonId: string) => void }) {
+function DesktopTable({ users }: { users: UserRecord[] }) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -53,21 +61,20 @@ function DesktopTable({ salons, onOpenSalon }: { salons: SalonRecord[]; onOpenSa
             borderBottomColor: adminTheme.borderSubtle,
           },
         ]}>
+        <Text style={[styles.headerText, styles.cellUser, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+          Kullanici
+        </Text>
+        <Text style={[styles.headerText, styles.cellRole, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+          Rol
+        </Text>
         <Text style={[styles.headerText, styles.cellSalon, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
-          Salon Bilgisi
-        </Text>
-        <Text style={[styles.headerText, styles.cellOwner, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
-          Isletmeci
-        </Text>
-        <Text
-          style={[styles.headerText, styles.cellLocation, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
-          Konum
+          Bagli Salon
         </Text>
         <Text style={[styles.headerText, styles.cellStatus, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
           Durum
         </Text>
-        <Text style={[styles.headerText, styles.cellPlan, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
-          Paket
+        <Text style={[styles.headerText, styles.cellCapacity, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }]}>
+          Gunluk Randevu
         </Text>
         <Text
           style={[
@@ -78,12 +85,11 @@ function DesktopTable({ salons, onOpenSalon }: { salons: SalonRecord[]; onOpenSa
           Islemler
         </Text>
       </View>
+
       <View>
-        {salons.map((salon, index) => (
-          <View
-            key={salon.id}
-            style={index < salons.length - 1 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 } : null}>
-            <SalonRow salon={salon} onPress={() => onOpenSalon(salon.id)} />
+        {users.map((user, index) => (
+          <View key={user.id} style={index < users.length - 1 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 } : null}>
+            <UserRow user={user} />
           </View>
         ))}
       </View>
@@ -92,13 +98,13 @@ function DesktopTable({ salons, onOpenSalon }: { salons: SalonRecord[]; onOpenSa
 }
 
 function Pagination({
-  filteredSalonsCount,
+  filteredUsersCount,
   page,
   totalPages,
   startRow,
   endRow,
   onPageChange,
-}: Omit<SalonListSectionProps, 'salons' | 'useDesktopTable' | 'onOpenSalon'>) {
+}: Omit<UserListSectionProps, 'users' | 'groupedSalons' | 'viewMode' | 'useDesktopTable'>) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -111,9 +117,9 @@ function Pagination({
         },
       ]}>
       <Text style={[styles.paginationText, { color: hexToRgba(adminTheme.onSurfaceVariant, 0.78) }]}>
-        {filteredSalonsCount === 0
+        {filteredUsersCount === 0
           ? 'Kayit bulunamadi'
-          : `${new Intl.NumberFormat('tr-TR').format(filteredSalonsCount)} kayittan ${startRow}-${endRow} gosteriliyor`}
+          : `${filteredUsersCount} kayittan ${startRow}-${endRow} arasi gosteriliyor`}
       </Text>
 
       <View style={styles.paginationControls}>
@@ -137,7 +143,7 @@ function Pagination({
 
           return (
             <Pressable
-              key={`page-${targetPage}`}
+              key={`user-page-${targetPage}`}
               onPress={() => onPageChange(targetPage)}
               style={({ hovered }) => [
                 styles.pageButton,
@@ -172,9 +178,11 @@ function Pagination({
   );
 }
 
-export default function SalonListSection({
-  salons,
-  filteredSalonsCount,
+export default function UserListSection({
+  users,
+  groupedSalons,
+  filteredUsersCount,
+  viewMode,
   page,
   totalPages,
   startRow,
@@ -182,8 +190,20 @@ export default function SalonListSection({
   useDesktopTable,
   onPageChange,
   onOpenSalon,
-}: SalonListSectionProps) {
+  onAddUser,
+}: UserListSectionProps) {
   const adminTheme = useSuperAdminTheme();
+
+  if (viewMode === 'salons') {
+    return groupedSalons.length === 0 ? (
+      <EmptyState
+        title="Salon eslesmesi bulunamadi"
+        description="Filtrelere gore gosterilecek kullanici grubu olusmadi."
+      />
+    ) : (
+      <UserSalonGroupedView groupedSalons={groupedSalons} onOpenSalon={onOpenSalon} onAddUser={onAddUser} />
+    );
+  }
 
   return (
     <View
@@ -208,26 +228,31 @@ export default function SalonListSection({
               }),
         },
       ]}>
-      {salons.length === 0 ? (
-        <EmptyState />
+      {users.length === 0 ? (
+        <EmptyState
+          title="Filtrelere gore kullanici bulunamadi"
+          description="Arama terimini veya secili filtreleri degistirerek listeyi genisletebilirsiniz."
+        />
       ) : useDesktopTable ? (
-        <DesktopTable salons={salons} onOpenSalon={onOpenSalon} />
+        <DesktopTable users={users} />
       ) : (
         <View style={styles.mobileList}>
-          {salons.map((salon) => (
-            <SalonMobileCard key={salon.id} salon={salon} onPress={() => onOpenSalon(salon.id)} />
+          {users.map((user) => (
+            <UserMobileCard key={user.id} user={user} />
           ))}
         </View>
       )}
 
-      <Pagination
-        filteredSalonsCount={filteredSalonsCount}
-        page={page}
-        totalPages={totalPages}
-        startRow={startRow}
-        endRow={endRow}
-        onPageChange={onPageChange}
-      />
+      {viewMode === 'all' ? (
+        <Pagination
+          filteredUsersCount={filteredUsersCount}
+          page={page}
+          totalPages={totalPages}
+          startRow={startRow}
+          endRow={endRow}
+          onPageChange={onPageChange}
+        />
+      ) : null}
     </View>
   );
 }

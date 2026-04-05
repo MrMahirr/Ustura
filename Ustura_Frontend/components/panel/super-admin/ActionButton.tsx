@@ -10,17 +10,20 @@ interface ActionButtonProps {
   label: string;
   variant?: 'primary' | 'secondary' | 'danger';
   style?: StyleProp<ViewStyle>;
+  onPress?: () => void;
 }
 
 export default function ActionButton({
   label,
   variant = 'secondary',
   style,
+  onPress,
 }: ActionButtonProps) {
   const adminTheme = useSuperAdminTheme();
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ hovered, pressed }) => [
         styles.button,
         variant === 'secondary' && {

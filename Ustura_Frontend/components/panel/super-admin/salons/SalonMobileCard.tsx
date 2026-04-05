@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image } from 'expo-image';
-import { Platform, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import type { SalonRecord } from '@/components/panel/super-admin/salon-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
@@ -10,17 +10,19 @@ import SalonActionIcon from './SalonActionIcon';
 import { styles } from './styles';
 import { formatCurrency, getPlanPalette, getRowActions, getStatusPalette } from './utils';
 
-export default function SalonMobileCard({ salon }: { salon: SalonRecord }) {
+export default function SalonMobileCard({ salon, onPress }: { salon: SalonRecord; onPress?: () => void }) {
   const adminTheme = useSuperAdminTheme();
   const statusPalette = getStatusPalette(salon.status, adminTheme);
   const planPalette = getPlanPalette(salon.plan, adminTheme);
   const actions = getRowActions(salon.status, adminTheme);
 
   return (
-    <View
+    <Pressable
+      onPress={onPress}
       style={[
         styles.mobileCard,
         { backgroundColor: adminTheme.cardBackground, borderColor: adminTheme.borderSubtle },
+        Platform.OS === 'web' && onPress ? ({ cursor: 'pointer' } as any) : null,
       ]}>
       <View style={styles.mobileCardTop}>
         <View style={styles.salonInfo}>
@@ -108,6 +110,6 @@ export default function SalonMobileCard({ salon }: { salon: SalonRecord }) {
           />
         ))}
       </View>
-    </View>
+    </Pressable>
   );
 }
