@@ -1,13 +1,5 @@
-import { View, Text } from 'react-native';
+import CustomerRegistrationScreen from '@/components/auth/customer-access/CustomerRegistrationScreen';
 
 export default function KayitPage() {
-  // TODO: Register formu (name, email, phone, password)
-  // TODO: React Hook Form validasyon
-  // TODO: Rol seçimi (customer default)
-  // TODO: Giriş sayfasına yönlendirme linki
-  return (
-    <View>
-      <Text>Kayıt Ol</Text>
-    </View>
-  );
+  return <CustomerRegistrationScreen />;
 }
