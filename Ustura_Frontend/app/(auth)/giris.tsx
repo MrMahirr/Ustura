@@ -1,13 +1,5 @@
-import { View, Text } from 'react-native';
+import CustomerAccessScreen from '@/components/auth/customer-access/CustomerAccessScreen';
 
 export default function GirisPage() {
-  // TODO: Login formu (email + password)
-  // TODO: React Hook Form validasyon
-  // TODO: Zustand auth store güncelleme
-  // TODO: Kayıt sayfasına yönlendirme linki
-  return (
-    <View>
-      <Text>Giriş Yap</Text>
-    </View>
-  );
+  return <CustomerAccessScreen />;
 }

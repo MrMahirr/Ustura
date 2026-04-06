@@ -1,6 +1,5 @@
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 
 export default function AuthLayout() {
-  // TODO: Minimal layout — logo + form alanı
-  return <Slot />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
