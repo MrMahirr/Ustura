@@ -1,59 +1,121 @@
 import React from 'react';
-import { Text, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Text, useWindowDimensions, View } from 'react-native';
 
-import { BOOKING_COPY } from '@/components/wizard/presentation';
-import { useAppTheme } from '@/contexts/ThemeContext';
+import BookingDateSelector from '@/components/wizard/BookingDateSelector';
+import BookingLocationCard from '@/components/wizard/BookingLocationCard';
+import BookingSummaryChip from '@/components/wizard/BookingSummaryChip';
+import BookingSurfacePanel from '@/components/wizard/BookingSurfacePanel';
+import TimeSlotGrid from '@/components/wizard/TimeSlotGrid';
+import {
+  BOOKING_LOCATION_IMAGE_URI,
+  BOOKING_TIME_SELECTION_COPY,
+  type BookingDateOption,
+  type BookingTimeSlot,
+} from '@/components/wizard/time-selection-presentation';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { hexToRgba } from '@/utils/color';
 
 interface StepTimeSelectProps {
   salonName: string;
+  salonLocation: string;
   staffName: string;
+  dateOptions: BookingDateOption[];
+  selectedDateId: string | null;
+  selectedDateLabel?: string | null;
+  selectedTimeId: string | null;
+  timeSlots: BookingTimeSlot[];
+  onSelectDate: (dateId: string) => void;
+  onSelectTime: (timeId: string) => void;
+  onPreviousWeek: () => void;
+  onNextWeek: () => void;
+  previousWeekDisabled?: boolean;
 }
 
-export default function StepTimeSelect({ salonName, staffName }: StepTimeSelectProps) {
-  const { theme } = useAppTheme();
-  const primary = useThemeColor({}, 'primary');
-  const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
-  const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
+export default function StepTimeSelect({
+  salonName,
+  salonLocation,
+  staffName,
+  dateOptions,
+  selectedDateId,
+  selectedDateLabel,
+  selectedTimeId,
+  timeSlots,
+  onSelectDate,
+  onSelectTime,
+  onPreviousWeek,
+  onNextWeek,
+  previousWeekDisabled = false,
+}: StepTimeSelectProps) {
+  const { width } = useWindowDimensions();
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
-  const outlineVariant = useThemeColor({}, 'outlineVariant');
+
+  const isDesktop = width >= 1024;
 
   return (
-    <View
-      className="rounded-2xl border p-8"
-      style={{
-        gap: 18,
-        backgroundColor: theme === 'light' ? surfaceContainerLowest : surfaceContainerLow,
-        borderColor: hexToRgba(outlineVariant, theme === 'light' ? 0.42 : 0.24),
-      }}>
-      <View
-        className="items-center justify-center self-start rounded-full"
-        style={{ width: 52, height: 52, backgroundColor: hexToRgba(primary, 0.12) }}>
-        <MaterialIcons name="schedule" size={24} color={primary} />
-      </View>
-
-      <View style={{ gap: 8 }}>
-        <Text className="font-headline text-4xl font-bold" style={{ color: onSurface }}>
-          {BOOKING_COPY.timeStepTitle}
-        </Text>
-        <Text className="font-body text-base" style={{ maxWidth: 640, color: onSurfaceVariant }}>
-          {BOOKING_COPY.timeStepDescription}
-        </Text>
-      </View>
-
-      <View className="flex-row flex-wrap" style={{ gap: 12 }}>
-        <View className="rounded-full px-4 py-2" style={{ backgroundColor: hexToRgba(primary, 0.12) }}>
-          <Text className="font-label text-xs font-bold uppercase tracking-[2px]" style={{ color: primary }}>
-            {salonName}
+    <View style={{ gap: 28 }}>
+      <View style={{ gap: 14 }}>
+        <View style={{ gap: 8 }}>
+          <Text className="font-headline text-5xl font-bold tracking-tight" style={{ color: onSurface }}>
+            {BOOKING_TIME_SELECTION_COPY.pageTitle}
+          </Text>
+          <Text className="font-body text-sm" style={{ maxWidth: 620, color: onSurfaceVariant }}>
+            {BOOKING_TIME_SELECTION_COPY.pageDescription}
           </Text>
         </View>
-        <View className="rounded-full px-4 py-2" style={{ backgroundColor: hexToRgba(outlineVariant, 0.12) }}>
-          <Text className="font-label text-xs font-bold uppercase tracking-[2px]" style={{ color: onSurfaceVariant }}>
-            {staffName}
-          </Text>
+
+        <View className="flex-row flex-wrap" style={{ gap: 12 }}>
+          <BookingSummaryChip label={salonName} icon="storefront" tone="highlight" />
+          <BookingSummaryChip label={staffName} icon="content-cut" />
+        </View>
+      </View>
+
+      <View className="flex-row flex-wrap" style={{ gap: 24 }}>
+        <View style={isDesktop ? { width: '38%' } : { width: '100%' }}>
+          <View style={{ gap: 20 }}>
+            <BookingDateSelector
+              title={BOOKING_TIME_SELECTION_COPY.dateSectionTitle}
+              dateOptions={dateOptions}
+              selectedDateId={selectedDateId}
+              onSelectDate={onSelectDate}
+              onPreviousWeek={onPreviousWeek}
+              onNextWeek={onNextWeek}
+              previousDisabled={previousWeekDisabled}
+            />
+
+            <BookingLocationCard
+              imageUri={BOOKING_LOCATION_IMAGE_URI}
+              locationLabel={BOOKING_TIME_SELECTION_COPY.locationLabel}
+              locationValue={salonLocation}
+            />
+          </View>
+        </View>
+
+        <View style={isDesktop ? { width: '59.5%' } : { width: '100%' }}>
+          <BookingSurfacePanel>
+            <View style={{ gap: 20 }}>
+              <View className="flex-row items-start justify-between" style={{ gap: 16 }}>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text className="font-headline text-2xl font-bold" style={{ color: onSurface }}>
+                    {BOOKING_TIME_SELECTION_COPY.timeSectionTitle}
+                  </Text>
+                  {selectedDateLabel ? (
+                    <Text className="font-body text-xs" style={{ color: hexToRgba(onSurfaceVariant, 0.82) }}>
+                      {selectedDateLabel}
+                    </Text>
+                  ) : null}
+                </View>
+
+                <Text
+                  className="font-label text-[10px] font-bold uppercase tracking-[2.6px]"
+                  style={{ color: hexToRgba(onSurfaceVariant, 0.74) }}>
+                  {BOOKING_TIME_SELECTION_COPY.timezoneLabel}
+                </Text>
+              </View>
+
+              <TimeSlotGrid slots={timeSlots} selectedTimeId={selectedTimeId} onSelectTime={onSelectTime} />
+            </View>
+          </BookingSurfacePanel>
         </View>
       </View>
     </View>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import AuthGuard from '@/components/layout/AuthGuard';
@@ -8,6 +9,8 @@ import { buildBookingLoginRoute, buildBookingRoute, normalizeBookingRouteParams,
 import { getStaffBySalonId } from '@/components/wizard/presentation';
 import StepStaffSelect from '@/components/wizard/StepStaffSelect';
 import StepTimeSelect from '@/components/wizard/StepTimeSelect';
+import { BOOKING_TIME_SELECTION_COPY } from '@/components/wizard/time-selection-presentation';
+import { useBookingTimeSelection } from '@/components/wizard/use-booking-time-selection';
 
 function BookingRouteScreen() {
   const router = useRouter();
@@ -35,6 +38,20 @@ function BookingRouteScreen() {
   }, [routeParams.staffId, staffMembers]);
 
   const selectedStaff = staffMembers.find((member) => member.id === selectedStaffId) ?? null;
+  const {
+    weekOffset,
+    dateOptions,
+    selectedDateId,
+    selectedTimeId,
+    selectedDate,
+    selectedTime,
+    timeSlots,
+    isSelectionComplete,
+    handleSelectDate,
+    handleSelectTime,
+    goToPreviousWeek,
+    goToNextWeek,
+  } = useBookingTimeSelection({ staffId: selectedStaffId });
 
   const handleBackToSalons = React.useCallback(() => {
     router.push('/(public)/kuaforler');
@@ -64,14 +81,55 @@ function BookingRouteScreen() {
     );
   }, [resolvedSalon.id, router, salonLocation, salonName, selectedStaffId]);
 
+  const handleConfirmBooking = React.useCallback(() => {
+    if (!selectedDate || !selectedTime) {
+      return;
+    }
+
+    const staffLabel = selectedStaff?.name ?? 'Herhangi Bir Berber';
+    const previewMessage = [
+      `Salon: ${salonName}`,
+      `Berber: ${staffLabel}`,
+      `Tarih: ${selectedDate.fullDateLabel}`,
+      `Saat: ${selectedTime.label}`,
+      '',
+      BOOKING_TIME_SELECTION_COPY.confirmPreviewDescription,
+    ].join('\n');
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.alert(`${BOOKING_TIME_SELECTION_COPY.confirmPreviewTitle}\n\n${previewMessage}`);
+      return;
+    }
+
+    Alert.alert(BOOKING_TIME_SELECTION_COPY.confirmPreviewTitle, previewMessage);
+  }, [salonName, selectedDate, selectedStaff?.name, selectedTime]);
+
   if (routeParams.step === 'time') {
     return (
       <BookingScaffold
         currentStep={3}
         onBack={handleReturnToStaff}
-        continueLabel="Yakinda"
-        continueDisabled>
-        <StepTimeSelect salonName={salonName} staffName={selectedStaff?.name ?? 'Herhangi Bir Berber'} />
+        onContinue={handleConfirmBooking}
+        continueLabel={BOOKING_TIME_SELECTION_COPY.confirmLabel}
+        continueIcon="arrow-forward"
+        continueDisabled={!isSelectionComplete}
+        helperLabel={BOOKING_TIME_SELECTION_COPY.durationNote}
+        helperIcon="check-circle">
+        <StepTimeSelect
+          salonName={salonName}
+          salonLocation={salonLocation}
+          staffName={selectedStaff?.name ?? 'Herhangi Bir Berber'}
+          dateOptions={dateOptions}
+          selectedDateId={selectedDateId}
+          selectedDateLabel={selectedDate?.fullDateLabel}
+          selectedTimeId={selectedTimeId}
+          timeSlots={timeSlots}
+          onSelectDate={handleSelectDate}
+          onSelectTime={handleSelectTime}
+          onPreviousWeek={goToPreviousWeek}
+          onNextWeek={goToNextWeek}
+          previousWeekDisabled={weekOffset === 0}
+        />
       </BookingScaffold>
     );
   }

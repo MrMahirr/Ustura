@@ -32,5 +32,9 @@ export function resolveCustomerAuthRedirect(params: CustomerAuthRedirectParams):
     };
   }
 
+  if (redirectTo === '/randevularim' || redirectTo === '/(public)/randevularim') {
+    return '/(public)/randevularim';
+  }
+
   return '/(public)';
 }

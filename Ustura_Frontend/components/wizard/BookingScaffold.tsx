@@ -16,6 +16,9 @@ interface BookingScaffoldProps {
   onContinue?: () => void;
   continueDisabled?: boolean;
   continueLabel?: string;
+  continueIcon?: React.ComponentProps<typeof BookingActionBar>['continueIcon'];
+  helperLabel?: string;
+  helperIcon?: React.ComponentProps<typeof BookingActionBar>['helperIcon'];
 }
 
 export default function BookingScaffold({
@@ -25,6 +28,9 @@ export default function BookingScaffold({
   onContinue,
   continueDisabled = false,
   continueLabel = BOOKING_COPY.continueLabel,
+  continueIcon,
+  helperLabel,
+  helperIcon,
 }: BookingScaffoldProps) {
   const { width } = useWindowDimensions();
   const { theme } = useAppTheme();
@@ -106,6 +112,9 @@ export default function BookingScaffold({
         onBack={onBack}
         onContinue={onContinue}
         continueDisabled={continueDisabled}
+        continueIcon={continueIcon}
+        helperLabel={helperLabel}
+        helperIcon={helperIcon}
       />
     </View>
   );

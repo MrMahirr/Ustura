@@ -103,7 +103,7 @@ function LandingBurgerMenuAccount({
   const outlineVariant = useThemeColor({}, 'outlineVariant');
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
 
-  const handleNavigate = (pathname: '/giris' | '/kayit' | '/(public)') => {
+  const handleNavigate = (pathname: '/giris' | '/kayit' | '/(public)' | '/(public)/randevularim') => {
     onClose();
     router.push(pathname);
   };
@@ -135,7 +135,16 @@ function LandingBurgerMenuAccount({
       </View>
 
       {isAuthenticated ? (
-        <Button title="Cikis Yap" variant="ghost" onPress={handleLogout} style={{ width: '100%' }} />
+        <View style={{ gap: 10 }}>
+          <Button
+            title="Randevularim"
+            variant="outline"
+            interactionPreset="outlineCta"
+            onPress={() => handleNavigate('/(public)/randevularim')}
+            style={{ width: '100%' }}
+          />
+          <Button title="Cikis Yap" variant="ghost" onPress={handleLogout} style={{ width: '100%' }} />
+        </View>
       ) : (
         <View style={{ gap: 10 }}>
           <Button
