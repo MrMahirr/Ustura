@@ -65,7 +65,16 @@ function clearFieldError(errors: FieldErrors, field: keyof FieldErrors): FieldEr
   return { ...errors, [field]: undefined };
 }
 
-export function useCustomerRegistration() {
+interface UseCustomerRegistrationOptions {
+  onSubmitSuccess?: (payload: {
+    fullName: string;
+    phone: string;
+    email: string;
+    password: string;
+  }) => void;
+}
+
+export function useCustomerRegistration(options: UseCustomerRegistrationOptions = {}) {
   const [fullName, setFullName] = React.useState('');
   const [phone, setPhone] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -160,7 +169,13 @@ export function useCustomerRegistration() {
     }
 
     setState('testReady');
-  }, [email, fullName, password, phone, selectedRoleId]);
+    options.onSubmitSuccess?.({
+      fullName: fullName.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      password: password.trim(),
+    });
+  }, [email, fullName, options, password, phone, selectedRoleId]);
 
   const notice = React.useMemo(
     () => getCustomerRegistrationNotice(state, selectedRole),

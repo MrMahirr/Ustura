@@ -1,6 +1,7 @@
 import type { Href } from 'expo-router';
 
 import type { AuthStatusTone } from '@/components/auth/shared/AuthStatusNotice';
+import { MOCK_CUSTOMER_CREDENTIALS } from '@/constants/mock-auth';
 
 export interface CustomerAuthNotice {
   badge: string;
@@ -9,7 +10,13 @@ export interface CustomerAuthNotice {
   tone: AuthStatusTone;
 }
 
-export type CustomerAccessState = 'idle' | 'validationError' | 'forgotPassword' | 'providerPreview' | 'testReady';
+export type CustomerAccessState =
+  | 'idle'
+  | 'validationError'
+  | 'invalidCredentials'
+  | 'forgotPassword'
+  | 'providerPreview'
+  | 'testReady';
 export type CustomerRegistrationState = 'idle' | 'validationError' | 'alternateRoute' | 'testReady';
 
 export interface CustomerAccessBarberProfile {
@@ -41,6 +48,13 @@ export const CUSTOMER_ACCESS_COPY = {
   registerPromptAction: 'Kayit Ol',
   staffLabel: 'Personel Girisi',
   adminLabel: 'Super Admin',
+  mockAccountTitle: 'Gecici Test Hesabi',
+  mockAccountDescription: 'Backend auth tamamlanana kadar giris icin bu sabit musteri hesabini kullan.',
+  mockAccountIdentifierLabel: 'E-posta',
+  mockAccountIdentifierValue: MOCK_CUSTOMER_CREDENTIALS.identifier,
+  mockAccountPasswordLabel: 'Sifre',
+  mockAccountPasswordValue: MOCK_CUSTOMER_CREDENTIALS.password,
+  mockAccountFootnote: 'Not: Backend auth entegrasyonu tamamlandiginda bu sabit kullanici kaldirilacak.',
 } as const;
 
 export const CUSTOMER_ACCESS_BARBER_PROFILES: CustomerAccessBarberProfile[] = [
@@ -134,6 +148,14 @@ export function getCustomerAccessNotice(state: CustomerAccessState): CustomerAut
         description: 'Simdilik kayitli email veya telefon bilgilerini kullanarak test girisi yapabilirsin.',
         tone: 'warning',
       };
+    case 'invalidCredentials':
+      return {
+        badge: 'Test Kullanici',
+        title: 'Sabit demo kullanici bilgileri gerekli.',
+        description:
+          'Asagidaki gecici test hesabi ile giris yap. Bu bilgi backend auth entegrasyonu tamamlandiginda kaldirilacak.',
+        tone: 'warning',
+      };
     case 'providerPreview':
       return {
         badge: 'SSO Preview',
@@ -143,9 +165,9 @@ export function getCustomerAccessNotice(state: CustomerAccessState): CustomerAut
       };
     case 'testReady':
       return {
-        badge: 'Hazir',
-        title: 'Musteri auth formu backend entegrasyonuna hazir.',
-        description: 'Frontend validasyon tamamlandi. API contract geldikten sonra bu islem oturum acmaya baglanacak.',
+        badge: 'Oturum',
+        title: 'Musteri oturumu baslatildi.',
+        description: 'Giris bilgileri dogrulandi ve seni bir sonraki ekrana yonlendiriyoruz.',
         tone: 'success',
       };
     case 'idle':
@@ -183,9 +205,9 @@ export function getCustomerRegistrationNotice(
       };
     case 'testReady':
       return {
-        badge: 'Hazir',
-        title: 'Musteri kayit formu API baglantisina hazir.',
-        description: 'Frontend validasyon tamamlandi. Sonraki adimda kayit istegi backend contract ile eslenecek.',
+        badge: 'Hesap',
+        title: 'Musteri hesabi olusturuldu.',
+        description: 'Kayit tamamlandi. Yeni oturum acildi ve seni uygun akisa yonlendiriyoruz.',
         tone: 'success',
       };
     case 'idle':

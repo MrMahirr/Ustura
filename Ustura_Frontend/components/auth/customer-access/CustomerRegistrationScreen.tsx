@@ -1,15 +1,24 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
 
+import { resolveCustomerAuthRedirect, type CustomerAuthRedirectParams } from '@/components/auth/customer-access/navigation';
 import CustomerAccessShell from '@/components/auth/customer-access/CustomerAccessShell';
 import CustomerRegistrationFormCard from '@/components/auth/customer-access/CustomerRegistrationFormCard';
 import CustomerRoleModal from '@/components/auth/customer-access/CustomerRoleModal';
 import { useCustomerRegistration } from '@/components/auth/customer-access/use-customer-registration';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function CustomerRegistrationScreen() {
   const router = useRouter();
-  const registration = useCustomerRegistration();
+  const params = useLocalSearchParams<CustomerAuthRedirectParams>();
+  const { register } = useAuth();
+  const registration = useCustomerRegistration({
+    onSubmitSuccess: ({ fullName, phone, email, password }) => {
+      register({ fullName, phone, email, password });
+      router.replace(resolveCustomerAuthRedirect(params));
+    },
+  });
   const { width } = useWindowDimensions();
   const isCompact = width < 480;
 
