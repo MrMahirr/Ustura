@@ -13,6 +13,9 @@ interface BookingActionBarProps {
   onBack: () => void;
   onContinue?: () => void;
   continueDisabled?: boolean;
+  continueIcon?: keyof typeof MaterialIcons.glyphMap;
+  helperLabel?: string;
+  helperIcon?: keyof typeof MaterialIcons.glyphMap;
 }
 
 export default function BookingActionBar({
@@ -21,6 +24,9 @@ export default function BookingActionBar({
   onBack,
   onContinue,
   continueDisabled = false,
+  continueIcon,
+  helperLabel,
+  helperIcon,
 }: BookingActionBarProps) {
   const { theme } = useAppTheme();
   const surface = useThemeColor({}, 'surface');
@@ -62,32 +68,46 @@ export default function BookingActionBar({
             },
       ]}>
       <View
-        className="w-full self-center flex-row items-center justify-between"
-        style={{ maxWidth: 1200, gap: 16 }}>
-        <Pressable accessibilityRole="button" className="flex-row items-center" style={{ gap: 8 }} onPress={onBack}>
-          {({ hovered, pressed }) => (
-            <>
-              <MaterialIcons
-                name="arrow-back"
-                size={18}
-                color={hovered || pressed ? primary : onSurfaceVariant}
-              />
-              <Text
-                className="font-label text-xs font-bold uppercase tracking-[2.4px]"
-                style={{ color: hovered || pressed ? primary : onSurfaceVariant }}>
-                {backLabel}
+        className="w-full self-center"
+        style={{ maxWidth: 1200, gap: helperLabel ? 18 : 0 }}>
+        {helperLabel ? (
+          <View className="items-center">
+            <View className="flex-row items-center" style={{ gap: 8 }}>
+              {helperIcon ? <MaterialIcons name={helperIcon} size={18} color={primary} /> : null}
+              <Text className="font-body text-sm" style={{ color: onSurfaceVariant }}>
+                {helperLabel}
               </Text>
-            </>
-          )}
-        </Pressable>
+            </View>
+          </View>
+        ) : null}
 
-        <Button
-          title={continueLabel}
-          interactionPreset="cta"
-          onPress={onContinue}
-          disabled={continueDisabled}
-          style={{ minWidth: 220 }}
-        />
+        <View className="flex-row items-center justify-between" style={{ gap: 16 }}>
+          <Pressable accessibilityRole="button" className="flex-row items-center" style={{ gap: 8 }} onPress={onBack}>
+            {({ hovered, pressed }) => (
+              <>
+                <MaterialIcons
+                  name="arrow-back"
+                  size={18}
+                  color={hovered || pressed ? primary : onSurfaceVariant}
+                />
+                <Text
+                  className="font-label text-xs font-bold uppercase tracking-[2.4px]"
+                  style={{ color: hovered || pressed ? primary : onSurfaceVariant }}>
+                  {backLabel}
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          <Button
+            title={continueLabel}
+            icon={continueIcon}
+            interactionPreset="cta"
+            onPress={onContinue}
+            disabled={continueDisabled}
+            style={{ minWidth: 220 }}
+          />
+        </View>
       </View>
     </View>
   );

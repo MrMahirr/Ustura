@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import LandingBurgerMenu, { type LandingBurgerMenuItem } from '@/components/landing/LandingBurgerMenu';
 import SessionProfileCard from '@/components/layout/SessionProfileCard';
 import ThemeToggleButton from '@/components/ui/ThemeToggleButton';
+import { useAuth } from '@/hooks/use-auth';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { hexToRgba } from '@/utils/color';
@@ -77,6 +78,7 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
 
   const pathname = usePathname();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
   const primary = useThemeColor({}, 'primary');
   const surface = useThemeColor({}, 'surface');
@@ -88,6 +90,7 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
   const isKuaforler = pathname === '/kuaforler' || pathname === '/(public)/kuaforler';
   const isHizmetler = pathname === '/hizmetler' || pathname === '/(public)/hizmetler';
   const isHakkimizda = pathname === '/hakkimizda' || pathname === '/(public)/hakkimizda';
+  const isRandevularim = pathname === '/randevularim' || pathname === '/(public)/randevularim';
   const navbarBackground = theme === 'light' ? 'rgba(253, 251, 255, 0.86)' : 'rgba(17, 17, 24, 0.84)';
   const burgerMenuItems = React.useMemo<LandingBurgerMenuItem[]>(
     () => [
@@ -95,8 +98,11 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
       { href: '/(public)/hizmetler', label: 'HIZMETLER', isActive: isHizmetler },
       { href: '/(public)/kuaforler', label: 'KUAFORLER', isActive: isKuaforler },
       { href: '/(public)/hakkimizda', label: 'HAKKIMIZDA', isActive: isHakkimizda },
+      ...(isAuthenticated
+        ? [{ href: '/(public)/randevularim' as const, label: 'RANDEVULARIM', isActive: isRandevularim }]
+        : []),
     ],
-    [isAnasayfa, isHakkimizda, isHizmetler, isKuaforler]
+    [isAnasayfa, isAuthenticated, isHakkimizda, isHizmetler, isKuaforler, isRandevularim]
   );
 
   React.useEffect(() => {
@@ -191,6 +197,15 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
               primary={primary}
               onSurfaceVariant={onSurfaceVariant}
             />
+            {isAuthenticated ? (
+              <NavbarLink
+                href="/(public)/randevularim"
+                label="RANDEVULARIM"
+                isActive={isRandevularim}
+                primary={primary}
+                onSurfaceVariant={onSurfaceVariant}
+              />
+            ) : null}
           </View>
         )}
 
