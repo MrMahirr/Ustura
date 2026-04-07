@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, useWindowDimensions, Platform } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
+import { View, Text, Image, useWindowDimensions, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+
 import { getLandingLayout } from '@/components/landing/layout';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function FeatureShowcase() {
   const { width } = useWindowDimensions();
@@ -16,65 +16,63 @@ export default function FeatureShowcase() {
   const primary = useThemeColor({}, 'primary');
 
   const checkItems = [
-    'Özel Seçilmiş Usta Berberler',
-    'VIP Hizmet Seçenekleri',
-    'Ödüllü Randevu Arayüzü',
+    'Ozel Secilmis Usta Berberler',
+    'VIP Hizmet Secenekleri',
+    'Odullu Randevu Arayuzu',
   ];
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: surfaceContainerLow,
-          paddingHorizontal: layout.horizontalPadding,
-        },
-      ]}
-    >
+    <View className="overflow-hidden py-24" style={{ backgroundColor: surfaceContainerLow, paddingHorizontal: layout.horizontalPadding }}>
       <View
-        style={[
-          styles.content,
-          {
-            maxWidth: layout.contentMaxWidth,
-            flexDirection: layout.isDesktop ? 'row' : 'column',
-          },
-        ]}
-      >
-        {/* Image side */}
-        <View style={[styles.imageSection, { width: layout.isDesktop ? '48%' : '100%' }]}>
-          {/* Decorative blur blob */}
-          <View style={[styles.decorBlob, { backgroundColor: primary }]} />
+        className="w-full self-center items-center gap-20"
+        style={{ maxWidth: layout.contentMaxWidth, flexDirection: layout.isDesktop ? 'row' : 'column' }}>
+        <View className="relative" style={{ width: layout.isDesktop ? '48%' : '100%' }}>
+          <View
+            className="absolute left-[-40px] top-[-40px] h-40 w-40 rounded-full opacity-10"
+            style={[
+              { backgroundColor: primary },
+              Platform.OS === 'web' ? ({ filter: 'blur(40px)' } as any) : null,
+            ]}
+          />
           <Image
             source={{
               uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDkWCTeUgr0KcIB1brQYyv0W7cd3htaf9XD4se0NEizx2XCeBX8tzeSn1Hl17wyUbUduMhhxMSc9LFD5E43rZNviK9oXnJcRyEGxSsGSvL9qBV5ZbTQ7aFRjTPL3vlNgxSZwbw-KeykC7QNMnqJRkSalvumnuu7CggOVIHoUN34f_evEVtgyxN64gMIZ_CB9zcDloaZUAqj2pqC2Qf1-aygKVVeQuKjBWXzPeCOSdggWlmzJvEp561lmACpOMMZK30W52xW2nI2Mio',
             }}
-            style={styles.image}
+            className="w-full rounded-md"
+            style={{ aspectRatio: 1.25, opacity: 0.8 }}
             resizeMode="cover"
           />
-          {/* Stats badge */}
+
           {layout.isDesktop && (
-            <View style={[styles.statsBadge, { backgroundColor: surfaceContainerHighest }]}>
-              <Text style={[styles.statsNumber, { color: primary }]}>+150</Text>
-              <Text style={[styles.statsLabel, { color: onSurfaceVariant }]}>Premium Salon</Text>
+            <View className="absolute bottom-[-24px] right-[-24px] z-20 rounded-sm p-6" style={{ backgroundColor: surfaceContainerHighest }}>
+              <Text className="font-headline text-[32px] font-bold" style={{ color: primary }}>
+                +150
+              </Text>
+              <Text className="font-label text-sm uppercase tracking-[1.5px]" style={{ color: onSurfaceVariant }}>
+                Premium Salon
+              </Text>
             </View>
           )}
         </View>
 
-        {/* Text side */}
-        <View style={[styles.textSection, { width: layout.isDesktop ? '48%' : '100%', marginTop: layout.isDesktop ? 0 : 48 }]}>
-          <Text style={[styles.preLabel, { color: primary }]}>OBSIDIAN EXCELLENCE</Text>
-          <Text style={[styles.headline, { color: onSurface }]}>
-            Bir Berberden Daha Fazlası, Bir Deneyim.
+        <View style={{ width: layout.isDesktop ? '48%' : '100%', marginTop: layout.isDesktop ? 0 : 48 }}>
+          <Text className="mb-5 font-label text-base uppercase tracking-[3px]" style={{ color: primary }}>
+            OBSIDIAN EXCELLENCE
           </Text>
-          <Text style={[styles.body, { color: onSurfaceVariant }]}>
-            USTURA sadece bir yazılım değil, berberlik sanatını dijital çağın hızıyla birleştiren bir köprüdür. En kaliteli kesimlerin ve en profesyonel salonların buluşma noktası.
+          <Text className="mb-6 font-headline text-5xl font-bold" style={{ color: onSurface, lineHeight: 48 }}>
+            Bir Berberden Daha Fazlasi, Bir Deneyim.
+          </Text>
+          <Text className="mb-8 font-body text-lg" style={{ color: onSurfaceVariant, lineHeight: 28 }}>
+            USTURA sadece bir yazilim degil, berberlik sanatini dijital cagin hiziyla birlestiren bir koprudur. En kaliteli kesimlerin ve en profesyonel salonlarin bulusma noktasi.
           </Text>
 
-          <View style={styles.checkList}>
-            {checkItems.map((item, i) => (
-              <View key={i} style={styles.checkRow}>
+          <View className="gap-4">
+            {checkItems.map((item) => (
+              <View key={item} className="flex-row items-center gap-4">
                 <MaterialIcons name="check-circle" size={22} color={primary} />
-                <Text style={[styles.checkText, { color: onSurface }]}>{item}</Text>
+                <Text className="font-body text-lg" style={{ color: onSurface }}>
+                  {item}
+                </Text>
               </View>
             ))}
           </View>
@@ -83,81 +81,3 @@ export default function FeatureShowcase() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 96,
-    overflow: 'hidden',
-  },
-  content: {
-    width: '100%',
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: 80,
-  },
-  imageSection: {
-    position: 'relative',
-  },
-  decorBlob: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    opacity: 0.1,
-    top: -40,
-    left: -40,
-    ...(Platform.OS === 'web' && { filter: 'blur(40px)' } as any),
-  },
-  image: {
-    width: '100%',
-    aspectRatio: 1.25,
-    borderRadius: 8,
-    opacity: 0.8,
-  },
-  statsBadge: {
-    position: 'absolute',
-    bottom: -24,
-    right: -24,
-    padding: 24,
-    borderRadius: 4,
-    zIndex: 20,
-  },
-  statsNumber: {
-    ...Typography.displayMd,
-    fontSize: 32,
-  },
-  statsLabel: {
-    ...Typography.labelMd,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  textSection: {},
-  preLabel: {
-    ...Typography.labelLg,
-    letterSpacing: 3,
-    fontFamily: 'Manrope-Bold',
-    marginBottom: 20,
-  },
-  headline: {
-    ...Typography.displayMd,
-    lineHeight: 48,
-    marginBottom: 24,
-  },
-  body: {
-    ...Typography.bodyLg,
-    fontSize: 18,
-    lineHeight: 28,
-    marginBottom: 32,
-  },
-  checkList: {
-    gap: 16,
-  },
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  checkText: {
-    ...Typography.bodyLg,
-  },
-});

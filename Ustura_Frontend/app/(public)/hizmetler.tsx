@@ -1,35 +1,32 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, useWindowDimensions, Animated } from 'react-native';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
+import { ScrollView, View, Text, useWindowDimensions, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { getLandingLayout } from '@/components/landing/layout';
 
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
-import AudienceSwitcher, { type Audience } from '../../components/hizmetler/AudienceSwitcher';
-import ServiceCard from '../../components/hizmetler/ServiceCard';
-import FeatureShowcase from '../../components/hizmetler/FeatureShowcase';
+import AudienceSwitcher, { type Audience } from '@/components/hizmetler/AudienceSwitcher';
+import FeatureShowcase from '@/components/hizmetler/FeatureShowcase';
+import ServiceCard from '@/components/hizmetler/ServiceCard';
 import Button from '@/components/ui/Button';
-
-/* ─── Data ─── */
+import { getLandingLayout } from '@/components/landing/layout';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 const CUSTOMER_SERVICES = [
-  { icon: 'store' as const, title: 'Kuaförünü Seç', desc: 'Şehrindeki en kaliteli salonları keşfet ve sana en yakın olanı saniyeler içinde bul.' },
-  { icon: 'content-cut' as const, title: 'Berberi Seç', desc: 'Tarzını en iyi yansıtacak usta berberi portfolyolarına bakarak kendin belirle.' },
-  { icon: 'calendar-month' as const, title: 'Saatini Belirle', desc: "Berberinin canlı takvimini gör ve sana en uygun boş saati anında rezerve et." },
-  { icon: 'done-all' as const, title: 'Anında Onay Al', desc: 'Telefon trafiğine girmeden, randevun için anlık dijital onay bildirimini al.' },
-  { icon: 'favorite' as const, title: 'Favori Berberler', desc: 'Sürekli gittiğin ustaları favorilerine ekle, bir sonraki randevunu daha hızlı al.' },
-  { icon: 'notifications-active' as const, title: 'Hatırlatmalar', desc: 'Randevu saatin yaklaşırken USTURA seni SMS ve bildirimlerle otomatik uyarır.' },
+  { icon: 'store' as const, title: 'Kuaforunu Sec', desc: 'Sehrindeki kaliteli salonlari kesfet ve sana en yakin olani saniyeler icinde bul.' },
+  { icon: 'content-cut' as const, title: 'Berberi Sec', desc: 'Tarzini en iyi yansitacak usta berberi portfolyolarina bakarak belirle.' },
+  { icon: 'calendar-month' as const, title: 'Saatini Belirle', desc: 'Berberinin canli takvimini gor ve sana en uygun bos saati aninda rezerve et.' },
+  { icon: 'done-all' as const, title: 'Aninda Onay Al', desc: 'Telefon trafigine girmeden randevun icin dijital onay bildirimini al.' },
+  { icon: 'favorite' as const, title: 'Favori Berberler', desc: 'Sik gittigin ustalari favorilerine ekle, sonraki randevunu daha hizli al.' },
+  { icon: 'notifications-active' as const, title: 'Hatirlatmalar', desc: 'Randevu saatin yaklasirken USTURA seni SMS ve bildirimlerle otomatik uyarir.' },
 ];
 
 const OWNER_SERVICES = [
-  { icon: 'book-online' as const, title: 'Online Randevu Yönetimi', desc: '24/7 randevu alabilen müşterilerinizle ajandanız her an güncel kalsın.' },
-  { icon: 'badge' as const, title: 'Personel Takibi', desc: 'Barberlerinizin performansını ve çalışma saatlerini tek panelden yönetin.' },
-  { icon: 'payments' as const, title: 'Hizmet & Fiyat Yönetimi', desc: 'Hizmetlerinizi, fiyatlarınızı ve süreleri dilediğiniz an güncelleyin.' },
-  { icon: 'groups' as const, title: 'Müşteri Yönetimi', desc: 'Müşteri veritabanınızı oluşturun, tercihleri kaydedin ve sadakati artırın.' },
-  { icon: 'monitor' as const, title: 'Raporlama & Analiz', desc: 'Gelirlerinizi ve popüler hizmetlerinizi detaylı grafiklerle takip edin.' },
-  { icon: 'sms-failed' as const, title: 'Bildirim Sistemi', desc: 'Randevu iptallerini önlemek için müşterilere otomatik SMS/Hatırlatma gönderin.' },
+  { icon: 'book-online' as const, title: 'Online Randevu Yonetimi', desc: '24/7 randevu alabilen musterilerinizle ajandaniz her an guncel kalsin.' },
+  { icon: 'badge' as const, title: 'Personel Takibi', desc: 'Barberlerinizin performansini ve calisma saatlerini tek panelden yonetin.' },
+  { icon: 'payments' as const, title: 'Hizmet ve Fiyat Yonetimi', desc: 'Hizmetlerinizi, fiyatlarinizi ve sureleri dilediginiz an guncelleyin.' },
+  { icon: 'groups' as const, title: 'Musteri Yonetimi', desc: 'Musteri veritabaninizi olusturun, tercihleri kaydedin ve sadakati artirin.' },
+  { icon: 'monitor' as const, title: 'Raporlama ve Analiz', desc: 'Gelirlerinizi ve populer hizmetlerinizi detayli grafiklerle takip edin.' },
+  { icon: 'sms-failed' as const, title: 'Bildirim Sistemi', desc: 'Randevu iptallerini azaltmak icin musterilere otomatik SMS ve hatirlatma gonderin.' },
 ];
 
 export default function HizmetlerPage() {
@@ -47,15 +44,18 @@ export default function HizmetlerPage() {
   const [displayAudience, setDisplayAudience] = useState<Audience>('customers');
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
 
-  const handleSwitchAudience = (newAudience: Audience) => {
-    if (newAudience === audience) return;
-    setAudience(newAudience); // Update switcher immediately
+  const handleSwitchAudience = (nextAudience: Audience) => {
+    if (nextAudience === audience) {
+      return;
+    }
+
+    setAudience(nextAudience);
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 150,
       useNativeDriver: true,
     }).start(() => {
-      setDisplayAudience(newAudience); // Change content while invisible
+      setDisplayAudience(nextAudience);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 250,
@@ -71,67 +71,69 @@ export default function HizmetlerPage() {
     <>
       <Navbar />
       <ScrollView
-        style={[styles.container, { backgroundColor: surface }]}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Header */}
+        className="flex-1"
+        style={{ backgroundColor: surface }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}>
         <View
-          style={[
-            styles.heroSection,
-            {
-              paddingHorizontal: layout.horizontalPadding,
-              paddingTop: layout.sectionPaddingVertical + 40,
-            },
-          ]}
-        >
-          <View style={[styles.heroInner, { maxWidth: layout.contentMaxWidth }]}>
-            <Text style={[styles.heroTitle, { color: onSurface }]}>Hizmetlerimiz</Text>
-            <Text style={[styles.heroDescription, { color: onSurfaceVariant }]}>
-              USTURA ile hem müşteriler hem de kuaförler için güçlü bir deneyim.
+          className="pb-16"
+          style={{
+            paddingHorizontal: layout.horizontalPadding,
+            paddingTop: layout.sectionPaddingVertical + 40,
+          }}>
+          <View className="w-full self-center" style={{ maxWidth: layout.contentMaxWidth }}>
+            <Text className="mb-4 font-headline text-[56px] font-bold tracking-tight" style={{ color: onSurface }}>
+              Hizmetlerimiz
+            </Text>
+            <Text className="max-w-[640px] font-body text-xl" style={{ color: onSurfaceVariant }}>
+              USTURA ile hem musteriler hem de kuaforler icin guclu bir deneyim.
             </Text>
           </View>
         </View>
 
-        {/* Audience Switcher */}
         <AudienceSwitcher active={audience} onSwitch={handleSwitchAudience} />
 
-        {/* Fading Content */}
         <Animated.View style={{ opacity: fadeAnim }}>
-          {/* Section Header */}
           <View
-            style={[
-              styles.sectionHeader,
-              {
-                paddingHorizontal: layout.horizontalPadding,
-                flexDirection: layout.isDesktop ? 'row' : 'column',
-                alignItems: layout.isDesktop ? 'flex-end' : 'flex-start',
-              },
-            ]}
-          >
-            <View style={[styles.sectionHeaderInner, { maxWidth: layout.contentMaxWidth }]}>
-              <Text style={[styles.sectionTitle, { color: onSurface }]}>
-                {isCustomer ? 'Randevu Almanın En Kolay Yolu' : 'Salonunu Dijitale Taşı'}
+            className="mb-12 justify-between gap-6"
+            style={{
+              paddingHorizontal: layout.horizontalPadding,
+              flexDirection: layout.isDesktop ? 'row' : 'column',
+              alignItems: layout.isDesktop ? 'flex-end' : 'flex-start',
+            }}>
+            <View
+              className="w-full self-center flex-row flex-wrap items-end justify-between gap-6"
+              style={{ maxWidth: layout.contentMaxWidth }}>
+              <Text className="min-w-[280px] flex-1 font-headline text-5xl font-bold" style={{ color: onSurface }}>
+                {isCustomer ? 'Randevu Almanin En Kolay Yolu' : 'Salonunu Dijitale Tasi'}
               </Text>
-              <View style={styles.tagRow}>
+              <View className="flex-row flex-wrap gap-4">
                 {isCustomer ? (
                   <>
-                    <View style={[styles.tag, { backgroundColor: surfaceContainerLow }]}>
+                    <View className="flex-row items-center gap-2 rounded-full px-4 py-2" style={{ backgroundColor: surfaceContainerLow }}>
                       <MaterialIcons name="verified" size={16} color={primary} />
-                      <Text style={[styles.tagText, { color: onSurfaceVariant }]}>Bekleme yok</Text>
+                      <Text className="font-label text-sm uppercase tracking-[1.5px]" style={{ color: onSurfaceVariant }}>
+                        Bekleme yok
+                      </Text>
                     </View>
-                    <View style={[styles.tag, { backgroundColor: surfaceContainerLow }]}>
+                    <View className="flex-row items-center gap-2 rounded-full px-4 py-2" style={{ backgroundColor: surfaceContainerLow }}>
                       <MaterialIcons name="schedule" size={16} color={primary} />
-                      <Text style={[styles.tagText, { color: onSurfaceVariant }]}>Anında rezervasyon</Text>
+                      <Text className="font-label text-sm uppercase tracking-[1.5px]" style={{ color: onSurfaceVariant }}>
+                        Aninda rezervasyon
+                      </Text>
                     </View>
                   </>
                 ) : (
                   <>
-                    <View style={[styles.tag, { backgroundColor: surfaceContainerLow }]}>
-                      <Text style={[styles.tagText, { color: onSurfaceVariant }]}>Daha fazla müşteri</Text>
+                    <View className="rounded-full px-4 py-2" style={{ backgroundColor: surfaceContainerLow }}>
+                      <Text className="font-label text-sm uppercase tracking-[1.5px]" style={{ color: onSurfaceVariant }}>
+                        Daha fazla musteri
+                      </Text>
                     </View>
-                    <View style={[styles.tag, { backgroundColor: surfaceContainerLow }]}>
-                      <Text style={[styles.tagText, { color: onSurfaceVariant }]}>Zaman yönetimi</Text>
+                    <View className="rounded-full px-4 py-2" style={{ backgroundColor: surfaceContainerLow }}>
+                      <Text className="font-label text-sm uppercase tracking-[1.5px]" style={{ color: onSurfaceVariant }}>
+                        Zaman yonetimi
+                      </Text>
                     </View>
                   </>
                 )}
@@ -139,157 +141,36 @@ export default function HizmetlerPage() {
             </View>
           </View>
 
-          {/* Service Cards Grid */}
-          <View
-            style={[
-              styles.gridContainer,
-              { paddingHorizontal: layout.horizontalPadding },
-            ]}
-          >
-            <View
-              style={[
-                styles.grid,
-                { maxWidth: layout.contentMaxWidth },
-              ]}
-            >
-              {services.map((svc, index) => (
+          <View className="mb-20" style={{ paddingHorizontal: layout.horizontalPadding }}>
+            <View className="w-full self-center flex-row flex-wrap gap-6" style={{ maxWidth: layout.contentMaxWidth }}>
+              {services.map((service, index) => (
                 <View
                   key={`${displayAudience}-${index}`}
-                  style={[
-                    styles.gridItem,
-                    {
-                      width: cols === 1 ? '100%' : cols === 2 ? '48%' : '31.33%',
-                    },
-                  ]}
-                >
-                  <ServiceCard icon={svc.icon} title={svc.title} description={svc.desc} />
+                  style={{ width: cols === 1 ? '100%' : cols === 2 ? '48%' : '31.33%' }}>
+                  <ServiceCard icon={service.icon} title={service.title} description={service.desc} />
                 </View>
               ))}
             </View>
           </View>
 
-          {/* CTA Section */}
-          <View style={styles.ctaSection}>
+          <View className="mb-20 items-center gap-6">
             <Button
               title={isCustomer ? 'Hemen Randevu Al' : 'Salonunu Kaydet'}
               variant={isCustomer ? 'primary' : 'outline'}
               style={{ paddingHorizontal: 48, paddingVertical: 20 }}
             />
-            <View style={styles.ctaNote}>
-              <MaterialIcons
-                name={isCustomer ? 'reviews' : 'rocket'}
-                size={16}
-                color={primary}
-              />
-              <Text style={[styles.ctaNoteText, { color: onSurfaceVariant }]}>
-                {isCustomer
-                  ? 'Gerçek kullanıcı yorumları ile güvenle seçin'
-                  : 'Kolay kullanım ve hızlı kurulum desteği'}
+            <View className="flex-row items-center gap-2">
+              <MaterialIcons name={isCustomer ? 'reviews' : 'rocket'} size={16} color={primary} />
+              <Text className="font-label text-sm uppercase tracking-[1.5px]" style={{ color: onSurfaceVariant }}>
+                {isCustomer ? 'Gercek kullanici yorumlari ile guvenle secin' : 'Kolay kullanim ve hizli kurulum destegi'}
               </Text>
             </View>
           </View>
         </Animated.View>
 
-        {/* Feature Showcase */}
         <FeatureShowcase />
-
-        {/* Footer */}
         <Footer />
       </ScrollView>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  heroSection: {
-    paddingBottom: 64,
-  },
-  heroInner: {
-    width: '100%',
-    alignSelf: 'center',
-  },
-  heroTitle: {
-    ...Typography.displayLg,
-    fontSize: 56,
-    letterSpacing: -0.5,
-    marginBottom: 16,
-  },
-  heroDescription: {
-    ...Typography.titleLg,
-    fontFamily: 'Manrope-Regular',
-    fontSize: 20,
-    maxWidth: 640,
-  },
-  sectionHeader: {
-    justifyContent: 'space-between',
-    gap: 24,
-    marginBottom: 48,
-  },
-  sectionHeaderInner: {
-    width: '100%',
-    alignSelf: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    gap: 24,
-  },
-  sectionTitle: {
-    ...Typography.displayMd,
-    flex: 1,
-    minWidth: 280,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    gap: 16,
-    flexWrap: 'wrap',
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 24,
-  },
-  tagText: {
-    ...Typography.labelMd,
-    fontFamily: 'Manrope-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
-  gridContainer: {
-    marginBottom: 80,
-  },
-  grid: {
-    width: '100%',
-    alignSelf: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 24,
-  },
-  gridItem: {
-    marginBottom: 0,
-  },
-  ctaSection: {
-    alignItems: 'center',
-    marginBottom: 80,
-    gap: 24,
-  },
-  ctaNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  ctaNoteText: {
-    ...Typography.labelMd,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-});

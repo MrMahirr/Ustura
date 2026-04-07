@@ -1,11 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
+import { Animated, Platform, Pressable, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAppTheme } from '@/contexts/ThemeContext';
-import { Typography } from '@/constants/typography';
 import Button from '@/components/ui/Button';
+import { useAppTheme } from '@/contexts/ThemeContext';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { hexToRgba } from '@/utils/color';
 
 export interface SalonCardProps {
@@ -16,9 +15,10 @@ export interface SalonCardProps {
   reviewCount: number;
   imageUrl: string;
   barbers: string[];
+  onBookPress?: () => void;
 }
 
-export default function SalonCard({ name, location, rating, reviewCount, imageUrl, barbers }: SalonCardProps) {
+export default function SalonCard({ name, location, rating, reviewCount, imageUrl, barbers, onBookPress }: SalonCardProps) {
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surfaceContainerHighest = useThemeColor({}, 'surfaceContainerHighest');
   const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
@@ -47,10 +47,16 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
   };
 
   return (
-    <Pressable onHoverIn={handleHoverIn} onHoverOut={handleHoverOut} style={styles.pressableWrapper}>
+    <Pressable className="h-full" onHoverIn={handleHoverIn} onHoverOut={handleHoverOut}>
       <Animated.View
         style={[
-          styles.card,
+          {
+            flex: 1,
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: 18,
+            borderWidth: 1,
+          },
           {
             backgroundColor: surfaceContainerLow,
             borderColor: outlineVariant,
@@ -59,23 +65,25 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
             shadowRadius: 30,
             elevation: shadowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) as any,
           },
+          Platform.OS === 'web'
+            ? ({ transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 260ms ease' } as any)
+            : null,
         ]}>
-        <View style={styles.imageWrapper}>
+        <View className="relative overflow-hidden" style={{ aspectRatio: 1.6 }}>
           <Animated.Image
             source={{ uri: imageUrl }}
-            style={[
-              styles.image,
-              {
-                transform: [{ scale: scaleAnim }],
-                opacity: theme === 'light' ? 0.9 : 0.72,
-              },
-            ]}
+            style={{
+              width: '100%',
+              height: '100%',
+              transform: [{ scale: scaleAnim }],
+              opacity: theme === 'light' ? 0.9 : 0.72,
+            }}
             resizeMode="cover"
           />
 
           <View
+            className="absolute right-4 top-4 flex-row items-center gap-1 rounded-full border px-3 py-1"
             style={[
-              styles.ratingBadge,
               {
                 backgroundColor:
                   theme === 'light'
@@ -87,33 +95,47 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
                       : surface,
                 borderColor: hexToRgba(primary, theme === 'light' ? 0.22 : 0.16),
               },
+              Platform.OS === 'web'
+                ? ({ backdropFilter: 'blur(8px)', transition: 'background-color 360ms ease, border-color 360ms ease' } as any)
+                : null,
             ]}>
             <MaterialIcons name="star" size={14} color={primary} />
-            <Text style={[styles.ratingText, { color: onSurface }]}>{rating.toFixed(1)}</Text>
-            <Text style={[styles.reviewText, { color: onSurfaceVariant }]}>({reviewCount})</Text>
+            <Text className="font-body text-base font-bold" style={{ color: onSurface }}>
+              {rating.toFixed(1)}
+            </Text>
+            <Text className="font-body text-xs" style={{ color: onSurfaceVariant }}>
+              ({reviewCount})
+            </Text>
           </View>
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: onSurface }]}>{name}</Text>
-            <View style={styles.locationRow}>
+        <View className="flex-1 p-6">
+          <View className="mb-4">
+            <Text className="mb-1 font-headline text-2xl font-bold" style={{ color: onSurface }}>
+              {name}
+            </Text>
+            <View className="flex-row items-center gap-1">
               <MaterialIcons name="location-on" size={14} color={onSurfaceVariant} />
-              <Text style={[styles.locationText, { color: onSurfaceVariant }]}>{location}</Text>
+              <Text className="font-body text-base" style={{ color: onSurfaceVariant }}>
+                {location}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.barbersWrapper}>
-            {barbers.map((barber, index) => (
-              <View key={index} style={[styles.barberChip, { backgroundColor: surfaceContainerHighest }]}>
-                <Text style={[styles.barberText, { color: onSurfaceVariant }]}>{barber}</Text>
+          <View className="mb-6 flex-row flex-wrap gap-2">
+            {barbers.map((barber) => (
+              <View key={barber} className="rounded-full px-2 py-1" style={{ backgroundColor: surfaceContainerHighest }}>
+                <Text className="font-body text-[10px] font-bold uppercase tracking-[1px]" style={{ color: onSurfaceVariant }}>
+                  {barber}
+                </Text>
               </View>
             ))}
           </View>
 
-          <View style={styles.actionWrapper}>
+          <View className="mt-auto">
             <Button
               title="Randevu Al"
+              onPress={onBookPress}
               style={{ width: '100%', paddingVertical: 12, minHeight: 44 }}
               textStyle={{ fontSize: 12, letterSpacing: 1.5 }}
             />
@@ -123,92 +145,3 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  pressableWrapper: {
-    height: '100%',
-  },
-  card: {
-    flex: 1,
-    flexDirection: 'column',
-    overflow: 'hidden',
-    borderRadius: 18,
-    borderWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({ transition: 'background-color 360ms ease, border-color 360ms ease, box-shadow 260ms ease' } as any)
-      : {}),
-  },
-  imageWrapper: {
-    position: 'relative',
-    aspectRatio: 1.6,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  ratingBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-    ...(Platform.OS === 'web'
-      ? ({ backdropFilter: 'blur(8px)', transition: 'background-color 360ms ease, border-color 360ms ease' } as any)
-      : {}),
-  },
-  ratingText: {
-    ...Typography.bodyMd,
-    fontFamily: 'Manrope-Bold',
-  },
-  reviewText: {
-    fontSize: 12,
-    fontFamily: 'Manrope-Regular',
-  },
-  content: {
-    padding: 24,
-    flex: 1,
-    flexDirection: 'column',
-  },
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    ...Typography.headlineLg,
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  locationText: {
-    ...Typography.bodyMd,
-  },
-  barbersWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 24,
-  },
-  barberChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  barberText: {
-    fontSize: 10,
-    fontFamily: 'Manrope-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  actionWrapper: {
-    marginTop: 'auto',
-  },
-});

@@ -1,7 +1,4 @@
-import { View } from 'react-native';
-
-// TODO: Landing page footer
-// TODO: İletişim bilgileri, linkler
+// Legacy placeholder kept for compatibility with older imports.
 export default function Footer() {
   return null;
 }

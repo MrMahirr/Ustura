@@ -1,8 +1,7 @@
 import type { ComponentProps } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 
-import { Typography } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
@@ -42,8 +41,8 @@ export default function StatsCard({
 
   return (
     <View
+      className="min-h-[128px] justify-between rounded-sm p-5"
       style={[
-        styles.card,
         {
           backgroundColor: surfaceContainerLow,
           borderLeftWidth: highlight === 'alert' ? 2 : 0,
@@ -52,71 +51,32 @@ export default function StatsCard({
         Platform.OS === 'web'
           ? ({
               transition: 'background-color 200ms ease',
+              cursor: 'default',
             } as any)
           : null,
       ]}>
-      <View style={styles.header}>
-        <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
+      <View className="mb-4 flex-row items-start justify-between">
+        <Text className="mr-2 flex-1 font-label text-[10px] uppercase tracking-wide" style={{ color: labelColor }}>
+          {label}
+        </Text>
         <MaterialIcons name={icon} size={20} color={iconColor} />
       </View>
 
       <View>
-        <Text style={[styles.value, { color: valueColor }]}>{value}</Text>
+        <Text className="mb-1.5 font-headline text-[26px] leading-[30px]" style={{ color: valueColor }}>
+          {value}
+        </Text>
         {trendLabel ? (
-          <View style={styles.trendRow}>
+          <View className="flex-row items-center">
             {trendTone !== 'neutral' ? (
-              <MaterialIcons name={trendIcon} size={14} color={trendColor} style={styles.trendIcon} />
+              <MaterialIcons name={trendIcon} size={14} color={trendColor} style={{ marginRight: 4 }} />
             ) : null}
-            <Text style={[styles.trend, { color: trendColor }]}>{trendLabel}</Text>
+            <Text className="font-label text-[10px] tracking-[0.2px]" style={{ color: trendColor }}>
+              {trendLabel}
+            </Text>
           </View>
         ) : null}
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 4,
-    padding: 20,
-    minHeight: 128,
-    justifyContent: 'space-between',
-    ...(Platform.OS === 'web'
-      ? ({
-          cursor: 'default',
-        } as any)
-      : {}),
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  label: {
-    ...Typography.labelSm,
-    fontSize: 10,
-    flex: 1,
-    marginRight: 8,
-    fontFamily: 'Manrope-Bold',
-  },
-  value: {
-    fontFamily: 'NotoSerif-Bold',
-    fontSize: 26,
-    lineHeight: 30,
-    marginBottom: 6,
-  },
-  trendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  trendIcon: {
-    marginRight: 4,
-  },
-  trend: {
-    ...Typography.labelSm,
-    fontSize: 10,
-    textTransform: 'none',
-    letterSpacing: 0.2,
-  },
-});

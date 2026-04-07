@@ -1,7 +1,9 @@
 import React from 'react';
-import { Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { Pressable, Text, type ViewStyle } from 'react-native';
+
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
+
+import { cn } from '@/utils/cn';
 
 interface BadgeProps {
   label: string;
@@ -21,36 +23,20 @@ export default function Badge({ label, onPress, isActive, style }: BadgeProps) {
 
   return (
     <Pressable
+      className="items-center justify-center rounded-full px-6 py-2"
       onPress={onPress}
       style={({ pressed, hovered }) => [
-        styles.badge,
         { backgroundColor: bgColor },
         !isActive && (pressed || hovered) && { backgroundColor: primary },
-        style
-      ]}
-    >
+        style,
+      ]}>
       {({ pressed, hovered }) => (
-        <Text style={[styles.text, { color: !isActive && (pressed || hovered) ? onPrimary : textColor }]}>
+        <Text
+          className={cn('font-label text-xs tracking-badge')}
+          style={{ color: !isActive && (pressed || hovered) ? onPrimary : textColor, fontFamily: 'Manrope-Bold' }}>
           {label}
         </Text>
       )}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'background-color 0.2s', // works on web
-  } as any,
-  text: {
-    ...Typography.labelMd,
-    fontFamily: 'Manrope-Bold',
-    textTransform: 'none',
-    letterSpacing: 0.5,
-  },
-});

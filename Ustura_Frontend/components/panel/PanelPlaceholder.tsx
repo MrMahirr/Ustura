@@ -1,9 +1,8 @@
 import type { ComponentProps } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import Card from '@/components/ui/Card';
-import { Typography } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { hexToRgba } from '@/utils/color';
 
@@ -21,43 +20,20 @@ export default function PanelPlaceholder({ title, description, icon }: PanelPlac
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
 
   return (
-    <View style={styles.container}>
-      <Card variant="glass" padding={28} style={styles.card}>
-        <View style={[styles.iconWrap, { backgroundColor: hexToRgba(primary, 0.14) }]}>
-          <MaterialIcons name={icon} size={30} color={primary} />
-        </View>
-        <Text style={[styles.title, { color: onSurface }]}>{title}</Text>
-        <Text style={[styles.description, { color: onSurfaceVariant }]}>{description}</Text>
-      </Card>
+    <View className="flex-1 justify-center p-6">
+      <View className="w-full max-w-[560px] self-center">
+        <Card variant="glass" padding={28}>
+          <View className="mb-5 h-[72px] w-[72px] items-center justify-center rounded-3xl" style={{ backgroundColor: hexToRgba(primary, 0.14) }}>
+            <MaterialIcons name={icon} size={30} color={primary} />
+          </View>
+          <Text className="mb-3 font-headline text-[30px]" style={{ color: onSurface }}>
+            {title}
+          </Text>
+          <Text className="font-body text-lg" style={{ color: onSurfaceVariant }}>
+            {description}
+          </Text>
+        </Card>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-  },
-  card: {
-    maxWidth: 560,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    ...Typography.displayMd,
-    fontSize: 30,
-    marginBottom: 12,
-  },
-  description: {
-    ...Typography.bodyLg,
-  },
-});

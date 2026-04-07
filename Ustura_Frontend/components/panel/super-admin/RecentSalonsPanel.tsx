@@ -1,9 +1,8 @@
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { RecentSalon } from '@/components/panel/super-admin/data';
-import { Typography } from '@/constants/typography';
 
 import { useSuperAdminTheme } from './theme';
 
@@ -19,36 +18,46 @@ export default function RecentSalonsPanel({ salons }: { salons: RecentSalon[] })
   const adminTheme = useSuperAdminTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: adminTheme.cardBackground }]}>
-      <Text style={[styles.title, { color: adminTheme.onSurface }]}>Son Eklenen Salonlar</Text>
+    <View className="min-h-[260px] flex-1 rounded-sm p-7" style={{ backgroundColor: adminTheme.cardBackground }}>
+      <Text className="mb-[22px] font-headline text-lg" style={{ color: adminTheme.onSurface }}>
+        Son Eklenen Salonlar
+      </Text>
 
-      <View style={styles.list}>
+      <View className="gap-[22px]">
         {salons.length === 0 ? (
-          <Text style={[styles.empty, { color: adminTheme.onSurfaceVariant }]}>
+          <Text className="font-body text-sm" style={{ color: adminTheme.onSurfaceVariant }}>
             Arama ile eslesen yeni salon bulunamadi.
           </Text>
         ) : (
           salons.map((salon, index) => {
             const gold = index % 2 === 0;
             return (
-              <View key={salon.id} style={styles.row}>
+              <View key={salon.id} className="flex-row items-center gap-[14px]">
                 {gold ? (
                   <LinearGradient
                     colors={adminTheme.goldGradient as [string, string]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.avatarGold}>
-                    <Text style={[styles.avatarText, { color: adminTheme.onPrimary }]}>{initials(salon.name)}</Text>
+                    className="h-12 w-12 items-center justify-center rounded-sm">
+                    <Text className="font-headline text-lg" style={{ color: adminTheme.onPrimary }}>
+                      {initials(salon.name)}
+                    </Text>
                   </LinearGradient>
                 ) : (
-                  <View style={[styles.avatarMuted, { backgroundColor: adminTheme.surfaceContainerHighest }]}>
-                    <Text style={[styles.avatarText, { color: adminTheme.onSurface }]}>{initials(salon.name)}</Text>
+                  <View className="h-12 w-12 items-center justify-center rounded-sm" style={{ backgroundColor: adminTheme.surfaceContainerHighest }}>
+                    <Text className="font-headline text-lg" style={{ color: adminTheme.onSurface }}>
+                      {initials(salon.name)}
+                    </Text>
                   </View>
                 )}
 
-                <View style={styles.meta}>
-                  <Text style={[styles.name, { color: adminTheme.onSurface }]}>{salon.name}</Text>
-                  <Text style={[styles.time, { color: adminTheme.onSurfaceVariant }]}>{salon.addedAt}</Text>
+                <View className="flex-1 gap-1">
+                  <Text className="font-body text-sm font-bold" style={{ color: adminTheme.onSurface }}>
+                    {salon.name}
+                  </Text>
+                  <Text className="font-label text-[10px] uppercase tracking-wide" style={{ color: adminTheme.onSurfaceVariant }}>
+                    {salon.addedAt}
+                  </Text>
                 </View>
               </View>
             );
@@ -58,58 +67,3 @@ export default function RecentSalonsPanel({ salons }: { salons: RecentSalon[] })
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 4,
-    padding: 28,
-    minHeight: 260,
-    flex: 1,
-  },
-  title: {
-    fontFamily: 'NotoSerif-Bold',
-    fontSize: 18,
-    marginBottom: 22,
-  },
-  list: {
-    gap: 22,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  avatarGold: {
-    width: 48,
-    height: 48,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarMuted: {
-    width: 48,
-    height: 48,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontFamily: 'NotoSerif-Bold',
-    fontSize: 18,
-  },
-  meta: {
-    flex: 1,
-    gap: 4,
-  },
-  name: {
-    fontSize: 14,
-    fontFamily: 'Manrope-Bold',
-  },
-  time: {
-    ...Typography.labelSm,
-    fontSize: 10,
-  },
-  empty: {
-    ...Typography.bodyMd,
-  },
-});
