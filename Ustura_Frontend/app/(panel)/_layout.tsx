@@ -1,6 +1,6 @@
 import React from 'react';
 import { Slot } from 'expo-router';
-import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, View, useWindowDimensions } from 'react-native';
 
 import Sidebar from '@/components/layout/Sidebar';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -16,27 +16,27 @@ export default function PanelLayout() {
 
   return (
     <View
+      className="flex-1"
       style={[
-        styles.container,
-        Platform.OS === 'web' ? styles.webContainer : null,
+        Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : null,
         {
           backgroundColor: neutral,
           flexDirection: isDesktop ? 'row' : 'column',
         },
       ]}>
       <View
+        className="flex-shrink-0"
         style={[
-          styles.sidebar,
-          isDesktop ? styles.sidebarDesktop : styles.sidebarMobile,
-          sidebarFixedWeb ? styles.sidebarWebFixed : null,
+          isDesktop ? { width: SIDEBAR_WIDTH, borderRightWidth: 1 } : { width: '100%', borderBottomWidth: 1 },
+          sidebarFixedWeb ? ({ position: 'fixed', left: 0, top: 0, height: '100vh', zIndex: 50 } as any) : null,
           { borderColor: surfaceContainerLow },
         ]}>
         <Sidebar />
       </View>
       <View
+        className="min-w-0 flex-1"
         style={[
-          styles.content,
-          Platform.OS === 'web' ? styles.webContent : null,
+          Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : null,
           sidebarFixedWeb ? { marginLeft: SIDEBAR_WIDTH } : null,
         ]}>
         <Slot />
@@ -44,38 +44,3 @@ export default function PanelLayout() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  webContainer: {
-    minHeight: '100vh',
-  } as any,
-  sidebar: {
-    flexShrink: 0,
-    borderRightWidth: 1,
-  },
-  sidebarDesktop: {
-    width: SIDEBAR_WIDTH,
-  },
-  sidebarMobile: {
-    width: '100%',
-    borderRightWidth: 0,
-    borderBottomWidth: 1,
-  },
-  sidebarWebFixed: {
-    position: 'fixed',
-    left: 0,
-    top: 0,
-    height: '100vh',
-    zIndex: 50,
-  } as any,
-  content: {
-    flex: 1,
-    minWidth: 0,
-  },
-  webContent: {
-    minHeight: '100vh',
-  } as any,
-});

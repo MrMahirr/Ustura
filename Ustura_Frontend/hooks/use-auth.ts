@@ -1,7 +1,7 @@
-// TODO: Auth hook
-// - login(email, password)
-// - register(data)
-// - logout()
-// - isAuthenticated
-// - user
-// - role
+export {
+  useAuthContext as useAuth,
+  type AuthUser,
+  type AuthUserRole,
+  type LoginInput,
+  type RegistrationInput,
+} from '@/contexts/AuthContext';

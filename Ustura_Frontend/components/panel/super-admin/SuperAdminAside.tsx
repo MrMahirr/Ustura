@@ -2,10 +2,10 @@ import type { ComponentProps } from 'react';
 import { usePathname, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 
-import { Typography } from '@/constants/typography';
 import { hexToRgba } from '@/utils/color';
+import { cn } from '@/utils/cn';
 
 import { superAdminAsideItems, type SuperAdminAsideItem } from './aside-nav';
 import { useSuperAdminTheme } from './theme';
@@ -21,6 +21,21 @@ function normalizePath(path: string) {
   p = p.replace(/\/\([^/]+\)/g, '');
   p = p.replace(/\/$/, '') || '/';
   return p;
+}
+
+function isItemActive(pathname: string, item: SuperAdminAsideItem) {
+  const currentPath = normalizePath(pathname);
+  const itemPath = normalizePath(String(item.href ?? ''));
+
+  if (!itemPath) {
+    return false;
+  }
+
+  if (currentPath === itemPath) {
+    return true;
+  }
+
+  return Boolean(item.matchSubroutes && itemPath !== '/' && currentPath.startsWith(`${itemPath}/`));
 }
 
 function AsideNavRow({
@@ -58,19 +73,23 @@ function AsideNavRow({
       accessibilityRole={handlePress ? 'link' : undefined}
       accessibilityLabel={collapsed ? item.label : undefined}
       accessibilityState={{ disabled: item.disabled, selected: isActive }}
+      className={cn(
+        isDesktop
+          ? 'w-full flex-row items-center justify-start px-4 py-3'
+          : 'min-h-12 min-w-0 flex-row items-center gap-3 rounded-sm border px-4 py-2.5',
+        isDesktop && !collapsed && 'gap-3',
+        isDesktop && collapsed && 'min-h-[52px]'
+      )}
       style={({ hovered, pressed }) => {
         const canHover = isDesktop && Platform.OS === 'web';
         const isHovered = canHover && hovered && !item.disabled;
 
         let bg = 'transparent';
-        if (isActive) {
-          bg = activeBackground;
-        } else if (isHovered) {
+        if (isActive || isHovered) {
           bg = activeBackground;
         }
 
         return [
-          isDesktop ? (collapsed ? styles.desktopLinkCollapsed : styles.desktopLink) : styles.mobileLink,
           {
             backgroundColor: bg,
             borderRightWidth: isActive && isDesktop ? 4 : 0,
@@ -84,6 +103,13 @@ function AsideNavRow({
                   : borderSubtle,
             transform: [{ scale: pressed && !item.disabled ? 0.995 : 1 }],
           },
+          Platform.OS === 'web'
+            ? ({
+                cursor: 'pointer',
+                transition:
+                  'background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), color 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 420ms cubic-bezier(0.22, 1, 0.36, 1), gap 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+              } as any)
+            : null,
         ];
       }}>
       {({ hovered }) => {
@@ -93,28 +119,47 @@ function AsideNavRow({
         let fg = INACTIVE_GRAY;
         if (item.disabled) {
           fg = hexToRgba(INACTIVE_GRAY, 0.55);
-        } else if (isActive) {
-          fg = primary;
-        } else if (isHovered) {
+        } else if (isActive || isHovered) {
           fg = primary;
         }
 
         return (
           <>
-            <View style={styles.linkIconWrap}>
+            <View className="w-[22px] shrink-0 items-center justify-center">
               <MaterialIcons name={item.icon as IconName} size={22} color={fg} />
             </View>
-            <View style={[styles.linkLabelWrap, collapsed ? styles.linkLabelWrapCollapsed : null]}>
+            <View
+              className={cn('min-w-0 overflow-hidden', collapsed ? 'max-w-0 opacity-0' : 'max-w-40 flex-1')}
+              style={[
+                Platform.OS === 'web'
+                  ? ({
+                      transition:
+                        'max-width 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease',
+                      transformOrigin: 'left center',
+                    } as any)
+                  : null,
+                collapsed
+                  ? {
+                      transform: [{ translateX: -16 }, { scale: 0.94 }],
+                      ...(Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as any) : null),
+                    }
+                  : null,
+              ]}>
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
+                className={cn('shrink font-label text-[11px] uppercase tracking-[2px]', collapsed && 'opacity-0')}
                 style={[
-                  styles.linkLabel,
-                  collapsed ? styles.linkLabelCollapsed : null,
                   {
                     color: fg,
                     fontFamily: isActive ? 'Manrope-SemiBold' : 'Manrope-Medium',
                   },
+                  Platform.OS === 'web'
+                    ? ({
+                        transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      } as any)
+                    : null,
+                  collapsed ? { transform: [{ translateX: -10 }] } : null,
                 ]}>
                 {item.label}
               </Text>
@@ -152,17 +197,60 @@ export default function SuperAdminAside({
 
   return (
     <View
+      className={cn('flex-1', isDesktop ? 'py-6' : 'w-full px-4 pb-3 pt-4')}
       style={[
-        styles.container,
-        isDesktop ? styles.desktopContainer : styles.mobileContainer,
-        Platform.OS === 'web' && isDesktop ? styles.desktopWebContainer : null,
         { backgroundColor: sidebarBackground },
+        Platform.OS === 'web' && isDesktop ? ({ height: '100vh' } as any) : null,
       ]}>
-      <View style={[styles.brandArea, collapsed ? styles.brandAreaCollapsed : null]}>
-        <View style={[styles.brandRow, collapsed ? styles.brandRowCollapsed : null]}>
-          <View style={[styles.brandCopy, collapsed ? styles.brandCopyCollapsed : null]}>
-            <Text style={[styles.brand, collapsed ? styles.brandCollapsed : null, { color: primary }]}>USTURA</Text>
-            <Text style={[styles.brandSubtitle, collapsed ? styles.brandSubtitleCollapsed : null, { color: subtitleColor }]}>
+      <View className={cn(collapsed ? 'mb-2 px-2.5' : 'mb-8 px-5')}>
+        <View className={cn('flex-row gap-3', collapsed ? 'items-center justify-center gap-0' : 'items-start justify-between')}>
+          <View
+            className="min-w-0 flex-1 overflow-hidden"
+            style={[
+              Platform.OS === 'web'
+                ? ({
+                    transition:
+                      'max-width 420ms cubic-bezier(0.22, 1, 0.36, 1), max-height 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease',
+                    transformOrigin: 'left center',
+                  } as any)
+                : null,
+              collapsed
+                ? {
+                    maxWidth: 0,
+                    maxHeight: 0,
+                    opacity: 0,
+                    transform: [{ translateX: -18 }, { scale: 0.92 }],
+                    ...(Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as any) : null),
+                  }
+                : {
+                    maxWidth: 168,
+                    maxHeight: 52,
+                  },
+            ]}>
+            <Text
+              className={cn('font-headline text-2xl tracking-[-0.8px]', collapsed && 'opacity-0')}
+              style={[
+                { color: primary, fontWeight: '900' },
+                Platform.OS === 'web'
+                  ? ({
+                      transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    } as any)
+                  : null,
+                collapsed ? { transform: [{ translateX: -14 }] } : null,
+              ]}>
+              USTURA
+            </Text>
+            <Text
+              className={cn('mt-1 font-label text-[10px] uppercase tracking-[2.4px]', collapsed && 'opacity-0')}
+              style={[
+                { color: subtitleColor },
+                Platform.OS === 'web'
+                  ? ({
+                      transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    } as any)
+                  : null,
+                collapsed ? { transform: [{ translateX: -12 }] } : null,
+              ]}>
               SaaS Platform
             </Text>
           </View>
@@ -172,30 +260,81 @@ export default function SuperAdminAside({
               onPress={onToggleCollapse}
               accessibilityRole="button"
               accessibilityLabel={collapsed ? 'Aside paneli genislet' : 'Aside paneli daralt'}
+              className="h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-2xl border"
               style={({ hovered, pressed }) => [
-                styles.toggleButton,
                 {
                   backgroundColor: hovered ? sidebarActiveBackground : 'transparent',
                   borderColor: hovered || collapsed ? borderSubtle : 'transparent',
                   transform: [{ scale: pressed ? 0.96 : 1 }],
                 },
+                Platform.OS === 'web'
+                  ? ({
+                      cursor: 'pointer',
+                      transition:
+                        'background-color 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    } as any)
+                  : null,
               ]}>
-              <View style={styles.toggleIconStack}>
+              <View className="relative h-[42px] w-[42px]">
                 <Image
                   source={OPEN_RAZOR}
                   style={[
-                    styles.toggleIconLayer,
-                    styles.toggleIcon,
-                    collapsed ? styles.toggleIconHidden : styles.toggleIconVisible,
+                    {
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 42,
+                      height: 42,
+                    },
+                    Platform.OS === 'web'
+                      ? ({
+                          transition:
+                            'opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                          willChange: 'opacity, transform, filter',
+                        } as any)
+                      : null,
+                    collapsed
+                      ? {
+                          opacity: 0,
+                          transform: [{ scale: 0.76 }, { rotate: '-14deg' }, { translateY: 3 }],
+                          ...(Platform.OS === 'web' ? ({ filter: 'blur(7px) saturate(0.8)' } as any) : null),
+                        }
+                      : {
+                          opacity: 1,
+                          transform: [{ scale: 1 }, { rotate: '0deg' }, { translateY: 0 }],
+                          ...(Platform.OS === 'web' ? ({ filter: 'blur(0px) saturate(1)' } as any) : null),
+                        },
                   ]}
                   contentFit="contain"
                 />
                 <Image
                   source={CLOSED_RAZOR}
                   style={[
-                    styles.toggleIconLayer,
-                    styles.toggleIcon,
-                    collapsed ? styles.toggleIconVisible : styles.toggleIconHidden,
+                    {
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 42,
+                      height: 42,
+                    },
+                    Platform.OS === 'web'
+                      ? ({
+                          transition:
+                            'opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                          willChange: 'opacity, transform, filter',
+                        } as any)
+                      : null,
+                    collapsed
+                      ? {
+                          opacity: 1,
+                          transform: [{ scale: 1 }, { rotate: '0deg' }, { translateY: 0 }],
+                          ...(Platform.OS === 'web' ? ({ filter: 'blur(0px) saturate(1)' } as any) : null),
+                        }
+                      : {
+                          opacity: 0,
+                          transform: [{ scale: 0.76 }, { rotate: '-14deg' }, { translateY: 3 }],
+                          ...(Platform.OS === 'web' ? ({ filter: 'blur(7px) saturate(0.8)' } as any) : null),
+                        },
                   ]}
                   contentFit="contain"
                 />
@@ -207,18 +346,15 @@ export default function SuperAdminAside({
 
       {isDesktop ? (
         <ScrollView
-          style={styles.desktopScroll}
-          contentContainerStyle={[
-            styles.desktopScrollContent,
-            collapsed ? styles.desktopScrollContentCollapsed : null,
-          ]}
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 8 }}
           showsVerticalScrollIndicator={false}>
-          <View style={[styles.navBlock, collapsed ? styles.navBlockCollapsed : null]}>
+          <View className={cn(collapsed ? 'w-full gap-2 px-0' : 'gap-1')}>
             {items.map((item) => (
               <AsideNavRow
                 key={item.label}
                 item={item}
-                isActive={normalizePath(pathname) === normalizePath(String(item.href ?? ''))}
+                isActive={isItemActive(pathname, item)}
                 isDesktop
                 collapsed={collapsed}
                 primary={primary}
@@ -230,12 +366,15 @@ export default function SuperAdminAside({
           </View>
         </ScrollView>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mobileScrollContent}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 4, paddingBottom: 4 }}>
           {items.map((item) => (
-            <View key={item.label} style={styles.mobileItem}>
+            <View key={item.label} style={{ minWidth: 168 }}>
               <AsideNavRow
                 item={item}
-                isActive={normalizePath(pathname) === normalizePath(String(item.href ?? ''))}
+                isActive={isItemActive(pathname, item)}
                 isDesktop={false}
                 collapsed={false}
                 primary={primary}
@@ -250,20 +389,45 @@ export default function SuperAdminAside({
 
       {isDesktop ? (
         <View
-          style={[
-            styles.logoutSection,
-            collapsed ? styles.logoutSectionCollapsed : null,
-            { borderTopColor: borderSubtle },
-          ]}>
-          <Pressable style={styles.logoutPressable}>
+          className={cn('mt-auto border-t pt-6', collapsed ? 'px-2.5' : 'px-4')}
+          style={{ borderTopColor: borderSubtle }}>
+          <Pressable style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : null}>
             {({ hovered }) => {
               const fg = Platform.OS === 'web' && hovered ? primary : INACTIVE_GRAY;
 
               return (
-                <View style={[styles.logoutRow, collapsed ? styles.logoutRowCollapsed : null]}>
+                <View
+                  className="flex-row items-center gap-3 px-4 py-3"
+                  style={Platform.OS === 'web' ? ({ transition: 'color 180ms ease' } as any) : null}>
                   <MaterialIcons name="logout" size={22} color={fg} />
-                  <View style={[styles.logoutLabelWrap, collapsed ? styles.logoutLabelWrapCollapsed : null]}>
-                    <Text style={[styles.logoutLabel, collapsed ? styles.logoutLabelCollapsed : null, { color: fg }]}>
+                  <View
+                    className={cn('overflow-hidden', collapsed ? 'max-w-0 opacity-0' : 'max-w-[140px]')}
+                    style={[
+                      Platform.OS === 'web'
+                        ? ({
+                            transition:
+                              'max-width 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease',
+                            transformOrigin: 'left center',
+                          } as any)
+                        : null,
+                      collapsed
+                        ? {
+                            transform: [{ translateX: -16 }, { scale: 0.94 }],
+                            ...(Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as any) : null),
+                          }
+                        : null,
+                    ]}>
+                    <Text
+                      className={cn('shrink font-label text-[11px] uppercase tracking-[2px]', collapsed && 'opacity-0')}
+                      style={[
+                        { color: fg, fontFamily: 'Manrope-Medium' },
+                        Platform.OS === 'web'
+                          ? ({
+                              transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                            } as any)
+                          : null,
+                        collapsed ? { transform: [{ translateX: -10 }] } : null,
+                      ]}>
                       Cikis Yap
                     </Text>
                   </View>
@@ -276,312 +440,3 @@ export default function SuperAdminAside({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  desktopContainer: {
-    paddingVertical: 24,
-  },
-  desktopWebContainer: {
-    height: '100vh',
-  } as any,
-  mobileContainer: {
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  brandArea: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
-  },
-  brandAreaCollapsed: {
-    paddingHorizontal: 10,
-    marginBottom: 8,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  brandRowCollapsed: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
-  },
-  brandCopy: {
-    flex: 1,
-    minWidth: 0,
-    maxWidth: 168,
-    maxHeight: 52,
-    overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? ({
-          transition:
-            'max-width 420ms cubic-bezier(0.22, 1, 0.36, 1), max-height 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease',
-          transformOrigin: 'left center',
-        } as any)
-      : {}),
-  },
-  brandCopyCollapsed: {
-    maxWidth: 0,
-    maxHeight: 0,
-    opacity: 0,
-    transform: [{ translateX: -18 }, { scale: 0.92 }],
-    ...(Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as any) : {}),
-  },
-  brand: {
-    fontFamily: 'NotoSerif-Bold',
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: -0.8,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-        } as any)
-      : {}),
-  },
-  brandCollapsed: {
-    opacity: 0,
-    transform: [{ translateX: -14 }],
-  },
-  brandSubtitle: {
-    fontFamily: 'Manrope-Bold',
-    fontSize: 10,
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    marginTop: 4,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-        } as any)
-      : {}),
-  },
-  brandSubtitleCollapsed: {
-    opacity: 0,
-    transform: [{ translateX: -12 }],
-  },
-  toggleButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? ({
-          cursor: 'pointer',
-          transition:
-            'background-color 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1)',
-        } as any)
-      : {}),
-  },
-  toggleIconStack: {
-    width: 42,
-    height: 42,
-    position: 'relative',
-  },
-  toggleIconLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  } as any,
-  toggleIcon: {
-    width: 42,
-    height: 42,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition:
-            'opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-          willChange: 'opacity, transform, filter',
-        } as any)
-      : {}),
-  },
-  toggleIconVisible: {
-    opacity: 1,
-    transform: [{ scale: 1 }, { rotate: '0deg' }, { translateY: 0 }],
-    ...(Platform.OS === 'web' ? ({ filter: 'blur(0px) saturate(1)' } as any) : {}),
-  },
-  toggleIconHidden: {
-    opacity: 0,
-    transform: [{ scale: 0.76 }, { rotate: '-14deg' }, { translateY: 3 }],
-    ...(Platform.OS === 'web' ? ({ filter: 'blur(7px) saturate(0.8)' } as any) : {}),
-  },
-  desktopScroll: {
-    flex: 1,
-  },
-  desktopScrollContent: {
-    flexGrow: 1,
-    paddingBottom: 8,
-  },
-  desktopScrollContentCollapsed: {
-    alignItems: 'stretch',
-  },
-  navBlock: {
-    gap: 4,
-  },
-  navBlockCollapsed: {
-    width: '100%',
-    gap: 8,
-    paddingHorizontal: 0,
-  },
-  mobileScrollContent: {
-    gap: 4,
-    paddingBottom: 4,
-  },
-  mobileItem: {
-    minWidth: 168,
-  },
-  desktopLink: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'nowrap',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    minWidth: 0,
-    ...(Platform.OS === 'web'
-      ? ({
-          cursor: 'pointer',
-          transition:
-            'background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), color 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 420ms cubic-bezier(0.22, 1, 0.36, 1), gap 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-        } as any)
-      : {}),
-  },
-  desktopLinkCollapsed: {
-    width: '100%',
-    minHeight: 52,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    ...(Platform.OS === 'web'
-      ? ({
-          cursor: 'pointer',
-          transition:
-            'background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), color 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-        } as any)
-      : {}),
-  },
-  linkIconWrap: {
-    width: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  linkLabelWrap: {
-    flex: 1,
-    minWidth: 0,
-    maxWidth: 160,
-    overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? ({
-          transition:
-            'max-width 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease',
-          transformOrigin: 'left center',
-        } as any)
-      : {}),
-  },
-  linkLabelWrapCollapsed: {
-    flex: 0,
-    maxWidth: 0,
-    opacity: 0,
-    transform: [{ translateX: -16 }, { scale: 0.94 }],
-    ...(Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as any) : {}),
-  },
-  mobileLink: {
-    minHeight: 48,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'nowrap',
-    gap: 12,
-    borderWidth: 1,
-    minWidth: 0,
-  },
-  linkLabel: {
-    ...Typography.labelSm,
-    flexShrink: 1,
-    fontSize: 11,
-    letterSpacing: 2,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-        } as any)
-      : {}),
-  },
-  linkLabelCollapsed: {
-    opacity: 0,
-    transform: [{ translateX: -10 }],
-  },
-  logoutSection: {
-    borderTopWidth: 1,
-    paddingTop: 24,
-    paddingHorizontal: 16,
-    marginTop: 'auto',
-  },
-  logoutSectionCollapsed: {
-    paddingHorizontal: 10,
-  },
-  logoutPressable: {
-    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
-  },
-  logoutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'nowrap',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    minWidth: 0,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'color 180ms ease',
-        } as any)
-      : {}),
-  },
-  logoutRowCollapsed: {
-    justifyContent: 'flex-start',
-    paddingHorizontal: 16,
-  },
-  logoutLabelWrap: {
-    overflow: 'hidden',
-    maxWidth: 140,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition:
-            'max-width 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease',
-          transformOrigin: 'left center',
-        } as any)
-      : {}),
-  },
-  logoutLabelWrapCollapsed: {
-    maxWidth: 0,
-    opacity: 0,
-    transform: [{ translateX: -16 }, { scale: 0.94 }],
-    ...(Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as any) : {}),
-  },
-  logoutLabel: {
-    ...Typography.labelSm,
-    flexShrink: 1,
-    fontSize: 11,
-    letterSpacing: 2,
-    fontFamily: 'Manrope-Medium',
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-        } as any)
-      : {}),
-  },
-  logoutLabelCollapsed: {
-    opacity: 0,
-    transform: [{ translateX: -10 }],
-  },
-});

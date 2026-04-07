@@ -1,0 +1,17 @@
+export const dashboardClassNames = {
+  page: 'relative flex-1 overflow-hidden',
+  content: 'w-full max-w-[1600px] self-center gap-9',
+  headerSection: 'justify-between gap-5',
+  headerCopy: 'max-w-[640px] flex-1',
+  title: 'mb-2.5 font-headline text-4xl tracking-[-0.6px]',
+  description: 'font-body text-lg font-light leading-7',
+  headerActions: 'flex-row flex-wrap items-center',
+  secondaryCta: 'items-center justify-center rounded-sm px-[22px] py-[11px]',
+  secondaryCtaText: 'font-label text-[11px] uppercase tracking-wide',
+  metricsGrid: 'flex-row flex-wrap gap-[14px]',
+  metricItem: 'min-w-40',
+  middleGrid: 'gap-6',
+  bottomGrid: 'items-stretch gap-6',
+  footerRule: 'mt-2 border-t',
+  footer: 'pb-2 text-center font-label text-[10px] uppercase tracking-[2px]',
+} as const;

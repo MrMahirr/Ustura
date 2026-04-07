@@ -1,11 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, useWindowDimensions, Pressable, Platform } from 'react-native';
+import { View, Text, Image, useWindowDimensions, Pressable, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { Typography } from '@/constants/typography';
 import { getLandingLayout } from '@/components/landing/layout';
 import { hexToRgba } from '@/utils/color';
 
@@ -33,67 +32,60 @@ export default function WhyUs() {
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: surface,
-          paddingVertical: layout.sectionPaddingVertical,
-          paddingHorizontal: layout.horizontalPadding,
-        },
-      ]}>
+      style={{
+        backgroundColor: surface,
+        paddingVertical: layout.sectionPaddingVertical,
+        paddingHorizontal: layout.horizontalPadding,
+      }}>
       <View
-        style={[
-          styles.content,
-          {
-            maxWidth: layout.contentMaxWidth,
-            flexDirection: isWide ? 'row' : 'column',
-            gap: isWide ? 64 : 40,
-          },
-        ]}>
+        className="w-full self-center items-stretch"
+        style={{
+          maxWidth: layout.contentMaxWidth,
+          flexDirection: isWide ? 'row' : 'column',
+          gap: isWide ? 64 : 40,
+        }}>
         <View
-          style={[
-            styles.textColumn,
-            {
-              flex: 1,
-              paddingRight: isWide ? 32 : 0,
-              alignItems: layout.isCompact ? 'center' : 'flex-start',
-            },
-          ]}>
-          <Text style={[styles.label, { color: primary, textAlign: layout.isCompact ? 'center' : 'left' }]}>
+          style={{
+            flex: 1,
+            paddingRight: isWide ? 32 : 0,
+            alignItems: layout.isCompact ? 'center' : 'flex-start',
+          }}>
+          <Text
+            className="mb-4 font-label text-base uppercase tracking-[3px]"
+            style={{ color: primary, textAlign: layout.isCompact ? 'center' : 'left' }}>
             Avantajlar
           </Text>
-          <Text style={[styles.headline, { color: onSurface, textAlign: layout.isCompact ? 'center' : 'left' }]}>
+          <Text
+            className="mb-8 font-headline text-5xl font-bold"
+            style={{ color: onSurface, textAlign: layout.isCompact ? 'center' : 'left', lineHeight: 52 }}>
             Neden Ustura?
           </Text>
           <Text
             style={[
-              styles.description,
+              { fontFamily: 'Manrope-Regular', fontSize: 18, marginBottom: 48, maxWidth: 760 },
               { color: onSurfaceVariant, textAlign: layout.isCompact ? 'center' : 'left' },
             ]}>
             Modern erkegin bakim rituelini teknolojiyle birlestiriyoruz. Zamaninizin degerini biliyor, size daha akici bir deneyim sunuyoruz.
           </Text>
 
           <View
-            style={[
-              styles.grid,
-              {
-                flexDirection: isTablet ? 'row' : 'column',
-                justifyContent: isTablet ? 'space-between' : 'flex-start',
-              },
-            ]}>
+            className="flex-wrap gap-4"
+            style={{ flexDirection: isTablet ? 'row' : 'column', justifyContent: isTablet ? 'space-between' : 'flex-start' }}>
             {advantages.map((adv, index) => (
               <Pressable
                 key={index}
-                style={[
-                  styles.advCardPressable,
-                  {
-                    width: isTablet ? '48%' : '100%',
-                  },
-                ]}>
+                className="w-full"
+                style={{ width: isTablet ? '48%' : '100%' }}>
                 {({ hovered, pressed }) => (
                   <View
                     style={[
-                      styles.advCard,
+                      {
+                        padding: 24,
+                        borderRadius: 18,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderBottomWidth: 3,
+                      },
                       {
                         backgroundColor: surfaceContainerLowest,
                         borderColor: hovered ? hexToRgba(primary, 0.22) : outlineVariant,
@@ -111,18 +103,20 @@ export default function WhyUs() {
                             shadowOpacity: hovered ? 0.10 : 0.05,
                             shadowRadius: hovered ? 16 : 10,
                             shadowOffset: { width: 0, height: hovered ? 10 : 5 },
-                            elevation: hovered ? 7 : 3,
-                          },
+                          elevation: hovered ? 7 : 3,
+                        },
                     ]}>
                     <View
-                      style={[
-                        styles.advIconWrap,
-                        { backgroundColor: hovered ? hexToRgba(primary, 0.14) : surfaceContainerLow },
-                      ]}>
+                      className="mb-4 h-[52px] w-[52px] items-center justify-center rounded-[14px]"
+                      style={{ backgroundColor: hovered ? hexToRgba(primary, 0.14) : surfaceContainerLow }}>
                       <MaterialIcons name={adv.icon} size={24} color={primary} />
                     </View>
-                    <Text style={[styles.advTitle, { color: onSurface }]}>{adv.title}</Text>
-                    <Text style={[styles.advDesc, { color: onSurfaceVariant }]}>{adv.desc}</Text>
+                    <Text className="mb-2 font-body text-xl font-bold" style={{ color: onSurface }}>
+                      {adv.title}
+                    </Text>
+                    <Text className="font-body text-base" style={{ color: onSurfaceVariant }}>
+                      {adv.desc}
+                    </Text>
                   </View>
                 )}
               </Pressable>
@@ -131,10 +125,10 @@ export default function WhyUs() {
         </View>
 
         {isWide && (
-          <View style={[styles.imageContainer, { flex: 0.95 }]}>
+          <View className="relative min-h-[600px]" style={{ flex: 0.95 }}>
             <View
               style={[
-                styles.imageFrame,
+                { flex: 1, borderRadius: 24, overflow: 'hidden', borderWidth: 1 },
                 { backgroundColor: surfaceContainerLow, borderColor: outlineVariant },
                 Platform.OS === 'web'
                   ? ({
@@ -148,12 +142,13 @@ export default function WhyUs() {
                       shadowOpacity: theme === 'light' ? 0.12 : 0.22,
                       shadowRadius: 24,
                       shadowOffset: { width: 0, height: 12 },
-                      elevation: 10,
-                    },
+                    elevation: 10,
+                  },
               ]}>
               <Image
                 source={require('../../assets/images/landing/landing_why.png')}
-                style={[styles.image, { opacity: theme === 'light' ? 0.92 : 0.62 }]}
+                className="h-full w-full"
+                style={{ opacity: theme === 'light' ? 0.92 : 0.62 }}
                 resizeMode="cover"
               />
               <LinearGradient
@@ -162,20 +157,31 @@ export default function WhyUs() {
                     ? ['rgba(253, 251, 255, 0)', 'rgba(253, 251, 255, 0.18)', 'rgba(253, 251, 255, 0.82)']
                     : ['rgba(17, 17, 24, 0)', 'rgba(17, 17, 24, 0.16)', 'rgba(17, 17, 24, 0.92)']
                 }
-                style={StyleSheet.absoluteFillObject}
+                style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
               />
             </View>
-            <View style={[styles.outlineBox, { borderColor: primary, opacity: 0.2 }]} />
+            <View
+              className="absolute bottom-[-40px] left-[-40px] z-[-1] h-64 w-64 border-[8px]"
+              style={{ borderColor: primary, opacity: 0.2 }}
+            />
             <View
               style={[
-                styles.quoteCard,
+                {
+                  position: 'absolute',
+                  left: 48,
+                  right: 48,
+                  bottom: 40,
+                  padding: 32,
+                  borderWidth: 1,
+                  borderRadius: 18,
+                },
                 {
                   backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.94)' : 'rgba(24, 24, 30, 0.92)',
                   borderColor: outlineVariant,
                 },
                 Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px)' } as any) : null,
               ]}>
-              <Text style={[styles.quoteText, { color: onSurface }]}>
+              <Text className="font-headline text-2xl italic" style={{ color: onSurface }}>
                 Ustura, kaliteyi ve kolayligi bir araya getiren tek platform.
               </Text>
             </View>
@@ -185,101 +191,3 @@ export default function WhyUs() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {},
-  content: {
-    width: '100%',
-    alignSelf: 'center',
-    alignItems: 'stretch',
-  },
-  textColumn: {},
-  label: {
-    ...Typography.labelLg,
-    letterSpacing: 3,
-    marginBottom: 16,
-  },
-  headline: {
-    ...Typography.displayLg,
-    lineHeight: 52,
-    marginBottom: 32,
-  },
-  description: {
-    ...Typography.bodyLg,
-    fontSize: 18,
-    marginBottom: 48,
-    maxWidth: 760,
-  },
-  grid: {
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  advCardPressable: {
-    width: '100%',
-  },
-  advCard: {
-    padding: 24,
-    borderRadius: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderBottomWidth: 3,
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, transform 220ms ease',
-        } as any)
-      : {}),
-  },
-  advIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  advTitle: {
-    ...Typography.titleMd,
-    fontFamily: 'Manrope-Bold',
-    marginBottom: 8,
-  },
-  advDesc: {
-    ...Typography.bodyMd,
-  },
-  imageContainer: {
-    position: 'relative',
-    minHeight: 600,
-  },
-  imageFrame: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  outlineBox: {
-    position: 'absolute',
-    bottom: -40,
-    left: -40,
-    width: 256,
-    height: 256,
-    borderWidth: 8,
-    zIndex: -1,
-  },
-  quoteCard: {
-    position: 'absolute',
-    left: 48,
-    right: 48,
-    bottom: 40,
-    padding: 32,
-    borderWidth: 1,
-    borderRadius: 18,
-  },
-  quoteText: {
-    ...Typography.headlineLg,
-    fontSize: 24,
-    fontStyle: 'italic',
-  },
-});

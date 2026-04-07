@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -41,8 +41,8 @@ export default function Card({
 
   return (
     <View
+      className="overflow-hidden rounded-xl border"
       style={[
-        styles.card,
         {
           backgroundColor,
           borderColor: accentColor ?? outlineVariant,
@@ -72,16 +72,3 @@ export default function Card({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? ({
-          transition: 'background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease',
-        } as any)
-      : {}),
-  },
-});

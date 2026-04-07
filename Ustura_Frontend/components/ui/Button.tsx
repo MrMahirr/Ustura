@@ -1,24 +1,11 @@
 import React from 'react';
-import { Text, Pressable, StyleSheet, Animated, View, ViewStyle, TextStyle, Platform } from 'react-native';
+import { Text, Pressable, Animated, View, Platform, type ViewStyle, type TextStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography } from '@/constants/typography';
 import { MaterialIcons } from '@expo/vector-icons';
 
-function hexToRgba(hex: string, alpha: number) {
-  const normalized = hex.replace('#', '');
-
-  if (normalized.length !== 6) {
-    return hex;
-  }
-
-  const value = Number.parseInt(normalized, 16);
-  const r = (value >> 16) & 255;
-  const g = (value >> 8) & 255;
-  const b = value & 255;
-
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { hexToRgba } from '@/utils/color';
+import { cn } from '@/utils/cn';
 
 export interface ButtonProps {
   title: string;
@@ -39,7 +26,7 @@ export default function Button({
   icon,
   style,
   textStyle,
-  disabled
+  disabled,
 }: ButtonProps) {
   const primaryColor = useThemeColor({}, 'primary');
   const primaryContainer = useThemeColor({}, 'primaryContainer');
@@ -48,7 +35,6 @@ export default function Button({
   const outlineVariant = useThemeColor({}, 'outlineVariant');
   const surfaceContainerHigh = useThemeColor({}, 'surfaceContainerHigh');
 
-  // Animation values
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const translateYAnim = React.useRef(new Animated.Value(0)).current;
   const isHovered = React.useRef(false);
@@ -103,23 +89,22 @@ export default function Button({
 
   const Content = ({ textColor }: { textColor: string }) => (
     <>
-      <Text style={[styles.text, { color: textColor }, textStyle]}>
+      <Text
+        className={cn('text-base uppercase tracking-[1.5px]')}
+        style={[{ color: textColor, fontFamily: 'Manrope-Bold' }, textStyle]}>
         {title}
       </Text>
-      {icon && (
-        <MaterialIcons
-          name={icon}
-          size={20}
-          color={textColor}
-          style={{ marginLeft: 8 }}
-        />
-      )}
+      {icon ? <MaterialIcons name={icon} size={20} color={textColor} style={{ marginLeft: 8 }} /> : null}
     </>
   );
 
   return (
     <Animated.View style={[{ transform: [{ translateY: translateYAnim }, { scale: scaleAnim }] }, style]}>
       <Pressable
+        className={cn(
+          'min-h-[52px] flex-row items-center justify-center overflow-hidden px-6 py-3.5',
+          isPrimaryCta || isOutlineCta ? 'rounded-md' : 'rounded-xs',
+        )}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -141,28 +126,32 @@ export default function Button({
               : hovered
                 ? hexToRgba(primaryColor, 0.09)
                 : 'rgba(255, 255, 255, 0.02)'
-            : (pressed || hovered)
+            : pressed || hovered
               ? surfaceContainerHigh
               : 'transparent';
 
           return [
-            styles.base,
-            Platform.OS === 'web' && styles.transitionBase,
             isOutline && {
               borderColor: outlineBorder,
               borderWidth: 1,
               backgroundColor: outlineBackground,
             },
             variant === 'ghost' && {
-              backgroundColor: (pressed || hovered) ? surfaceContainerHigh : 'transparent'
+              backgroundColor: pressed || hovered ? surfaceContainerHigh : 'transparent',
             },
             isPrimaryCta && [
-              styles.ctaBase,
+              {
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+              },
               Platform.OS === 'web'
                 ? ({
                     boxShadow: hovered
                       ? `0 18px 42px ${hexToRgba(primaryColor, 0.24)}, 0 4px 12px rgba(0, 0, 0, 0.18)`
                       : `0 10px 24px ${hexToRgba(primaryColor, 0.16)}, 0 2px 6px rgba(0, 0, 0, 0.12)`,
+                    transition: 'background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.22s ease, color 0.18s ease',
+                    cursor: 'pointer',
                   } as any)
                 : {
                     shadowColor: primaryColor,
@@ -173,12 +162,14 @@ export default function Button({
                   },
             ],
             isOutlineCta && [
-              styles.outlineCtaBase,
+              { borderRadius: 8 },
               Platform.OS === 'web'
                 ? ({
                     boxShadow: hovered
                       ? `0 14px 34px ${hexToRgba(primaryColor, 0.14)}, 0 3px 10px rgba(0, 0, 0, 0.14)`
                       : `0 8px 20px rgba(0, 0, 0, 0.08)`,
+                    transition: 'background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.22s ease, color 0.18s ease',
+                    cursor: 'pointer',
                   } as any)
                 : {
                     shadowColor: primaryColor,
@@ -188,50 +179,59 @@ export default function Button({
                     elevation: hovered ? 8 : 3,
                   },
             ],
-            disabled && { opacity: 0.5 }
+            !isPrimaryCta &&
+              !isOutlineCta &&
+              Platform.OS === 'web' && {
+                transition: 'background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.22s ease, color 0.18s ease',
+              },
+            disabled && { opacity: 0.5 },
           ];
-        }}
-      >
+        }}>
         {({ hovered, pressed }) => {
-          const textColor = isPrimary
-            ? onPrimaryColor
-            : isOutlineCta && hovered
-              ? primaryColor
-              : onSurface;
+          const textColor = isPrimary ? onPrimaryColor : isOutlineCta && hovered ? primaryColor : onSurface;
 
           return (
             <>
-              {isPrimary && (
+              {isPrimary ? (
                 <LinearGradient
                   colors={isPrimaryCta ? [primaryColor, '#B48D28'] : [primaryColor, primaryContainer]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={[
-                    StyleSheet.absoluteFillObject,
-                    { borderRadius: isPrimaryCta ? 8 : 2 },
-                  ]}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0,
+                    borderRadius: isPrimaryCta ? 8 : 2,
+                  }}
                 />
-              )}
-              {isPrimaryCta && (
+              ) : null}
+
+              {isPrimaryCta ? (
                 <>
                   <LinearGradient
-                    colors={[
-                      hovered ? 'rgba(255, 255, 255, 0.24)' : 'rgba(255, 255, 255, 0.14)',
-                      'rgba(255, 255, 255, 0)',
-                    ]}
+                    colors={[hovered ? 'rgba(255, 255, 255, 0.24)' : 'rgba(255, 255, 255, 0.14)', 'rgba(255, 255, 255, 0)']}
                     start={{ x: 0.1, y: 0 }}
                     end={{ x: 0.9, y: 0.85 }}
-                    style={[styles.primarySheen, pressed && styles.primarySheenPressed]}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                      borderRadius: 8,
+                      opacity: pressed ? 0.7 : 1,
+                    }}
                   />
                   <View
                     pointerEvents="none"
-                    style={[
-                      styles.primaryRing,
-                      { borderColor: hovered ? hexToRgba('#FFFFFF', 0.22) : hexToRgba('#FFFFFF', 0.14) },
-                    ]}
+                    className="absolute inset-0 rounded-md border"
+                    style={{ borderColor: hovered ? hexToRgba('#FFFFFF', 0.22) : hexToRgba('#FFFFFF', 0.14) }}
                   />
                 </>
-              )}
+              ) : null}
+
               <Content textColor={textColor} />
             </>
           );
@@ -240,45 +240,3 @@ export default function Button({
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 2,
-    minHeight: 52,
-    overflow: 'hidden',
-  },
-  transitionBase: {
-    transition: 'background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.22s ease, color 0.18s ease',
-  } as any,
-  ctaBase: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  outlineCtaBase: {
-    borderRadius: 8,
-  },
-  text: {
-    ...Typography.bodyLg,
-    fontFamily: 'Manrope-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
-  primarySheen: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 8,
-  },
-  primarySheenPressed: {
-    opacity: 0.7,
-  },
-  primaryRing: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-});

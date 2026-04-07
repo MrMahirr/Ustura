@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Platform } from 'react-native';
+import { ScrollView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import Navbar from '@/components/landing/Navbar';
@@ -45,8 +45,12 @@ export default function LandingPage() {
       <Navbar onRegisterPress={scrollToRegistration} />
       <ScrollView
         ref={scrollViewRef}
-        style={[styles.container, { backgroundColor: surface }]}
-        contentContainerStyle={styles.content}
+        className="flex-1"
+        style={[
+          { backgroundColor: surface },
+          Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : null,
+        ]}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}>
         <HeroSection onRegisterPress={scrollToRegistration} />
         <HowItWorks />
@@ -57,13 +61,3 @@ export default function LandingPage() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    ...(Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : {}),
-  },
-  content: {
-    flexGrow: 1,
-  },
-});

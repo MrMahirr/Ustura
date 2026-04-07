@@ -11,17 +11,17 @@ export interface SuperAdminAsideItem {
   icon: AsideIconName;
   href?: Href;
   disabled?: boolean;
+  matchSubroutes?: boolean;
 }
 
-/** HTML mock ile aynı sıra ve etiketler; href yalnızca mevcut rotalar için */
 export const superAdminAsideItems: SuperAdminAsideItem[] = [
   { label: 'Dashboard', icon: 'dashboard', href: panelRoutes.home },
-  { label: 'Salonlar', icon: 'storefront', href: panelRoutes.salonlar },
-  { label: 'Kullanıcılar', icon: 'group', disabled: true },
+  { label: 'Salonlar', icon: 'storefront', href: panelRoutes.salonlar, matchSubroutes: true },
+  { label: 'Kullanicilar', icon: 'group', href: panelRoutes.kullanicilar, matchSubroutes: true },
   { label: 'Randevular', icon: 'event-available', href: panelRoutes.randevular },
-  { label: 'Ödemeler', icon: 'payments', disabled: true },
+  { label: 'Odemeler', icon: 'payments', disabled: true },
   { label: 'Paketler', icon: 'inventory-2', disabled: true },
   { label: 'Raporlar', icon: 'analytics', disabled: true },
   { label: 'Bildirimler', icon: 'notifications', disabled: true },
-  { label: 'Sistem Ayarları', icon: 'settings', href: panelRoutes.ayarlar },
+  { label: 'Sistem Ayarlari', icon: 'settings', href: panelRoutes.ayarlar },
 ];
