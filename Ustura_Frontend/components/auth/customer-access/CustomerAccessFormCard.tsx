@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import CustomerAccessField from '@/components/auth/customer-access/CustomerAccessField';
 import CustomerAccessGoogleButton from '@/components/auth/customer-access/CustomerAccessGoogleButton';
+import CustomerAccessMockCredentials from '@/components/auth/customer-access/CustomerAccessMockCredentials';
 import CustomerAccessNoticeStrip from '@/components/auth/customer-access/CustomerAccessNoticeStrip';
 import {
   CUSTOMER_ACCESS_COPY,
@@ -158,6 +159,8 @@ export default function CustomerAccessFormCard({
           interactionPreset="cta"
           style={{ width: '100%' }}
         />
+
+        <CustomerAccessMockCredentials />
 
         {showNotice ? <CustomerAccessNoticeStrip notice={notice} /> : null}
 

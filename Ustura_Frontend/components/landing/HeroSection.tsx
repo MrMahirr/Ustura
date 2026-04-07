@@ -219,7 +219,12 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
               <View className="mb-4 flex-row items-center">
                 <Image
                   source={require('../../assets/images/landing/landing_avatar.png')}
-                  className="mr-4 h-12 w-12 rounded-full"
+                  style={{
+                    width: width < 768 ? 36 : 40,
+                    height: width < 768 ? 36 : 40,
+                    marginRight: width < 768 ? 12 : 14,
+                    borderRadius: 999,
+                  }}
                 />
                 <View>
                   <Text className="font-label text-xs uppercase tracking-[1.2px]" style={{ color: primary }}>

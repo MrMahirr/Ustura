@@ -15,9 +15,10 @@ export interface SalonCardProps {
   reviewCount: number;
   imageUrl: string;
   barbers: string[];
+  onBookPress?: () => void;
 }
 
-export default function SalonCard({ name, location, rating, reviewCount, imageUrl, barbers }: SalonCardProps) {
+export default function SalonCard({ name, location, rating, reviewCount, imageUrl, barbers, onBookPress }: SalonCardProps) {
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surfaceContainerHighest = useThemeColor({}, 'surfaceContainerHighest');
   const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
@@ -134,6 +135,7 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
           <View className="mt-auto">
             <Button
               title="Randevu Al"
+              onPress={onBookPress}
               style={{ width: '100%', paddingVertical: 12, minHeight: 44 }}
               textStyle={{ fontSize: 12, letterSpacing: 1.5 }}
             />

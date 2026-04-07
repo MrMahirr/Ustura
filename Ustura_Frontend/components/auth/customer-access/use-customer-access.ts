@@ -45,7 +45,11 @@ function clearFieldError(errors: FieldErrors, field: keyof FieldErrors): FieldEr
   return { ...errors, [field]: undefined };
 }
 
-export function useCustomerAccess() {
+interface UseCustomerAccessOptions {
+  onSubmitSuccess?: (payload: { identifier: string; password: string }) => boolean;
+}
+
+export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
   const [identifier, setIdentifier] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(true);
@@ -89,9 +93,11 @@ export function useCustomerAccess() {
   }, []);
 
   const handleSubmit = React.useCallback(() => {
+    const normalizedIdentifier = identifier.trim();
+    const normalizedPassword = password.trim();
     const nextErrors: FieldErrors = {
-      identifier: validateIdentifier(identifier),
-      password: validatePassword(password),
+      identifier: validateIdentifier(normalizedIdentifier),
+      password: validatePassword(normalizedPassword),
     };
 
     setFieldErrors(nextErrors);
@@ -101,8 +107,22 @@ export function useCustomerAccess() {
       return;
     }
 
+    const didLogin = options.onSubmitSuccess?.({
+      identifier: normalizedIdentifier,
+      password: normalizedPassword,
+    });
+
+    if (didLogin === false) {
+      setFieldErrors({
+        identifier: undefined,
+        password: 'Gecici test hesabi sifresini kullan.',
+      });
+      setState('invalidCredentials');
+      return;
+    }
+
     setState('testReady');
-  }, [identifier, password]);
+  }, [identifier, options, password]);
 
   const notice = React.useMemo(() => getCustomerAccessNotice(state), [state]);
 

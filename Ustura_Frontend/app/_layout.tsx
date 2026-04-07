@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { vars } from 'nativewind';
 
 import { getNativeWindThemeVariables } from '@/constants/nativewind-theme';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeContext';
 
 function RootNavigator() {
@@ -24,7 +25,9 @@ export default function RootLayout() {
   // TODO: SplashScreen gizleme
   return (
     <ThemeProvider>
-      <RootNavigator />
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
