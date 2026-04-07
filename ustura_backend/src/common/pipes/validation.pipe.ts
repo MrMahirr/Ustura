@@ -1,9 +1,9 @@
-import { Injectable, PipeTransform, ArgumentMetadata } from '@nestjs/common';
+import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
 
 @Injectable()
-export class CustomValidationPipe implements PipeTransform {
-  transform(value: any, metadata: ArgumentMetadata) {
-    // TODO: class-validator ile DTO validasyon mantığı eklenecek
+export class CustomValidationPipe implements PipeTransform<unknown, unknown> {
+  transform(value: unknown, metadata: ArgumentMetadata): unknown {
+    void metadata;
     return value;
   }
 }
