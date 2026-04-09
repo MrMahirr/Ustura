@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import type { JwtPayload } from '../../src/common/interfaces/jwt-payload.interface';
+import type { JwtPayload } from '../../src/shared/auth/jwt-payload.interface';
 
 export const TEST_JWT_SECRET = 'test-jwt-secret';
 

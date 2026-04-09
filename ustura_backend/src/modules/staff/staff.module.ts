@@ -11,6 +11,6 @@ import { StaffRepository } from './repositories/staff.repository';
   imports: [DatabaseModule, SalonModule, UserModule],
   controllers: [StaffController],
   providers: [StaffService, StaffRepository, StaffPolicy],
-  exports: [StaffService, StaffRepository],
+  exports: [StaffService],
 })
 export class StaffModule {}

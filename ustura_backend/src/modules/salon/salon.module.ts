@@ -9,6 +9,6 @@ import { SalonRepository } from './repositories/salon.repository';
   imports: [DatabaseModule],
   controllers: [SalonController],
   providers: [SalonService, SalonRepository, SalonPolicy],
-  exports: [SalonService, SalonRepository],
+  exports: [SalonService],
 })
 export class SalonModule {}

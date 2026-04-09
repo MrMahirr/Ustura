@@ -1,9 +1,9 @@
-import { ERROR_CODES } from '../../../common/errors/error-codes';
+import { ERROR_CODES } from '../../../shared/errors/error-codes';
 import {
   badRequestError,
   conflictError,
   notFoundError,
-} from '../../../common/errors/http-exception.factory';
+} from '../../../shared/errors/http-exception.factory';
 
 export function invalidSlotStartError() {
   return badRequestError(

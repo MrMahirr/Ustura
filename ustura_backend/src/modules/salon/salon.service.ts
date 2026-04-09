@@ -1,8 +1,6 @@
-import {
-  Injectable,
-} from '@nestjs/common';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
-import { SLOT_DURATION_MINUTES } from '../../common/constants';
+import { Injectable } from '@nestjs/common';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { AppConfigService } from '../../config/config.service';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
@@ -36,6 +34,7 @@ const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 @Injectable()
 export class SalonService {
   constructor(
+    private readonly configService: AppConfigService,
     private readonly salonRepository: SalonRepository,
     private readonly salonPolicy: SalonPolicy,
   ) {}
@@ -57,6 +56,16 @@ export class SalonService {
 
     if (!salon?.isActive) {
       throw salonNotFoundError();
+    }
+
+    return salon;
+  }
+
+  async findActiveById(id: string): Promise<Salon | null> {
+    const salon = await this.salonRepository.findById(id);
+
+    if (!salon?.isActive) {
+      return null;
     }
 
     return salon;
@@ -240,10 +249,10 @@ export class SalonService {
 
     if (
       this.toMinuteValue(close) - this.toMinuteValue(open) <
-      SLOT_DURATION_MINUTES
+      this.configService.reservation.slotDurationMinutes
     ) {
       throw salonInvalidWorkingHoursError(
-        `working_hours.${day} must span at least ${SLOT_DURATION_MINUTES} minutes.`,
+        `working_hours.${day} must span at least ${this.configService.reservation.slotDurationMinutes} minutes.`,
       );
     }
 

@@ -1,14 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {
-  BUSINESS_UTC_OFFSET,
-  SLOT_DURATION_MINUTES,
-  SLOT_LOCK_TTL_SECONDS,
-  SLOT_SELECTION_TTL_SECONDS,
-} from '../../../common/constants';
-import { Role } from '../../../common/enums/role.enum';
+import { Role } from '../../../shared/auth/role.enum';
+import { AppConfigService } from '../../../config/config.service';
 import { RedisService } from '../../../redis/redis.service';
-import { SalonRepository } from '../../salon/repositories/salon.repository';
-import { StaffRepository } from '../../staff/repositories/staff.repository';
+import { SalonService } from '../../salon/salon.service';
+import { StaffService } from '../../staff/staff.service';
 import { ReservationRepository } from '../repositories/reservation.repository';
 import { GetSlotsQueryDto } from './dto/get-slots-query.dto';
 import {
@@ -35,8 +30,9 @@ interface ReservationLock {
 @Injectable()
 export class SlotService {
   constructor(
-    private readonly salonRepository: SalonRepository,
-    private readonly staffRepository: StaffRepository,
+    private readonly configService: AppConfigService,
+    private readonly salonService: SalonService,
+    private readonly staffService: StaffService,
     private readonly reservationRepository: ReservationRepository,
     private readonly redisService: RedisService,
   ) {}
@@ -45,9 +41,9 @@ export class SlotService {
     salonId: string,
     query: GetSlotsQueryDto,
   ): Promise<AvailableSlot[]> {
-    const salon = await this.salonRepository.findById(salonId);
+    const salon = await this.salonService.findActiveById(salonId);
 
-    if (!salon?.isActive) {
+    if (!salon) {
       throw slotSalonNotFoundError();
     }
 
@@ -61,7 +57,7 @@ export class SlotService {
 
     if (!query.staff_id) {
       const activeBarbers =
-        await this.staffRepository.findActiveBarbersBySalonId(salonId);
+        await this.staffService.findActiveBarbersBySalonId(salonId);
 
       if (activeBarbers.length === 0) {
         return generatedSlots.map((slot) => ({
@@ -103,7 +99,7 @@ export class SlotService {
       });
     }
 
-    const staff = await this.staffRepository.findById(query.staff_id);
+    const staff = await this.staffService.findById(query.staff_id);
 
     if (
       !staff ||
@@ -189,7 +185,7 @@ export class SlotService {
       key,
       token,
       'EX',
-      SLOT_LOCK_TTL_SECONDS,
+      this.configService.reservation.slotLockTtlSeconds,
       'NX',
     );
 
@@ -242,7 +238,7 @@ export class SlotService {
       key,
       JSON.stringify(this.createSelection(slotStart, holderId)),
       'EX',
-      SLOT_SELECTION_TTL_SECONDS,
+      this.configService.reservation.slotSelectionTtlSeconds,
     );
 
     return this.getSelections(scope);
@@ -321,7 +317,7 @@ export class SlotService {
       holderId,
       slotStart,
       expiresAt: new Date(
-        Date.now() + SLOT_SELECTION_TTL_SECONDS * 1000,
+        Date.now() + this.configService.reservation.slotSelectionTtlSeconds * 1000,
       ).toISOString(),
     };
   }
@@ -367,9 +363,14 @@ export class SlotService {
     let cursor = this.parseBusinessDateTime(date, hours.open);
     const closeTime = this.parseBusinessDateTime(date, hours.close);
 
-    while (cursor.getTime() + SLOT_DURATION_MINUTES * 60_000 <= closeTime.getTime()) {
+    while (
+      cursor.getTime() +
+        this.configService.reservation.slotDurationMinutes * 60_000 <=
+      closeTime.getTime()
+    ) {
       const nextCursor = new Date(
-        cursor.getTime() + SLOT_DURATION_MINUTES * 60_000,
+        cursor.getTime() +
+          this.configService.reservation.slotDurationMinutes * 60_000,
       );
 
       slots.push({
@@ -384,7 +385,9 @@ export class SlotService {
   }
 
   private parseBusinessDateTime(date: string, time: string): Date {
-    return new Date(`${date}T${time}:00${BUSINESS_UTC_OFFSET}`);
+    return new Date(
+      `${date}T${time}:00${this.configService.reservation.businessUtcOffset}`,
+    );
   }
 
   private parseIsoDate(value: string): Date {
@@ -398,7 +401,9 @@ export class SlotService {
   }
 
   private buildDateRange(date: string): { rangeStart: Date; rangeEnd: Date } {
-    const rangeStart = new Date(`${date}T00:00:00${BUSINESS_UTC_OFFSET}`);
+    const rangeStart = new Date(
+      `${date}T00:00:00${this.configService.reservation.businessUtcOffset}`,
+    );
     const rangeEnd = new Date(rangeStart.getTime() + 24 * 60 * 60 * 1000);
 
     return { rangeStart, rangeEnd };
@@ -406,16 +411,20 @@ export class SlotService {
 
   private formatBusinessDate(date: Date): string {
     return new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'Europe/Istanbul',
+      timeZone: this.configService.reservation.businessTimeZone,
     }).format(date);
   }
 
   private getDayKey(date: string): string {
     return new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
-      timeZone: 'Europe/Istanbul',
+      timeZone: this.configService.reservation.businessTimeZone,
     })
-      .format(new Date(`${date}T00:00:00${BUSINESS_UTC_OFFSET}`))
+      .format(
+        new Date(
+          `${date}T00:00:00${this.configService.reservation.businessUtcOffset}`,
+        ),
+      )
       .toLowerCase();
   }
 

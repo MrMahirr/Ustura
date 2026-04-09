@@ -1,14 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { Role } from '../../../common/enums/role.enum';
-import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
+import { Role } from '../../../shared/auth/role.enum';
+import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
 import type { StaffMember } from '../../staff/interfaces/staff.types';
+import {
+  ReservationStatus,
+  type OperationalReservationStatus,
+} from '../enums/reservation-status.enum';
 import {
   barberScheduleOnlyError,
   cancellationForbiddenError,
+  invalidReservationStatusTransitionError,
   onlyCustomersCanViewOwnReservationsError,
   ownerSalonOnlyError,
   receptionistSalonOnlyError,
   reservationListAccessDeniedError,
+  reservationStatusUpdateForbiddenError,
 } from '../errors/reservation.errors';
 import type { ReservationRecord } from '../interfaces/reservation.types';
 
@@ -34,8 +40,28 @@ interface ReservationCancellationPolicyContext {
   membership: StaffMember | null;
 }
 
+interface ReservationStatusUpdatePolicyContext {
+  currentUser: JwtPayload;
+  reservation: ReservationRecord;
+  salonOwnerId: string;
+  membership: StaffMember | null;
+}
+
 @Injectable()
 export class ReservationPolicy {
+  private readonly allowedStatusTransitions: Readonly<
+    Record<ReservationStatus, readonly OperationalReservationStatus[]>
+  > = {
+    [ReservationStatus.PENDING]: [ReservationStatus.CONFIRMED],
+    [ReservationStatus.CONFIRMED]: [
+      ReservationStatus.COMPLETED,
+      ReservationStatus.NO_SHOW,
+    ],
+    [ReservationStatus.CANCELLED]: [],
+    [ReservationStatus.COMPLETED]: [],
+    [ReservationStatus.NO_SHOW]: [],
+  };
+
   assertCanCreate(context: ReservationCreatePolicyContext): void {
     const { currentUser, salonOwnerId, membership, targetStaffId } = context;
 
@@ -137,5 +163,49 @@ export class ReservationPolicy {
     }
 
     throw cancellationForbiddenError();
+  }
+
+  assertCanUpdateStatus(
+    context: ReservationStatusUpdatePolicyContext,
+  ): void {
+    const { currentUser, reservation, salonOwnerId, membership } = context;
+
+    if (currentUser.role === Role.OWNER && salonOwnerId === currentUser.sub) {
+      return;
+    }
+
+    if (!membership) {
+      throw reservationStatusUpdateForbiddenError();
+    }
+
+    if (
+      currentUser.role === Role.BARBER &&
+      membership.id === reservation.staffId &&
+      membership.role === Role.BARBER
+    ) {
+      return;
+    }
+
+    if (
+      currentUser.role === Role.RECEPTIONIST &&
+      membership.role === Role.RECEPTIONIST
+    ) {
+      return;
+    }
+
+    throw reservationStatusUpdateForbiddenError();
+  }
+
+  assertCanTransitionStatus(
+    currentStatus: ReservationStatus,
+    nextStatus: OperationalReservationStatus,
+  ): void {
+    const allowedStatuses = this.allowedStatusTransitions[currentStatus];
+
+    if (allowedStatuses.includes(nextStatus)) {
+      return;
+    }
+
+    throw invalidReservationStatusTransitionError(currentStatus, nextStatus);
   }
 }

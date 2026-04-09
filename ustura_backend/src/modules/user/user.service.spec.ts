@@ -1,6 +1,6 @@
 import { ConflictException, HttpException, NotFoundException } from '@nestjs/common';
-import { ERROR_CODES } from '../../common/errors/error-codes';
-import { Role } from '../../common/enums/role.enum';
+import { ERROR_CODES } from '../../shared/errors/error-codes';
+import { Role } from '../../shared/auth/role.enum';
 import { CreateEmployeeInput, User } from './interfaces/user.types';
 import { UserAccountPolicy } from './policies/user-account.policy';
 import { UserRepository } from './repositories/user.repository';

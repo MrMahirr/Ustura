@@ -1,4 +1,4 @@
-import { Role } from '../enums/role.enum';
+import { Role } from './role.enum';
 
 export type JwtTokenType = 'access' | 'refresh';
 

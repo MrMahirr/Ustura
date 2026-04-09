@@ -54,10 +54,12 @@ export const ERROR_CODES = {
     ONLY_CUSTOMERS_CAN_VIEW_OWN: 'reservation.only_customers_can_view_own',
     OWNER_SALON_ONLY: 'reservation.owner_salon_only',
     RECEPTIONIST_SALON_ONLY: 'reservation.receptionist_salon_only',
+    INVALID_STATUS_TRANSITION: 'reservation.invalid_status_transition',
     RESERVATION_NOT_FOUND: 'reservation.not_found',
     SALON_NOT_FOUND: 'reservation.salon_not_found',
     SLOT_ALREADY_RESERVED: 'reservation.slot_already_reserved',
     SLOT_BEING_RESERVED: 'reservation.slot_being_reserved',
+    STATUS_UPDATE_FORBIDDEN: 'reservation.status_update_forbidden',
   },
   SLOT: {
     INVALID_SLOT_START: 'slot.invalid_slot_start',

@@ -3,11 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
-import { Role } from '../src/common/enums/role.enum';
-import type { JwtPayload } from '../src/common/interfaces/jwt-payload.interface';
+import { Role } from '../src/shared/auth/role.enum';
+import type { JwtPayload } from '../src/shared/auth/jwt-payload.interface';
 import { RolesGuard } from '../src/common/guards/roles.guard';
 import { ReservationController } from '../src/modules/reservation/reservation.controller';
 import { cancellationForbiddenError } from '../src/modules/reservation/errors/reservation.errors';
+import { ReservationStatus } from '../src/modules/reservation/enums/reservation-status.enum';
 import { ReservationService } from '../src/modules/reservation/reservation.service';
 import { createContractTestApp } from './helpers/create-contract-test-app';
 import {
@@ -22,6 +23,7 @@ describe('ReservationController (e2e)', () => {
     findByCustomerId: jest.Mock;
     findBySalonId: jest.Mock;
     cancel: jest.Mock;
+    updateStatus: jest.Mock;
   };
 
   const reservationResponse = {
@@ -45,6 +47,10 @@ describe('ReservationController (e2e)', () => {
       cancel: jest.fn().mockResolvedValue({
         ...reservationResponse,
         status: 'cancelled',
+      }),
+      updateStatus: jest.fn().mockResolvedValue({
+        ...reservationResponse,
+        status: 'completed',
       }),
     };
 
@@ -164,6 +170,60 @@ describe('ReservationController (e2e)', () => {
         });
         expect(typeof body.timestamp).toBe('string');
       });
+  });
+
+  it('PATCH /api/reservations/:reservationId/status validates operational status updates', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/reservations/55555555-5555-5555-5555-555555555555/status')
+      .set(
+        'Authorization',
+        `Bearer ${createAccessToken({
+          role: Role.OWNER,
+        })}`,
+      )
+      .send({
+        status: 'cancelled',
+      })
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body.statusCode).toBe(400);
+        expect(body.path).toBe(
+          '/api/reservations/55555555-5555-5555-5555-555555555555/status',
+        );
+        expect(body.message).toContain(
+          'status must be one of the following values: confirmed, completed, no_show',
+        );
+      });
+
+    expect(reservationService.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('PATCH /api/reservations/:reservationId/status forwards valid updates to the service', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/reservations/55555555-5555-5555-5555-555555555555/status')
+      .set(
+        'Authorization',
+        `Bearer ${createAccessToken({
+          sub: 'owner-1',
+          role: Role.OWNER,
+        })}`,
+      )
+      .send({
+        status: ReservationStatus.COMPLETED,
+      })
+      .expect(200);
+
+    expect(reservationService.updateStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: 'owner-1',
+        role: Role.OWNER,
+        tokenType: 'access',
+      }),
+      '55555555-5555-5555-5555-555555555555',
+      {
+        status: ReservationStatus.COMPLETED,
+      },
+    );
   });
 
   function createAccessToken(

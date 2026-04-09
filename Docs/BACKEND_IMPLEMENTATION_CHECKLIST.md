@@ -16,33 +16,33 @@ Durum tarihi: 2026-04-09
 
 ## 1. Reservation Veri Modelini Düzelt
 
-- [ ] `reservations` tablosundaki `UNIQUE (staff_id, slot_start)` kısıtını kaldır.
-- [ ] Sadece aktif rezervasyonları koruyan partial unique index ekle.
-- [ ] Reservation status alanını `pending`, `confirmed`, `cancelled`, `completed`, `no_show` olarak genişlet.
-- [ ] `cancelled_at`, `cancelled_by_user_id`, `status_changed_at`, `status_changed_by_user_id` alanlarını ekle.
-- [ ] `slot_end` değerinin türetilmiş mantıkla tutarlı kaldığını migration sonrası doğrula.
-- [ ] Migration dosyasını yaz ve mevcut migration zincirine ekle.
-- [ ] Health/readiness kontrollerinde yeni schema beklentilerini doğrula.
+- [x] `reservations` tablosundaki `UNIQUE (staff_id, slot_start)` kısıtını kaldır.
+- [x] Sadece aktif rezervasyonları koruyan partial unique index ekle.
+- [x] Reservation status alanını `pending`, `confirmed`, `cancelled`, `completed`, `no_show` olarak genişlet.
+- [x] `cancelled_at`, `cancelled_by_user_id`, `status_changed_at`, `status_changed_by_user_id` alanlarını ekle.
+- [x] `slot_end` değerinin türetilmiş mantıkla tutarlı kaldığını migration sonrası doğrula.
+- [x] Migration dosyasını yaz ve mevcut migration zincirine ekle.
+- [x] Health/readiness kontrollerinde yeni schema beklentilerini doğrula.
 
 ## 2. Reservation Domain Akışını Tamamla
 
-- [ ] `ReservationStatus` enum'unu reservation modülü içine taşı.
-- [ ] `UpdateReservationStatusDto` için `class-validator` kurallarını ekle.
-- [ ] `PATCH /reservations/:id/status` endpoint'ini controller seviyesinde ekle.
-- [ ] Reservation service içinde geçerli status transition kurallarını tanımla.
-- [ ] Owner, barber ve receptionist için status değiştirme yetki kurallarını ayır.
-- [ ] Customer iptal akışı ile personel tarafı status güncelleme akışını ayrı kurallarla yönet.
-- [ ] Reservation response DTO'larını yeni status alanlarıyla hizala.
-- [ ] Reservation policy testlerini yeni lifecycle'a göre genişlet.
+- [x] `ReservationStatus` enum'unu reservation modülü içine taşı.
+- [x] `UpdateReservationStatusDto` için `class-validator` kurallarını ekle.
+- [x] `PATCH /reservations/:id/status` endpoint'ini controller seviyesinde ekle.
+- [x] Reservation service içinde geçerli status transition kurallarını tanımla.
+- [x] Owner, barber ve receptionist için status değiştirme yetki kurallarını ayır.
+- [x] Customer iptal akışı ile personel tarafı status güncelleme akışını ayrı kurallarla yönet.
+- [x] Reservation response DTO'larını yeni status alanlarıyla hizala.
+- [x] Reservation policy testlerini yeni lifecycle'a göre genişlet.
 
 ## 3. `common` ve Modül Sınırlarını Temizle
 
-- [ ] Reservation'a ait enum ve sabitleri `common/` altından çıkar.
-- [ ] Slot süresi, lock TTL ve business-time sabitlerini reservation/config tarafına taşı.
-- [ ] JWT süreleri ve auth sabitlerini auth/config tarafına taşı.
-- [ ] Modüllerin repository export kullanımını gözden geçir.
-- [ ] Başka modüllerin repository'lerine doğrudan bağımlı olan yerleri servis/contract seviyesine çek.
-- [ ] Ortak katmanda sadece decorator, guard, interceptor, filter ve pipe bırak.
+- [x] Reservation'a ait enum ve sabitleri `common/` altından çıkar.
+- [x] Slot süresi, lock TTL ve business-time sabitlerini reservation/config tarafına taşı.
+- [x] JWT süreleri ve auth sabitlerini auth/config tarafına taşı.
+- [x] Modüllerin repository export kullanımını gözden geçir.
+- [x] Başka modüllerin repository'lerine doğrudan bağımlı olan yerleri servis/contract seviyesine çek.
+- [x] Ortak katmanda sadece decorator, guard, interceptor, filter ve pipe bırak.
 
 ## 4. Platform Admin Modülünü Ekle
 

@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -18,12 +19,13 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { Role } from '../../common/enums/role.enum';
+import { Role } from '../../shared/auth/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ReservationResponseDto } from './dto/reservation-response.dto';
+import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
 import { ReservationService } from './reservation.service';
 
 @ApiTags('reservations')
@@ -64,6 +66,26 @@ export class ReservationController {
     @Param('salonId', new ParseUUIDPipe()) salonId: string,
   ) {
     return this.reservationService.findBySalonId(currentUser, salonId);
+  }
+
+  @Patch(':reservationId/status')
+  @Roles(Role.OWNER, Role.RECEPTIONIST, Role.BARBER)
+  @ApiOperation({
+    summary:
+      'Update a reservation operational status within the caller permission scope',
+  })
+  @ApiParam({ name: 'reservationId', format: 'uuid' })
+  @ApiOkResponse({ type: ReservationResponseDto })
+  async updateStatus(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('reservationId', new ParseUUIDPipe()) reservationId: string,
+    @Body() updateReservationStatusDto: UpdateReservationStatusDto,
+  ) {
+    return this.reservationService.updateStatus(
+      currentUser,
+      reservationId,
+      updateReservationStatusDto,
+    );
   }
 
   @Delete(':reservationId')

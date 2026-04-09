@@ -9,6 +9,7 @@ import {
   GoogleAuthConfig,
   JwtConfig,
   NodeEnvironment,
+  ReservationConfig,
   RedisConfig,
 } from './config.types';
 
@@ -17,6 +18,7 @@ export class AppConfigService {
   readonly app: AppConfig;
   readonly database: DatabaseConfig;
   readonly jwt: JwtConfig;
+  readonly reservation: ReservationConfig;
   readonly firebase: FirebaseConfig;
   readonly google: GoogleAuthConfig;
   readonly redis: RedisConfig;
@@ -47,6 +49,14 @@ export class AppConfigService {
       secret: this.getValue<string>('JWT_SECRET'),
       accessExpiresIn: this.getValue<string>('JWT_ACCESS_EXPIRATION'),
       refreshExpiresIn: this.getValue<string>('JWT_REFRESH_EXPIRATION'),
+    });
+
+    this.reservation = Object.freeze({
+      slotDurationMinutes: 30,
+      slotSelectionTtlSeconds: 45,
+      slotLockTtlSeconds: 5,
+      businessUtcOffset: '+03:00',
+      businessTimeZone: 'Europe/Istanbul',
     });
 
     this.firebase = Object.freeze({

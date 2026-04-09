@@ -12,6 +12,7 @@ export interface ReadinessReport {
     database: HealthCheckResult;
     schemaMigrations: HealthCheckResult;
     usersTableSchema: HealthCheckResult;
+    reservationsTableSchema: HealthCheckResult;
     redis: HealthCheckResult;
   };
 }

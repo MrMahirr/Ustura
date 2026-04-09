@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { ReservationStatus } from '../../common/enums/reservation-status.enum';
-import { Role } from '../../common/enums/role.enum';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import { Role } from '../../shared/auth/role.enum';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DatabaseService } from '../../database/database.service';
+import { SalonService } from '../salon/salon.service';
+import { StaffService } from '../staff/staff.service';
 import { UserService } from '../user/user.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
+import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
+import { ReservationStatus } from './enums/reservation-status.enum';
 import { ReservationRecord } from './interfaces/reservation.types';
 import { ReservationPolicy } from './policies/reservation.policy';
 import { ReservationRepository } from './repositories/reservation.repository';
 import { SlotService } from './slot/slot.service';
-import { SalonRepository } from '../salon/repositories/salon.repository';
-import { StaffRepository } from '../staff/repositories/staff.repository';
 import {
   barberNotFoundError,
   customerDetailsRequiredError,
@@ -28,8 +29,8 @@ export class ReservationService {
     private readonly reservationRepository: ReservationRepository,
     private readonly userService: UserService,
     private readonly slotService: SlotService,
-    private readonly salonRepository: SalonRepository,
-    private readonly staffRepository: StaffRepository,
+    private readonly salonService: SalonService,
+    private readonly staffService: StaffService,
     private readonly databaseService: DatabaseService,
     private readonly reservationPolicy: ReservationPolicy,
   ) {}
@@ -176,6 +177,7 @@ export class ReservationService {
 
     const cancelledReservation = await this.reservationRepository.cancel(
       reservationId,
+      currentUser.sub,
     );
 
     if (!cancelledReservation) {
@@ -183,6 +185,52 @@ export class ReservationService {
     }
 
     return cancelledReservation;
+  }
+
+  async updateStatus(
+    currentUser: JwtPayload,
+    reservationId: string,
+    updateReservationStatusDto: UpdateReservationStatusDto,
+  ): Promise<ReservationRecord> {
+    const reservation = await this.reservationRepository.findById(reservationId);
+
+    if (!reservation) {
+      throw reservationNotFoundError();
+    }
+
+    const salon = await this.requireSalon(reservation.salonId);
+    const membership = await this.findActiveMembershipForAuthorization(
+      currentUser,
+      reservation.salonId,
+    );
+
+    this.reservationPolicy.assertCanUpdateStatus({
+      currentUser,
+      reservation,
+      salonOwnerId: salon.ownerId,
+      membership,
+    });
+
+    if (reservation.status === updateReservationStatusDto.status) {
+      return reservation;
+    }
+
+    this.reservationPolicy.assertCanTransitionStatus(
+      reservation.status,
+      updateReservationStatusDto.status,
+    );
+
+    const updatedReservation = await this.reservationRepository.updateStatus(
+      reservationId,
+      updateReservationStatusDto.status,
+      currentUser.sub,
+    );
+
+    if (!updatedReservation) {
+      throw reservationNotFoundError();
+    }
+
+    return updatedReservation;
   }
 
   private async resolveCustomerId(
@@ -223,9 +271,9 @@ export class ReservationService {
   }
 
   private async requireSalon(salonId: string) {
-    const salon = await this.salonRepository.findById(salonId);
+    const salon = await this.salonService.findActiveById(salonId);
 
-    if (!salon?.isActive) {
+    if (!salon) {
       throw reservationSalonNotFoundError();
     }
 
@@ -233,7 +281,7 @@ export class ReservationService {
   }
 
   private async requireBarber(staffId: string, salonId: string) {
-    const staff = await this.staffRepository.findById(staffId);
+    const staff = await this.staffService.findById(staffId);
 
     if (
       !staff ||
@@ -258,7 +306,7 @@ export class ReservationService {
       return null;
     }
 
-    return this.staffRepository.findActiveByUserIdAndSalon(
+    return this.staffService.findActiveByUserIdAndSalon(
       currentUser.sub,
       salonId,
     );

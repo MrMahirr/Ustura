@@ -1,4 +1,4 @@
-import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
+import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
 import type { UserProfile } from '../../user/interfaces/user.types';
 
 export interface AuthTokens {

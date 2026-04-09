@@ -61,6 +61,7 @@ describe('HealthService', () => {
         rows: [
           { filename: '001_init_tables.sql' },
           { filename: '002_add_customer_google_auth.sql' },
+          { filename: '003_rework_reservation_schema.sql' },
         ],
       })
       .mockResolvedValueOnce({
@@ -68,6 +69,23 @@ describe('HealthService', () => {
           { column_name: 'password_hash', is_nullable: 'YES' },
           { column_name: 'firebase_uid', is_nullable: 'YES' },
         ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'cancelled_at', is_nullable: 'YES' },
+          { column_name: 'cancelled_by_user_id', is_nullable: 'YES' },
+          { column_name: 'status_changed_at', is_nullable: 'YES' },
+          { column_name: 'status_changed_by_user_id', is_nullable: 'YES' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { constraint_name: 'chk_reservations_status_lifecycle' },
+          { constraint_name: 'chk_reservations_slot_duration' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_reservations_active_staff_slot' }],
       });
     redisServiceMock.connect.mockResolvedValue(undefined);
     redisClientMock.ping.mockResolvedValue('PONG');
@@ -78,6 +96,7 @@ describe('HealthService', () => {
     expect(result.checks.database.status).toBe('up');
     expect(result.checks.schemaMigrations.status).toBe('up');
     expect(result.checks.usersTableSchema.status).toBe('up');
+    expect(result.checks.reservationsTableSchema.status).toBe('up');
     expect(result.checks.redis.status).toBe('up');
   });
 
@@ -93,6 +112,23 @@ describe('HealthService', () => {
           { column_name: 'password_hash', is_nullable: 'YES' },
           { column_name: 'firebase_uid', is_nullable: 'YES' },
         ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'cancelled_at', is_nullable: 'YES' },
+          { column_name: 'cancelled_by_user_id', is_nullable: 'YES' },
+          { column_name: 'status_changed_at', is_nullable: 'YES' },
+          { column_name: 'status_changed_by_user_id', is_nullable: 'YES' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { constraint_name: 'chk_reservations_status_lifecycle' },
+          { constraint_name: 'chk_reservations_slot_duration' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_reservations_active_staff_slot' }],
       });
     redisServiceMock.connect.mockResolvedValue(undefined);
     redisClientMock.ping.mockResolvedValue('PONG');
@@ -103,6 +139,42 @@ describe('HealthService', () => {
     expect(result.checks.schemaMigrations.status).toBe('down');
     expect(result.checks.schemaMigrations.message).toContain(
       '002_add_customer_google_auth.sql',
+    );
+  });
+
+  it('marks readiness as not_ready when the reservation schema is outdated', async () => {
+    databaseServiceMock.query
+      .mockResolvedValueOnce({ rows: [{ ok: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ exists: true }] })
+      .mockResolvedValueOnce({
+        rows: [
+          { filename: '001_init_tables.sql' },
+          { filename: '002_add_customer_google_auth.sql' },
+          { filename: '003_rework_reservation_schema.sql' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'password_hash', is_nullable: 'YES' },
+          { column_name: 'firebase_uid', is_nullable: 'YES' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'cancelled_at', is_nullable: 'YES' },
+          { column_name: 'status_changed_at', is_nullable: 'YES' },
+          { column_name: 'status_changed_by_user_id', is_nullable: 'YES' },
+        ],
+      });
+    redisServiceMock.connect.mockResolvedValue(undefined);
+    redisClientMock.ping.mockResolvedValue('PONG');
+
+    const result = await service.getReadiness();
+
+    expect(result.status).toBe('not_ready');
+    expect(result.checks.reservationsTableSchema.status).toBe('down');
+    expect(result.checks.reservationsTableSchema.message).toContain(
+      'cancelled_by_user_id',
     );
   });
 
@@ -119,6 +191,9 @@ describe('HealthService', () => {
       'Skipped because PostgreSQL is unavailable.',
     );
     expect(result.checks.usersTableSchema.message).toContain(
+      'Skipped because PostgreSQL is unavailable.',
+    );
+    expect(result.checks.reservationsTableSchema.message).toContain(
       'Skipped because PostgreSQL is unavailable.',
     );
   });

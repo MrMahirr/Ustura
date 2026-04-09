@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
+import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
 import { AppConfigService } from '../../../config/config.service';
 import { UserService } from '../../user/user.service';
 import { accessTokenInvalidError } from '../errors/auth.errors';
