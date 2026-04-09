@@ -33,6 +33,13 @@ export interface CreateEmployeeInput {
   role: Role.BARBER | Role.RECEPTIONIST;
 }
 
+export interface CreateOwnerInput {
+  name: string;
+  email: string;
+  phone: string;
+  passwordHash: string;
+}
+
 export interface CreateUserRecordInput {
   name: string;
   email: string;

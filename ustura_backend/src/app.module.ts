@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
 import { UserModule } from './modules/user/user.module';
 import { SalonModule } from './modules/salon/salon.module';
 import { StaffModule } from './modules/staff/staff.module';
@@ -26,6 +27,7 @@ import { StartupValidationService } from './startup/startup-validation.service';
     ]),
     AuthModule,
     HealthModule,
+    PlatformAdminModule,
     UserModule,
     SalonModule,
     StaffModule,

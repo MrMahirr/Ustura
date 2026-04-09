@@ -10,12 +10,14 @@ import {
 import {
   CreateCustomerInput,
   CreateEmployeeInput,
+  CreateOwnerInput,
   CreateUserRecordInput,
   User,
   UserProfile,
 } from './interfaces/user.types';
 import { UserAccountPolicy } from './policies/user-account.policy';
 import { UserRepository } from './repositories/user.repository';
+import type { SqlQueryExecutor } from '../../database/database.types';
 
 @Injectable()
 export class UserService {
@@ -80,6 +82,19 @@ export class UserService {
     return this.createUser(input);
   }
 
+  async createOwner(
+    input: CreateOwnerInput,
+    executor?: SqlQueryExecutor,
+  ): Promise<User> {
+    return this.createUser(
+      {
+        ...input,
+        role: Role.OWNER,
+      },
+      executor,
+    );
+  }
+
   async updateProfile(id: string, input: UpdateUserDto): Promise<UserProfile> {
     const normalizedInput = this.normalizeProfileUpdate(input);
 
@@ -138,7 +153,10 @@ export class UserService {
     return linkedUser;
   }
 
-  private async createUser(input: CreateUserRecordInput): Promise<User> {
+  private async createUser(
+    input: CreateUserRecordInput,
+    executor?: SqlQueryExecutor,
+  ): Promise<User> {
     const normalizedEmail = this.normalizeEmail(input.email);
     const normalizedPhone = this.normalizePhone(input.phone);
     const normalizedFirebaseUid = this.normalizeFirebaseUid(input.firebaseUid);
@@ -153,20 +171,26 @@ export class UserService {
       allowEmptyPhone: input.allowEmptyPhone,
     });
 
-    const existingUser = await this.userRepository.findByEmail(normalizedEmail);
+    const existingUser = await this.userRepository.findByEmailWithExecutor(
+      normalizedEmail,
+      executor,
+    );
 
     if (existingUser) {
       throw emailAlreadyExistsError();
     }
 
-    return this.userRepository.create({
-      ...input,
-      email: normalizedEmail,
-      name: input.name.trim(),
-      phone: normalizedPhone,
-      firebaseUid: normalizedFirebaseUid,
-      passwordHash: hasPassword ? input.passwordHash!.trim() : null,
-    });
+    return this.userRepository.create(
+      {
+        ...input,
+        email: normalizedEmail,
+        name: input.name.trim(),
+        phone: normalizedPhone,
+        firebaseUid: normalizedFirebaseUid,
+        passwordHash: hasPassword ? input.passwordHash!.trim() : null,
+      },
+      executor,
+    );
   }
 
   private normalizeEmail(email: string): string {

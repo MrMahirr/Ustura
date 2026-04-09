@@ -36,6 +36,15 @@ export interface CreateSalonInput {
   workingHours: WorkingHours;
 }
 
+export interface CreateOwnedSalonDraft {
+  name: string;
+  address: string;
+  city: string;
+  district?: string | null;
+  photoUrl?: string | null;
+  workingHours: Record<string, unknown>;
+}
+
 export interface UpdateSalonInput {
   name?: string;
   address?: string;

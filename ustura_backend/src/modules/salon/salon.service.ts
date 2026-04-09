@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AppConfigService } from '../../config/config.service';
+import type { SqlQueryExecutor } from '../../database/database.types';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
@@ -10,6 +11,7 @@ import {
   salonNotFoundError,
 } from './errors/salon.errors';
 import {
+  CreateOwnedSalonDraft,
   CreateSalonInput,
   Salon,
   UpdateSalonInput,
@@ -77,19 +79,43 @@ export class SalonService {
   ): Promise<Salon> {
     this.salonPolicy.assertCanManage(currentUser);
 
-    const input: CreateSalonInput = {
-      ownerId: currentUser.sub,
-      name: this.normalizeRequiredString(createSalonDto.name, 'name'),
-      address: this.normalizeRequiredString(createSalonDto.address, 'address'),
-      city: this.normalizeRequiredString(createSalonDto.city, 'city'),
-      district: this.normalizeOptionalString(createSalonDto.district) ?? null,
-      photoUrl: this.normalizeOptionalString(createSalonDto.photo_url) ?? null,
-      workingHours: this.normalizeWorkingHours(createSalonDto.working_hours, {
+    return this.createOwnedSalon(currentUser.sub, {
+      name: createSalonDto.name,
+      address: createSalonDto.address,
+      city: createSalonDto.city,
+      district: createSalonDto.district,
+      photoUrl: createSalonDto.photo_url,
+      workingHours: createSalonDto.working_hours,
+    });
+  }
+
+  prepareOwnedSalonInput(
+    input: CreateOwnedSalonDraft,
+  ): Omit<CreateSalonInput, 'ownerId'> {
+    return {
+      name: this.normalizeRequiredString(input.name, 'name'),
+      address: this.normalizeRequiredString(input.address, 'address'),
+      city: this.normalizeRequiredString(input.city, 'city'),
+      district: this.normalizeOptionalString(input.district) ?? null,
+      photoUrl: this.normalizeOptionalString(input.photoUrl) ?? null,
+      workingHours: this.normalizeWorkingHours(input.workingHours, {
         requireAtLeastOneOpenDay: true,
       }),
     };
+  }
 
-    return this.salonRepository.create(input);
+  async createOwnedSalon(
+    ownerId: string,
+    input: CreateOwnedSalonDraft,
+    executor?: SqlQueryExecutor,
+  ): Promise<Salon> {
+    return this.salonRepository.create(
+      {
+        ownerId,
+        ...this.prepareOwnedSalonInput(input),
+      },
+      executor,
+    );
   }
 
   async update(

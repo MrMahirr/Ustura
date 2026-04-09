@@ -38,7 +38,14 @@ export class UserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const result = await this.databaseService.query<UserRow>({
+    return this.findByEmailWithExecutor(email);
+  }
+
+  async findByEmailWithExecutor(
+    email: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<User | null> {
+    const result = await executor.query<UserRow>({
       name: 'user.find-by-email',
       text: `
         SELECT
