@@ -15,6 +15,7 @@ describe('HealthController (e2e)', () => {
   let redisService: {
     connect: jest.Mock;
     getClient: jest.Mock;
+    isUsingMemoryFallback: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -27,6 +28,7 @@ describe('HealthController (e2e)', () => {
       getClient: jest.fn().mockReturnValue({
         ping: redisPing,
       }),
+      isUsingMemoryFallback: jest.fn().mockReturnValue(false),
     };
 
     app = await createContractTestApp({

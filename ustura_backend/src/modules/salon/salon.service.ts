@@ -1,13 +1,16 @@
 import {
-  BadRequestException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { SLOT_DURATION_MINUTES } from '../../common/constants';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
+import {
+  salonInvalidFieldError,
+  salonInvalidWorkingHoursError,
+  salonNotFoundError,
+} from './errors/salon.errors';
 import {
   CreateSalonInput,
   Salon,
@@ -53,7 +56,7 @@ export class SalonService {
     const salon = await this.salonRepository.findById(id);
 
     if (!salon?.isActive) {
-      throw new NotFoundException('Salon not found.');
+      throw salonNotFoundError();
     }
 
     return salon;
@@ -134,7 +137,7 @@ export class SalonService {
     const updatedSalon = await this.salonRepository.update(salonId, updateInput);
 
     if (!updatedSalon) {
-      throw new NotFoundException('Salon not found.');
+      throw salonNotFoundError();
     }
 
     return updatedSalon;
@@ -146,7 +149,7 @@ export class SalonService {
     const salon = await this.salonRepository.deactivate(salonId);
 
     if (!salon) {
-      throw new NotFoundException('Salon not found.');
+      throw salonNotFoundError();
     }
 
     return salon;
@@ -159,7 +162,7 @@ export class SalonService {
     const salon = await this.salonRepository.findById(salonId);
 
     if (!salon) {
-      throw new NotFoundException('Salon not found.');
+      throw salonNotFoundError();
     }
 
     this.salonPolicy.assertCanManageSalon(currentUser, salon);
@@ -174,7 +177,7 @@ export class SalonService {
     },
   ): WorkingHours {
     if (typeof input !== 'object' || input === null || Array.isArray(input)) {
-      throw new BadRequestException('working_hours must be an object.');
+      throw salonInvalidWorkingHoursError('working_hours must be an object.');
     }
 
     const nextWorkingHours: WorkingHours = {
@@ -192,7 +195,7 @@ export class SalonService {
       const day = rawKey.trim().toLowerCase();
 
       if (!WEEK_DAYS.includes(day as (typeof WEEK_DAYS)[number])) {
-        throw new BadRequestException(
+        throw salonInvalidWorkingHoursError(
           `working_hours contains unsupported day key: ${rawKey}.`,
         );
       }
@@ -204,7 +207,7 @@ export class SalonService {
       options.requireAtLeastOneOpenDay &&
       WEEK_DAYS.every((day) => nextWorkingHours[day] === null)
     ) {
-      throw new BadRequestException(
+      throw salonInvalidWorkingHoursError(
         'working_hours must contain at least one open day.',
       );
     }
@@ -221,7 +224,7 @@ export class SalonService {
     }
 
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      throw new BadRequestException(
+      throw salonInvalidWorkingHoursError(
         `working_hours.${day} must be null or an object with open/close.`,
       );
     }
@@ -230,7 +233,7 @@ export class SalonService {
     const close = this.readTimeField(value, 'close', day);
 
     if (open >= close) {
-      throw new BadRequestException(
+      throw salonInvalidWorkingHoursError(
         `working_hours.${day} close must be after open.`,
       );
     }
@@ -239,7 +242,7 @@ export class SalonService {
       this.toMinuteValue(close) - this.toMinuteValue(open) <
       SLOT_DURATION_MINUTES
     ) {
-      throw new BadRequestException(
+      throw salonInvalidWorkingHoursError(
         `working_hours.${day} must span at least ${SLOT_DURATION_MINUTES} minutes.`,
       );
     }
@@ -258,7 +261,7 @@ export class SalonService {
     const fieldValue = Reflect.get(value, fieldName);
 
     if (typeof fieldValue !== 'string' || !TIME_PATTERN.test(fieldValue)) {
-      throw new BadRequestException(
+      throw salonInvalidWorkingHoursError(
         `working_hours.${day}.${fieldName} must be in HH:MM format.`,
       );
     }
@@ -275,7 +278,7 @@ export class SalonService {
     const normalizedValue = value.trim();
 
     if (!normalizedValue) {
-      throw new BadRequestException(`${fieldName} cannot be empty.`);
+      throw salonInvalidFieldError(fieldName);
     }
 
     return normalizedValue;

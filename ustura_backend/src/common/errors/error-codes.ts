@@ -29,6 +29,21 @@ export const ERROR_CODES = {
     PASSWORD_REQUIRED: 'user.password_required',
     PHONE_REQUIRED: 'user.phone_required',
   },
+  STAFF: {
+    ALREADY_ASSIGNED: 'staff.already_assigned',
+    INVALID_ACCOUNT_ROLE: 'staff.invalid_account_role',
+    MANAGEMENT_FORBIDDEN: 'staff.management_forbidden',
+    NOT_FOUND: 'staff.not_found',
+    SALON_NOT_FOUND: 'staff.salon_not_found',
+    USER_INACTIVE: 'staff.user_inactive',
+    USER_NOT_FOUND: 'staff.user_not_found',
+  },
+  SALON: {
+    INVALID_FIELD: 'salon.invalid_field',
+    INVALID_WORKING_HOURS: 'salon.invalid_working_hours',
+    MANAGEMENT_FORBIDDEN: 'salon.management_forbidden',
+    NOT_FOUND: 'salon.not_found',
+  },
   RESERVATION: {
     BARBER_NOT_FOUND: 'reservation.barber_not_found',
     BARBER_SCHEDULE_ONLY: 'reservation.barber_schedule_only',

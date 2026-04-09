@@ -13,6 +13,7 @@ type RedisClientMock = {
 type RedisServiceMock = {
   connect: jest.Mock;
   getClient: jest.Mock<RedisClientMock, []>;
+  isUsingMemoryFallback: jest.Mock<boolean, []>;
 };
 
 function createDatabaseServiceMock(): DatabaseServiceMock {
@@ -31,6 +32,7 @@ function createRedisServiceMock(client: RedisClientMock): RedisServiceMock {
   return {
     connect: jest.fn(),
     getClient: jest.fn().mockReturnValue(client),
+    isUsingMemoryFallback: jest.fn().mockReturnValue(false),
   };
 }
 
