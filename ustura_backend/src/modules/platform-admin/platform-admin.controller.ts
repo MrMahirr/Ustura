@@ -1,0 +1,93 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { Role } from '../../shared/auth/role.enum';
+import { CreateOwnerApplicationDto } from './dto/create-owner-application.dto';
+import { OwnerApplicationResponseDto } from './dto/owner-application-response.dto';
+import { RejectOwnerApplicationDto } from './dto/reject-owner-application.dto';
+import { PlatformAdminService } from './platform-admin.service';
+
+@ApiTags('platform-admin')
+@Controller()
+export class PlatformAdminController {
+  constructor(private readonly platformAdminService: PlatformAdminService) {}
+
+  @Post('owner-applications')
+  @ApiOperation({ summary: 'Submit a new owner onboarding application' })
+  @ApiBody({ type: CreateOwnerApplicationDto })
+  @ApiCreatedResponse({ type: OwnerApplicationResponseDto })
+  async createOwnerApplication(
+    @Body() createOwnerApplicationDto: CreateOwnerApplicationDto,
+  ) {
+    return this.platformAdminService.createOwnerApplication(
+      createOwnerApplicationDto,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Get('admin/owner-applications')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'List owner applications for super admins' })
+  @ApiOkResponse({ type: OwnerApplicationResponseDto, isArray: true })
+  async listOwnerApplications(@CurrentUser() currentUser: JwtPayload) {
+    return this.platformAdminService.listOwnerApplications(currentUser);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Post('admin/owner-applications/:applicationId/approve')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Approve an owner application as super admin' })
+  @ApiParam({ name: 'applicationId', format: 'uuid' })
+  @ApiOkResponse({ type: OwnerApplicationResponseDto })
+  async approveOwnerApplication(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('applicationId', new ParseUUIDPipe()) applicationId: string,
+  ) {
+    return this.platformAdminService.approveOwnerApplication(
+      currentUser,
+      applicationId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Post('admin/owner-applications/:applicationId/reject')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Reject an owner application as super admin' })
+  @ApiParam({ name: 'applicationId', format: 'uuid' })
+  @ApiBody({ type: RejectOwnerApplicationDto })
+  @ApiOkResponse({ type: OwnerApplicationResponseDto })
+  async rejectOwnerApplication(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('applicationId', new ParseUUIDPipe()) applicationId: string,
+    @Body() rejectOwnerApplicationDto: RejectOwnerApplicationDto,
+  ) {
+    return this.platformAdminService.rejectOwnerApplication(
+      currentUser,
+      applicationId,
+      rejectOwnerApplicationDto,
+    );
+  }
+}

@@ -29,6 +29,14 @@ export const ERROR_CODES = {
     PASSWORD_REQUIRED: 'user.password_required',
     PHONE_REQUIRED: 'user.phone_required',
   },
+  PLATFORM_ADMIN: {
+    ACCESS_FORBIDDEN: 'platform_admin.access_forbidden',
+    OWNER_APPLICATION_ALREADY_EXISTS:
+      'platform_admin.owner_application_already_exists',
+    OWNER_APPLICATION_ALREADY_REVIEWED:
+      'platform_admin.owner_application_already_reviewed',
+    OWNER_APPLICATION_NOT_FOUND: 'platform_admin.owner_application_not_found',
+  },
   STAFF: {
     ALREADY_ASSIGNED: 'staff.already_assigned',
     INVALID_ACCOUNT_ROLE: 'staff.invalid_account_role',

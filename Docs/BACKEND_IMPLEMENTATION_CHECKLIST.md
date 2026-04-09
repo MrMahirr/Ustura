@@ -46,15 +46,15 @@ Durum tarihi: 2026-04-09
 
 ## 4. Platform Admin Modülünü Ekle
 
-- [ ] `PlatformAdminModule` oluştur.
-- [ ] `owner_applications` tablosu için migration yaz.
-- [ ] `POST /owner-applications` endpoint'ini ekle.
-- [ ] `GET /admin/owner-applications` endpoint'ini ekle.
-- [ ] `POST /admin/owner-applications/:id/approve` endpoint'ini ekle.
-- [ ] `POST /admin/owner-applications/:id/reject` endpoint'ini ekle.
-- [ ] Owner onayı sırasında owner user + salon oluşturma işlemini transaction içinde yap.
-- [ ] `super_admin` rolünü gerçek business capability ile bağla.
-- [ ] Owner onboarding akışı için e2e test yaz.
+- [x] `PlatformAdminModule` oluştur.
+- [x] `owner_applications` tablosu için migration yaz.
+- [x] `POST /owner-applications` endpoint'ini ekle.
+- [x] `GET /admin/owner-applications` endpoint'ini ekle.
+- [x] `POST /admin/owner-applications/:id/approve` endpoint'ini ekle.
+- [x] `POST /admin/owner-applications/:id/reject` endpoint'ini ekle.
+- [x] Owner onayı sırasında owner user + salon oluşturma işlemini transaction içinde yap.
+- [x] `super_admin` rolünü gerçek business capability ile bağla.
+- [x] Owner onboarding akışı için e2e test yaz.
 
 ## 5. Audit Log Modülünü Ekle
 

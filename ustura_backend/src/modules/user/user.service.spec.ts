@@ -48,6 +48,7 @@ describe('UserService', () => {
     userRepository = {
       findById: jest.fn(),
       findByEmail: findByEmailMock,
+      findByEmailWithExecutor: findByEmailMock,
       findByFirebaseUid: jest.fn(),
       create: createUserMock,
       updateProfile: jest.fn(),
@@ -74,15 +75,21 @@ describe('UserService', () => {
       passwordHash: 'hashed-password',
     });
 
-    expect(findByEmailMock).toHaveBeenCalledWith('customer@example.com');
-    expect(createUserMock).toHaveBeenCalledWith({
-      name: 'Customer',
-      email: 'customer@example.com',
-      phone: '+905551112233',
-      passwordHash: 'hashed-password',
-      firebaseUid: null,
-      role: Role.CUSTOMER,
-    });
+    expect(findByEmailMock).toHaveBeenCalledWith(
+      'customer@example.com',
+      undefined,
+    );
+    expect(createUserMock).toHaveBeenCalledWith(
+      {
+        name: 'Customer',
+        email: 'customer@example.com',
+        phone: '+905551112233',
+        passwordHash: 'hashed-password',
+        firebaseUid: null,
+        role: Role.CUSTOMER,
+      },
+      undefined,
+    );
     expect(result.role).toBe(Role.CUSTOMER);
   });
 
@@ -152,14 +159,17 @@ describe('UserService', () => {
       firebaseUid: ' firebase-user-1 ',
     });
 
-    expect(createUserMock).toHaveBeenCalledWith({
-      name: 'Google Customer',
-      email: 'google@example.com',
-      phone: '+905551110000',
-      firebaseUid: 'firebase-user-1',
-      passwordHash: null,
-      role: Role.CUSTOMER,
-    });
+    expect(createUserMock).toHaveBeenCalledWith(
+      {
+        name: 'Google Customer',
+        email: 'google@example.com',
+        phone: '+905551110000',
+        firebaseUid: 'firebase-user-1',
+        passwordHash: null,
+        role: Role.CUSTOMER,
+      },
+      undefined,
+    );
     expect(result.firebaseUid).toBe('firebase-user-1');
   });
 
@@ -195,5 +205,36 @@ describe('UserService', () => {
 
     expect(capturedError).toBeInstanceOf(NotFoundException);
     expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.NOT_FOUND);
+  });
+
+  it('creates an owner account with the reserved owner role', async () => {
+    const createdOwner = createUser({
+      email: 'owner@example.com',
+      role: Role.OWNER,
+    });
+
+    findByEmailMock.mockResolvedValue(null);
+    createUserMock.mockResolvedValue(createdOwner);
+
+    const result = await userService.createOwner({
+      name: ' Owner Candidate ',
+      email: ' OWNER@EXAMPLE.COM ',
+      phone: ' +905551112233 ',
+      passwordHash: 'hashed-password',
+    });
+
+    expect(findByEmailMock).toHaveBeenCalledWith('owner@example.com', undefined);
+    expect(createUserMock).toHaveBeenCalledWith(
+      {
+        name: 'Owner Candidate',
+        email: 'owner@example.com',
+        phone: '+905551112233',
+        passwordHash: 'hashed-password',
+        firebaseUid: null,
+        role: Role.OWNER,
+      },
+      undefined,
+    );
+    expect(result.role).toBe(Role.OWNER);
   });
 });
