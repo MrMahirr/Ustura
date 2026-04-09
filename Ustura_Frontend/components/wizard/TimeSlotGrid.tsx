@@ -37,7 +37,7 @@ export default function TimeSlotGrid({
   return (
     <View className="flex-row flex-wrap" style={{ gap: 12 }}>
       {slots.map((slot) => {
-        const isLocked = slot.status === 'locked';
+        const isLocked = slot.status !== 'available';
         const isSelected = !isLocked && selectedTimeId === slot.id;
 
         return (

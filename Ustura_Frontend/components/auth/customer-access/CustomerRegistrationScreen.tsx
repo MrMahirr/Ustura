@@ -11,11 +11,11 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function CustomerRegistrationScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<CustomerAuthRedirectParams>();
+  const params = useLocalSearchParams() as CustomerAuthRedirectParams;
   const { register } = useAuth();
   const registration = useCustomerRegistration({
-    onSubmitSuccess: ({ fullName, phone, email, password }) => {
-      register({ fullName, phone, email, password });
+    onSubmitSuccess: async ({ fullName, phone, email, password }) => {
+      await register({ fullName, phone, email, password });
       router.replace(resolveCustomerAuthRedirect(params));
     },
   });
@@ -33,6 +33,8 @@ export default function CustomerRegistrationScreen() {
         email={registration.email}
         password={registration.password}
         selectedRoleLabel={registration.selectedRole.label}
+        submitLabel={registration.isSubmitting ? 'Hesap Olusturuluyor' : 'Hesabi Hazirla'}
+        submitDisabled={registration.isSubmitting}
         fullNameError={registration.fieldErrors.fullName}
         phoneError={registration.fieldErrors.phone}
         emailError={registration.fieldErrors.email}
@@ -43,7 +45,9 @@ export default function CustomerRegistrationScreen() {
         onEmailChange={registration.handleEmailChange}
         onPasswordChange={registration.handlePasswordChange}
         onOpenRoleModal={registration.openRoleModal}
-        onSubmit={registration.handleSubmit}
+        onSubmit={() => {
+          void registration.handleSubmit();
+        }}
         onSignInPress={() => router.push('/giris')}
       />
 

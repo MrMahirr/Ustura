@@ -10,15 +10,17 @@ import { useWindowDimensions } from 'react-native';
 
 export default function CustomerAccessScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<CustomerAuthRedirectParams>();
-  const { login } = useAuth();
+  const params = useLocalSearchParams() as CustomerAuthRedirectParams;
+  const { login, loginWithGoogle, isGoogleLoginLoading } = useAuth();
   const access = useCustomerAccess({
-    onSubmitSuccess: ({ identifier, password }) => {
-      const sessionUser = login({ identifier, password });
+    onSubmitSuccess: async ({ identifier, password }) => {
+      await login({ identifier, password });
 
-      if (sessionUser == null) {
-        return false;
-      }
+      router.replace(resolveCustomerAuthRedirect(params));
+      return true;
+    },
+    onGoogleSubmitSuccess: async () => {
+      await loginWithGoogle();
 
       router.replace(resolveCustomerAuthRedirect(params));
       return true;
@@ -37,14 +39,30 @@ export default function CustomerAccessScreen() {
         identifier={access.identifier}
         password={access.password}
         rememberMe={access.rememberMe}
+        submitLabel={access.isSubmitting ? 'Giris Yapiliyor' : 'Giris Yap'}
+        submitDisabled={access.isSubmitting || access.isGoogleSubmitting}
         identifierError={access.fieldErrors.identifier}
         passwordError={access.fieldErrors.password}
         onIdentifierChange={access.handleIdentifierChange}
         onPasswordChange={access.handlePasswordChange}
         onToggleRememberMe={access.toggleRememberMe}
         onForgotPassword={access.handleForgotPassword}
-        onSubmit={access.handleSubmit}
-        onGoogleAccess={access.handleGoogleAccess}
+        onSubmit={() => {
+          void access.handleSubmit();
+        }}
+        googleAccessLabel={
+          access.isGoogleSubmitting
+            ? 'Google ile giris yapiliyor'
+            : isGoogleLoginLoading
+              ? 'Google hazirlaniyor'
+              : 'Google ile giris yap'
+        }
+        googleAccessDisabled={
+          access.isSubmitting || access.isGoogleSubmitting || isGoogleLoginLoading
+        }
+        onGoogleAccess={() => {
+          void access.handleGoogleAccess();
+        }}
         onRegisterPress={() => router.push('/kayit')}
       />
     </CustomerAccessShell>

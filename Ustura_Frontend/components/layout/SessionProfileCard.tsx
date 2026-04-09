@@ -13,14 +13,12 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 
-import {
-  MOCK_CUSTOMER_BOOKINGS,
-  getNextUpcomingBooking,
-} from '@/components/customer-bookings/presentation';
+import { getNextUpcomingBooking } from '@/components/customer-bookings/presentation';
 import SessionProfileMenuAction from '@/components/layout/session-profile/SessionProfileMenuAction';
 import SessionProfileNextBookingCard from '@/components/layout/session-profile/SessionProfileNextBookingCard';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/hooks/use-auth';
+import { useMyBookings } from '@/hooks/use-my-bookings';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { hexToRgba } from '@/utils/color';
 
@@ -65,6 +63,7 @@ export default function SessionProfileCard({
   const pathname = usePathname();
   const { width: viewportWidth } = useWindowDimensions();
   const { user, isAuthenticated, logout } = useAuth();
+  const { bookings } = useMyBookings();
   const [isOpen, setIsOpen] = React.useState(false);
   const [rendered, setRendered] = React.useState(false);
   const [triggerFrame, setTriggerFrame] = React.useState<TriggerFrame | null>(null);
@@ -85,8 +84,8 @@ export default function SessionProfileCard({
   const detailLine = user?.email ?? user?.phone ?? 'Giris yaparak randevu ve profil durumunu yonet.';
   const statusLabel = isAuthenticated ? 'Musteri Hesabi' : 'Guest Session';
   const nextBooking = React.useMemo(
-    () => (isAuthenticated ? getNextUpcomingBooking(MOCK_CUSTOMER_BOOKINGS) : null),
-    [isAuthenticated]
+    () => (isAuthenticated ? getNextUpcomingBooking(bookings) : null),
+    [bookings, isAuthenticated]
   );
 
   const isSmall = size === 'small';

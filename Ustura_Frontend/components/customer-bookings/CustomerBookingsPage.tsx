@@ -15,6 +15,7 @@ import {
 } from '@/components/customer-bookings/presentation';
 import { useCustomerBookings } from '@/components/customer-bookings/use-customer-bookings';
 import { getLandingLayout } from '@/components/landing/layout';
+import Button from '@/components/ui/Button';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 function buildBookingDetailsMessage(booking: CustomerBookingRecord) {
@@ -40,6 +41,9 @@ export default function CustomerBookingsPage() {
     visibleBookings,
     highlightedBooking,
     tabCounts,
+    isLoading,
+    error,
+    reload,
     setActiveTab,
     cancelBooking,
   } = useCustomerBookings();
@@ -60,17 +64,31 @@ export default function CustomerBookingsPage() {
   }, []);
 
   const handleCancel = React.useCallback(
-    (booking: CustomerBookingRecord) => {
-      cancelBooking(booking.id);
+    async (booking: CustomerBookingRecord) => {
+      try {
+        await cancelBooking(booking.id);
 
-      const cancelMessage = `${booking.salonName} icin ${formatCustomerBookingDateTime(booking.startsAt)} tarihli randevu iptal edildi.`;
+        const cancelMessage = `${booking.salonName} icin ${formatCustomerBookingDateTime(booking.startsAt)} tarihli randevu iptal edildi.`;
 
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(`${CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle}\n\n${cancelMessage}`);
-        return;
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert(`${CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle}\n\n${cancelMessage}`);
+          return;
+        }
+
+        Alert.alert(CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle, cancelMessage);
+      } catch (cancelError) {
+        const message =
+          cancelError instanceof Error
+            ? cancelError.message
+            : 'Randevu iptal edilemedi.';
+
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert(`Iptal Hatasi\n\n${message}`);
+          return;
+        }
+
+        Alert.alert('Iptal Hatasi', message);
       }
-
-      Alert.alert(CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle, cancelMessage);
     },
     [cancelBooking]
   );
@@ -106,7 +124,34 @@ export default function CustomerBookingsPage() {
                 onChange={setActiveTab}
               />
 
-              {visibleBookings.length > 0 ? (
+              {isLoading ? (
+                <View style={{ gap: 8, paddingVertical: 24 }}>
+                  <Text className="font-headline text-3xl font-bold" style={{ color: onSurface }}>
+                    Randevular yukleniyor
+                  </Text>
+                  <Text className="font-body text-base" style={{ maxWidth: 540, color: onSurfaceVariant }}>
+                    Hesabina ait rezervasyon kayitlari backend uzerinden getiriliyor.
+                  </Text>
+                </View>
+              ) : error ? (
+                <View style={{ gap: 14, paddingVertical: 24 }}>
+                  <Text className="font-headline text-3xl font-bold" style={{ color: onSurface }}>
+                    Randevular alinmadi
+                  </Text>
+                  <Text className="font-body text-base" style={{ maxWidth: 540, color: onSurfaceVariant }}>
+                    {error}
+                  </Text>
+                  <Button
+                    title="Tekrar Dene"
+                    variant="outline"
+                    interactionPreset="outlineCta"
+                    onPress={() => {
+                      void reload();
+                    }}
+                    style={{ width: 220 }}
+                  />
+                </View>
+              ) : visibleBookings.length > 0 ? (
                 <View style={{ gap: 16 }}>
                   {visibleBookings.map((booking) => (
                     <CustomerBookingsListItem

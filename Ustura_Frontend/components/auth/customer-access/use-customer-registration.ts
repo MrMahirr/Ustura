@@ -54,7 +54,7 @@ function validatePassword(value: string): string | undefined {
     return 'Sifre alani zorunludur.';
   }
 
-  return trimmed.length >= 8 ? undefined : 'Test akisi icin en az 8 karakter kullan.';
+  return trimmed.length >= 8 ? undefined : 'En az 8 karakter kullan.';
 }
 
 function clearFieldError(errors: FieldErrors, field: keyof FieldErrors): FieldErrors {
@@ -71,7 +71,7 @@ interface UseCustomerRegistrationOptions {
     phone: string;
     email: string;
     password: string;
-  }) => void;
+  }) => Promise<void>;
 }
 
 export function useCustomerRegistration(options: UseCustomerRegistrationOptions = {}) {
@@ -83,6 +83,8 @@ export function useCustomerRegistration(options: UseCustomerRegistrationOptions 
   const [isRoleModalOpen, setIsRoleModalOpen] = React.useState(false);
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({});
   const [state, setState] = React.useState<CustomerRegistrationState>('idle');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [requestErrorMessage, setRequestErrorMessage] = React.useState<string | null>(null);
 
   const selectedRole =
     CUSTOMER_ROLE_OPTIONS.find((option) => option.id === selectedRoleId) ?? CUSTOMER_ROLE_OPTIONS[0];
@@ -97,6 +99,7 @@ export function useCustomerRegistration(options: UseCustomerRegistrationOptions 
     (value: string) => {
       setFullName(value);
       setFieldErrors((previous) => clearFieldError(previous, 'fullName'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
     [resetToIdle]
@@ -106,6 +109,7 @@ export function useCustomerRegistration(options: UseCustomerRegistrationOptions 
     (value: string) => {
       setPhone(value);
       setFieldErrors((previous) => clearFieldError(previous, 'phone'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
     [resetToIdle]
@@ -115,6 +119,7 @@ export function useCustomerRegistration(options: UseCustomerRegistrationOptions 
     (value: string) => {
       setEmail(value);
       setFieldErrors((previous) => clearFieldError(previous, 'email'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
     [resetToIdle]
@@ -124,6 +129,7 @@ export function useCustomerRegistration(options: UseCustomerRegistrationOptions 
     (value: string) => {
       setPassword(value);
       setFieldErrors((previous) => clearFieldError(previous, 'password'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
     [resetToIdle]
@@ -147,7 +153,7 @@ export function useCustomerRegistration(options: UseCustomerRegistrationOptions 
     [resetToIdle]
   );
 
-  const handleSubmit = React.useCallback(() => {
+  const handleSubmit = React.useCallback(async () => {
     const nextErrors: FieldErrors = {
       fullName: validateFullName(fullName),
       phone: validatePhone(phone),
@@ -168,22 +174,43 @@ export function useCustomerRegistration(options: UseCustomerRegistrationOptions 
       return;
     }
 
-    setState('testReady');
-    options.onSubmitSuccess?.({
-      fullName: fullName.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      password: password.trim(),
-    });
+    setIsSubmitting(true);
+    setRequestErrorMessage(null);
+
+    try {
+      await options.onSubmitSuccess?.({
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        password: password.trim(),
+      });
+      setState('testReady');
+    } catch (submitError) {
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : 'Kayit istegi tamamlanamadi.';
+      setRequestErrorMessage(message);
+      setState('requestError');
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [email, fullName, options, password, phone, selectedRoleId]);
 
-  const notice = React.useMemo(
-    () => getCustomerRegistrationNotice(state, selectedRole),
-    [selectedRole, state]
-  );
+  const notice = React.useMemo(() => {
+    if (state !== 'requestError' || !requestErrorMessage) {
+      return getCustomerRegistrationNotice(state, selectedRole);
+    }
+
+    return {
+      ...getCustomerRegistrationNotice(state, selectedRole),
+      description: requestErrorMessage,
+    };
+  }, [requestErrorMessage, selectedRole, state]);
 
   return {
     state,
+    isSubmitting,
     fullName,
     phone,
     email,
