@@ -1,4 +1,5 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, HttpException, NotFoundException } from '@nestjs/common';
+import { ERROR_CODES } from '../../common/errors/error-codes';
 import { Role } from '../../common/enums/role.enum';
 import { CreateEmployeeInput, User } from './interfaces/user.types';
 import { UserRepository } from './repositories/user.repository';
@@ -18,6 +19,20 @@ function createUser(overrides: Partial<User> = {}): User {
     updatedAt: new Date('2026-04-07T00:00:00.000Z'),
     ...overrides,
   };
+}
+
+function getExceptionCode(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) {
+    return undefined;
+  }
+
+  const response = error.getResponse();
+
+  if (typeof response !== 'object' || response == null || !('code' in response)) {
+    return undefined;
+  }
+
+  return typeof response.code === 'string' ? response.code : undefined;
 }
 
 describe('UserService', () => {
@@ -73,14 +88,23 @@ describe('UserService', () => {
   it('rejects duplicate emails before writing to the database', async () => {
     findByEmailMock.mockResolvedValue(createUser());
 
-    await expect(
-      userService.createCustomer({
+    let capturedError: unknown;
+
+    try {
+      await userService.createCustomer({
         name: 'Customer',
         email: 'john@example.com',
         phone: '+905551112233',
         passwordHash: 'hashed-password',
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ConflictException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.EMAIL_ALREADY_EXISTS,
+    );
 
     expect(createUserMock).not.toHaveBeenCalled();
   });
@@ -94,9 +118,18 @@ describe('UserService', () => {
       role: Role.OWNER,
     } as CreateEmployeeInput;
 
-    await expect(
-      userService.createEmployee(invalidEmployeeInput),
-    ).rejects.toBeInstanceOf(ConflictException);
+    let capturedError: unknown;
+
+    try {
+      await userService.createEmployee(invalidEmployeeInput);
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ConflictException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.INVALID_EMPLOYEE_ROLE,
+    );
 
     expect(findByEmailMock).not.toHaveBeenCalled();
   });
@@ -149,10 +182,17 @@ describe('UserService', () => {
   it('throws when updating a missing user profile', async () => {
     userRepository.updateProfile.mockResolvedValue(null);
 
-    await expect(
-      userService.updateProfile('missing-user', {
+    let capturedError: unknown;
+
+    try {
+      await userService.updateProfile('missing-user', {
         name: 'Updated Name',
-      }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(NotFoundException);
+    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.NOT_FOUND);
   });
 });

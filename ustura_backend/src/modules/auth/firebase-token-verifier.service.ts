@@ -1,11 +1,13 @@
 import { createVerify } from 'node:crypto';
-import {
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AppConfigService } from '../../config/config.service';
 import type { FirebaseGoogleIdentity } from './interfaces/auth.types';
+import {
+  firebaseCertificatesInvalidError,
+  firebaseCertificatesUnavailableError,
+  firebaseGoogleNotConfiguredError,
+  googleIdentityTokenInvalidError,
+} from './errors/auth.errors';
 
 interface FirebaseCertCache {
   certificates: Record<string, string>;
@@ -44,16 +46,14 @@ export class FirebaseTokenVerifierService {
     const projectId = this.configService.firebase.projectId;
 
     if (!projectId) {
-      throw new ServiceUnavailableException(
-        'Firebase Google sign-in is not configured on the backend.',
-      );
+      throw firebaseGoogleNotConfiguredError();
     }
 
     const [encodedHeader, encodedPayload, encodedSignature] =
       idToken.split('.');
 
     if (!encodedHeader || !encodedPayload || !encodedSignature) {
-      throw new UnauthorizedException('Google identity token is invalid.');
+      throw googleIdentityTokenInvalidError();
     }
 
     const header = this.parseJwtPart<JwtHeader>(encodedHeader, 'header');
@@ -63,14 +63,14 @@ export class FirebaseTokenVerifierService {
     );
 
     if (header.alg !== 'RS256' || typeof header.kid !== 'string') {
-      throw new UnauthorizedException('Google identity token is invalid.');
+      throw googleIdentityTokenInvalidError();
     }
 
     const certificates = await this.getCertificates();
     const certificate = certificates[header.kid];
 
     if (!certificate) {
-      throw new UnauthorizedException('Google identity token is invalid.');
+      throw googleIdentityTokenInvalidError();
     }
 
     const verifier = createVerify('RSA-SHA256');
@@ -83,7 +83,7 @@ export class FirebaseTokenVerifierService {
     );
 
     if (!isSignatureValid) {
-      throw new UnauthorizedException('Google identity token is invalid.');
+      throw googleIdentityTokenInvalidError();
     }
 
     const nowInSeconds = Math.floor(Date.now() / 1000);
@@ -102,7 +102,7 @@ export class FirebaseTokenVerifierService {
       !payload.email_verified ||
       payload.firebase?.sign_in_provider !== 'google.com'
     ) {
-      throw new UnauthorizedException('Google identity token is invalid.');
+      throw googleIdentityTokenInvalidError();
     }
 
     const normalizedEmail = payload.email.trim().toLowerCase();
@@ -132,23 +132,17 @@ export class FirebaseTokenVerifierService {
     try {
       response = await fetch(this.configService.firebase.certsUrl);
     } catch {
-      throw new ServiceUnavailableException(
-        'Firebase signing certificates could not be fetched.',
-      );
+      throw firebaseCertificatesUnavailableError();
     }
 
     if (!response.ok) {
-      throw new ServiceUnavailableException(
-        'Firebase signing certificates could not be fetched.',
-      );
+      throw firebaseCertificatesUnavailableError();
     }
 
     const body = (await response.json()) as unknown;
 
     if (!this.isCertificateMap(body)) {
-      throw new ServiceUnavailableException(
-        'Firebase signing certificates response is invalid.',
-      );
+      throw firebaseCertificatesInvalidError();
     }
 
     const maxAge = this.extractMaxAge(response.headers.get('cache-control'));
@@ -165,7 +159,7 @@ export class FirebaseTokenVerifierService {
       const decodedText = this.decodeBase64Url(segment).toString('utf8');
       return JSON.parse(decodedText) as T;
     } catch {
-      throw new UnauthorizedException(
+      throw googleIdentityTokenInvalidError(
         `Google identity token ${partName} is invalid.`,
       );
     }

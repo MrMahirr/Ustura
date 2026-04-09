@@ -32,3 +32,10 @@ export interface FirebaseGoogleIdentity {
   name: string;
   pictureUrl?: string;
 }
+
+export interface GoogleWebIdentity {
+  googleSubject: string;
+  email: string;
+  name: string;
+  pictureUrl?: string;
+}

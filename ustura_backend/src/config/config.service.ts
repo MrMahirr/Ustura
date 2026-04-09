@@ -6,6 +6,7 @@ import {
   DatabaseConfig,
   EnvironmentVariables,
   FirebaseConfig,
+  GoogleAuthConfig,
   JwtConfig,
   NodeEnvironment,
   RedisConfig,
@@ -17,6 +18,7 @@ export class AppConfigService {
   readonly database: DatabaseConfig;
   readonly jwt: JwtConfig;
   readonly firebase: FirebaseConfig;
+  readonly google: GoogleAuthConfig;
   readonly redis: RedisConfig;
   readonly cors: CorsConfig;
 
@@ -50,6 +52,10 @@ export class AppConfigService {
     this.firebase = Object.freeze({
       projectId: this.getValue<string>('FIREBASE_PROJECT_ID'),
       certsUrl: this.getValue<string>('FIREBASE_CERTS_URL'),
+    });
+
+    this.google = Object.freeze({
+      webClientId: this.getValue<string>('GOOGLE_WEB_CLIENT_ID'),
     });
 
     this.redis = Object.freeze({

@@ -1,11 +1,20 @@
 import {
-  BadRequestException,
-  ConflictException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { Role } from '../../common/enums/role.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  customerCredentialsRequiredError,
+  customerGoogleOnlyError,
+  customerInactiveError,
+  customerOnlyManagedReservationError,
+  emailAlreadyExistsError,
+  googleIdentityAlreadyLinkedError,
+  invalidEmployeeRoleError,
+  passwordRequiredError,
+  phoneRequiredError,
+  userNotFoundError,
+} from './errors/user.errors';
 import {
   CreateCustomerInput,
   CreateEmployeeInput,
@@ -35,7 +44,7 @@ export class UserService {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw userNotFoundError();
     }
 
     return this.toProfile(user);
@@ -48,11 +57,37 @@ export class UserService {
     });
   }
 
+  async findOrCreateManagedCustomer(input: {
+    name: string;
+    email: string;
+    phone: string;
+  }): Promise<User> {
+    const normalizedEmail = this.normalizeEmail(input.email);
+    const existingUser = await this.userRepository.findByEmail(normalizedEmail);
+
+    if (existingUser) {
+      if (existingUser.role !== Role.CUSTOMER) {
+        throw customerOnlyManagedReservationError();
+      }
+
+      if (!existingUser.isActive) {
+        throw customerInactiveError();
+      }
+
+      return existingUser;
+    }
+
+    return this.createCustomer({
+      name: input.name,
+      email: normalizedEmail,
+      phone: input.phone,
+      allowPasswordless: true,
+    });
+  }
+
   async createEmployee(input: CreateEmployeeInput): Promise<User> {
     if (input.role !== Role.BARBER && input.role !== Role.RECEPTIONIST) {
-      throw new ConflictException(
-        'Only barber and receptionist accounts can be created as employees.',
-      );
+      throw invalidEmployeeRoleError();
     }
 
     return this.createUser(input);
@@ -68,7 +103,7 @@ export class UserService {
     const user = await this.userRepository.updateProfile(id, normalizedInput);
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw userNotFoundError();
     }
 
     return this.toProfile(user);
@@ -78,7 +113,7 @@ export class UserService {
     const user = await this.userRepository.deactivate(id);
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw userNotFoundError();
     }
 
     return this.toProfile(user);
@@ -91,21 +126,17 @@ export class UserService {
     const user = await this.userRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw userNotFoundError();
     }
 
     if (user.role !== Role.CUSTOMER) {
-      throw new ConflictException(
-        'Firebase Google sign-in is only available for customer accounts.',
-      );
+      throw customerGoogleOnlyError();
     }
 
     const normalizedFirebaseUid = firebaseUid.trim();
 
     if (user.firebaseUid && user.firebaseUid !== normalizedFirebaseUid) {
-      throw new ConflictException(
-        'Customer account is already linked to another Google identity.',
-      );
+      throw googleIdentityAlreadyLinkedError();
     }
 
     if (user.firebaseUid === normalizedFirebaseUid) {
@@ -118,7 +149,7 @@ export class UserService {
     );
 
     if (!linkedUser) {
-      throw new NotFoundException('User not found.');
+      throw userNotFoundError();
     }
 
     return linkedUser;
@@ -132,25 +163,24 @@ export class UserService {
     const hasFirebaseIdentity = this.hasCredential(normalizedFirebaseUid);
 
     if (input.role === Role.CUSTOMER) {
-      if (!hasPassword && !hasFirebaseIdentity) {
-        throw new BadRequestException(
-          'Customer accounts must have a password or a Firebase Google identity.',
-        );
+      if (!hasPassword && !hasFirebaseIdentity && !input.allowPasswordless) {
+        throw customerCredentialsRequiredError();
       }
     } else if (!hasPassword) {
-      throw new BadRequestException(
-        'Password credentials are required for non-customer accounts.',
-      );
+      throw passwordRequiredError();
     }
 
-    if (!normalizedPhone) {
-      throw new BadRequestException('Phone is required.');
+    const canOmitPhone =
+      input.role === Role.CUSTOMER && input.allowEmptyPhone === true;
+
+    if (!normalizedPhone && !canOmitPhone) {
+      throw phoneRequiredError();
     }
 
     const existingUser = await this.userRepository.findByEmail(normalizedEmail);
 
     if (existingUser) {
-      throw new ConflictException('A user with this email already exists.');
+      throw emailAlreadyExistsError();
     }
 
     return this.userRepository.create({
@@ -181,8 +211,8 @@ export class UserService {
     return normalizedInput;
   }
 
-  private normalizePhone(phone: string): string {
-    return phone.trim();
+  private normalizePhone(phone?: string): string {
+    return phone?.trim() ?? '';
   }
 
   private normalizeFirebaseUid(firebaseUid?: string | null): string | null {

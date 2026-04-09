@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { EnvironmentVariables, NodeEnvironment } from './config.types';
 
@@ -14,18 +14,10 @@ const DEFAULT_CORS_ORIGINS = [
   'http://localhost:8081',
   'http://localhost:19006',
 ];
+const DEFAULT_NON_PRODUCTION_JWT_SECRET =
+  'ustura-development-jwt-secret-change-before-production';
 const DEFAULT_FIREBASE_CERTS_URL =
   'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
-
-function readRequiredString(env: Env, key: string): string {
-  const value = env[key]?.trim();
-
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-
-  return value;
-}
 
 function readOptionalString(env: Env, key: string, fallback = ''): string {
   return env[key]?.trim() ?? fallback;
@@ -110,6 +102,20 @@ function validateJwtSecret(secret: string, nodeEnv: NodeEnvironment): string {
   return secret;
 }
 
+function resolveJwtSecret(env: Env, nodeEnv: NodeEnvironment): string {
+  const configuredSecret = env.JWT_SECRET?.trim();
+
+  if (configuredSecret) {
+    return validateJwtSecret(configuredSecret, nodeEnv);
+  }
+
+  if (nodeEnv === 'production') {
+    throw new Error('Missing required environment variable: JWT_SECRET');
+  }
+
+  return DEFAULT_NON_PRODUCTION_JWT_SECRET;
+}
+
 export function validateEnvironment(env: Env): EnvironmentVariables {
   const nodeEnv = readNodeEnvironment(env);
   const poolMin = readPositiveInteger(env, 'DB_POOL_MIN', 2);
@@ -141,10 +147,7 @@ export function validateEnvironment(env: Env): EnvironmentVariables {
     REDIS_HOST: readOptionalString(env, 'REDIS_HOST', 'localhost'),
     REDIS_PORT: readPositiveInteger(env, 'REDIS_PORT', 6379),
     REDIS_PASSWORD: readOptionalString(env, 'REDIS_PASSWORD'),
-    JWT_SECRET: validateJwtSecret(
-      readRequiredString(env, 'JWT_SECRET'),
-      nodeEnv,
-    ),
+    JWT_SECRET: resolveJwtSecret(env, nodeEnv),
     JWT_ACCESS_EXPIRATION: readOptionalString(
       env,
       'JWT_ACCESS_EXPIRATION',
@@ -161,6 +164,7 @@ export function validateEnvironment(env: Env): EnvironmentVariables {
       'FIREBASE_CERTS_URL',
       DEFAULT_FIREBASE_CERTS_URL,
     ),
+    GOOGLE_WEB_CLIENT_ID: readOptionalString(env, 'GOOGLE_WEB_CLIENT_ID'),
     CORS_ORIGINS: readCorsOrigins(env),
     CORS_CREDENTIALS: readBoolean(env, 'CORS_CREDENTIALS', true),
   };
@@ -177,4 +181,49 @@ export function resolveEnvFilePaths(cwd = process.cwd()): string[] {
   return candidates.filter((path, index, allPaths) => {
     return allPaths.indexOf(path) === index && existsSync(path);
   });
+}
+
+function parseEnvValue(rawValue: string): string {
+  const trimmedValue = rawValue.trim();
+
+  if (
+    (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+    (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"))
+  ) {
+    return trimmedValue.slice(1, -1);
+  }
+
+  return trimmedValue;
+}
+
+export function applyEnvFileOverrides(
+  envFilePaths = resolveEnvFilePaths(),
+): void {
+  for (const envFilePath of [...envFilePaths].reverse()) {
+    const fileContents = readFileSync(envFilePath, 'utf8');
+    const lines = fileContents.split(/\r?\n/u);
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      if (!trimmedLine || trimmedLine.startsWith('#')) {
+        continue;
+      }
+
+      const separatorIndex = trimmedLine.indexOf('=');
+
+      if (separatorIndex <= 0) {
+        continue;
+      }
+
+      const key = trimmedLine.slice(0, separatorIndex).trim();
+
+      if (!key) {
+        continue;
+      }
+
+      const rawValue = trimmedLine.slice(separatorIndex + 1);
+      process.env[key] = parseEnvValue(rawValue);
+    }
+  }
 }
