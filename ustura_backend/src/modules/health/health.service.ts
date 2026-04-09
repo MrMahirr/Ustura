@@ -247,7 +247,9 @@ export class HealthService {
 
       return {
         status: 'up',
-        message: 'Redis connection is healthy.',
+        message: this.redisService.isUsingMemoryFallback()
+          ? 'Redis is unavailable; using the in-memory development fallback.'
+          : 'Redis connection is healthy.',
       };
     } catch (error) {
       return {

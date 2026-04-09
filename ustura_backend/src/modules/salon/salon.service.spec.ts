@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   NotFoundException,
 } from '@nestjs/common';
+import { ERROR_CODES } from '../../common/errors/error-codes';
 import { Role } from '../../common/enums/role.enum';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { Salon } from './interfaces/salon.types';
@@ -43,6 +45,20 @@ function createSalon(overrides: Partial<Salon> = {}): Salon {
     updatedAt: new Date('2026-04-08T00:00:00.000Z'),
     ...overrides,
   };
+}
+
+function getExceptionCode(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) {
+    return undefined;
+  }
+
+  const response = error.getResponse();
+
+  if (typeof response !== 'object' || response == null || !('code' in response)) {
+    return undefined;
+  }
+
+  return typeof response.code === 'string' ? response.code : undefined;
 }
 
 describe('SalonService', () => {
@@ -99,16 +115,25 @@ describe('SalonService', () => {
   });
 
   it('rejects working hours shorter than one slot', async () => {
-    await expect(
-      salonService.create(createOwnerPayload(), {
+    let capturedError: unknown;
+
+    try {
+      await salonService.create(createOwnerPayload(), {
         name: 'Ustura Barber',
         address: 'Istanbul Street 10',
         city: 'Istanbul',
         working_hours: {
           monday: { open: '09:00', close: '09:15' },
         },
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(BadRequestException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.SALON.INVALID_WORKING_HOURS,
+    );
   });
 
   it('rejects access when the owner tries to update a salon they do not own', async () => {
@@ -118,11 +143,20 @@ describe('SalonService', () => {
       }),
     );
 
-    await expect(
-      salonService.update(createOwnerPayload(), 'salon-1', {
+    let capturedError: unknown;
+
+    try {
+      await salonService.update(createOwnerPayload(), 'salon-1', {
         city: 'Ankara',
-      }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ForbiddenException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.SALON.MANAGEMENT_FORBIDDEN,
+    );
   });
 
   it('hides inactive salons from the public detail endpoint', async () => {
@@ -132,8 +166,17 @@ describe('SalonService', () => {
       }),
     );
 
-    await expect(salonService.findById('salon-1')).rejects.toBeInstanceOf(
-      NotFoundException,
+    let capturedError: unknown;
+
+    try {
+      await salonService.findById('salon-1');
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(NotFoundException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.SALON.NOT_FOUND,
     );
   });
 });

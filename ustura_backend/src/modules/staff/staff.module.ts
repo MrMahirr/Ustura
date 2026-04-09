@@ -1,13 +1,16 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
+import { SalonModule } from '../salon/salon.module';
+import { UserModule } from '../user/user.module';
 import { StaffController } from './staff.controller';
+import { StaffPolicy } from './policies/staff.policy';
 import { StaffService } from './staff.service';
 import { StaffRepository } from './repositories/staff.repository';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, SalonModule, UserModule],
   controllers: [StaffController],
-  providers: [StaffService, StaffRepository],
+  providers: [StaffService, StaffRepository, StaffPolicy],
   exports: [StaffService, StaffRepository],
 })
 export class StaffModule {}

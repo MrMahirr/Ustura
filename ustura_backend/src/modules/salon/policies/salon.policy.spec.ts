@@ -1,4 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, HttpException } from '@nestjs/common';
+import { ERROR_CODES } from '../../../common/errors/error-codes';
 import { Role } from '../../../common/enums/role.enum';
 import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
 import { SalonPolicy } from './salon.policy';
@@ -13,6 +14,20 @@ function createUser(overrides: Partial<JwtPayload> = {}): JwtPayload {
   };
 }
 
+function getExceptionCode(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) {
+    return undefined;
+  }
+
+  const response = error.getResponse();
+
+  if (typeof response !== 'object' || response == null || !('code' in response)) {
+    return undefined;
+  }
+
+  return typeof response.code === 'string' ? response.code : undefined;
+}
+
 describe('SalonPolicy', () => {
   let policy: SalonPolicy;
 
@@ -21,21 +36,39 @@ describe('SalonPolicy', () => {
   });
 
   it('rejects non-owner users from salon management actions', () => {
-    expect(() =>
+    let capturedError: unknown;
+
+    try {
       policy.assertCanManage(
         createUser({
           role: Role.CUSTOMER,
         }),
-      ),
-    ).toThrow(ForbiddenException);
+      );
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ForbiddenException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.SALON.MANAGEMENT_FORBIDDEN,
+    );
   });
 
   it('rejects owners managing salons they do not own', () => {
-    expect(() =>
+    let capturedError: unknown;
+
+    try {
       policy.assertCanManageSalon(createUser(), {
         ownerId: 'owner-2',
-      }),
-    ).toThrow('You do not have permission to manage this salon.');
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ForbiddenException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.SALON.MANAGEMENT_FORBIDDEN,
+    );
   });
 
   it('allows owners to manage their own salons', () => {
