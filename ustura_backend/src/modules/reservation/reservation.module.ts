@@ -3,6 +3,7 @@ import { DatabaseModule } from '../../database/database.module';
 import { SalonModule } from '../salon/salon.module';
 import { StaffModule } from '../staff/staff.module';
 import { UserModule } from '../user/user.module';
+import { ReservationPolicy } from './policies/reservation.policy';
 import { ReservationController } from './reservation.controller';
 import { ReservationService } from './reservation.service';
 import { ReservationRepository } from './repositories/reservation.repository';
@@ -15,6 +16,7 @@ import { SlotGateway } from './slot/slot.gateway';
   controllers: [ReservationController, SlotController],
   providers: [
     ReservationService,
+    ReservationPolicy,
     ReservationRepository,
     SlotService,
     SlotGateway,

@@ -1,10 +1,8 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '../../common/enums/role.enum';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { SLOT_DURATION_MINUTES } from '../../common/constants';
 import { CreateSalonDto } from './dto/create-salon.dto';
@@ -17,6 +15,7 @@ import {
   WorkingHours,
   WorkingHoursEntry,
 } from './interfaces/salon.types';
+import { SalonPolicy } from './policies/salon.policy';
 import { SalonRepository } from './repositories/salon.repository';
 
 const WEEK_DAYS = [
@@ -33,7 +32,10 @@ const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
 @Injectable()
 export class SalonService {
-  constructor(private readonly salonRepository: SalonRepository) {}
+  constructor(
+    private readonly salonRepository: SalonRepository,
+    private readonly salonPolicy: SalonPolicy,
+  ) {}
 
   async findAll(query: FindSalonsQueryDto): Promise<Salon[]> {
     return this.salonRepository.findAll({
@@ -43,7 +45,7 @@ export class SalonService {
   }
 
   async findOwned(currentUser: JwtPayload): Promise<Salon[]> {
-    this.assertOwnerRole(currentUser);
+    this.salonPolicy.assertCanManage(currentUser);
     return this.salonRepository.findByOwnerId(currentUser.sub);
   }
 
@@ -61,7 +63,7 @@ export class SalonService {
     currentUser: JwtPayload,
     createSalonDto: CreateSalonDto,
   ): Promise<Salon> {
-    this.assertOwnerRole(currentUser);
+    this.salonPolicy.assertCanManage(currentUser);
 
     const input: CreateSalonInput = {
       ownerId: currentUser.sub,
@@ -83,8 +85,7 @@ export class SalonService {
     salonId: string,
     updateSalonDto: UpdateSalonDto,
   ): Promise<Salon> {
-    this.assertOwnerRole(currentUser);
-    const existingSalon = await this.requireOwnedSalon(currentUser.sub, salonId);
+    const existingSalon = await this.requireOwnedSalon(currentUser, salonId);
 
     const updateInput: UpdateSalonInput = {
       ...(updateSalonDto.name !== undefined
@@ -140,8 +141,7 @@ export class SalonService {
   }
 
   async remove(currentUser: JwtPayload, salonId: string): Promise<Salon> {
-    this.assertOwnerRole(currentUser);
-    await this.requireOwnedSalon(currentUser.sub, salonId);
+    await this.requireOwnedSalon(currentUser, salonId);
 
     const salon = await this.salonRepository.deactivate(salonId);
 
@@ -153,7 +153,7 @@ export class SalonService {
   }
 
   private async requireOwnedSalon(
-    ownerId: string,
+    currentUser: JwtPayload,
     salonId: string,
   ): Promise<Salon> {
     const salon = await this.salonRepository.findById(salonId);
@@ -162,19 +162,8 @@ export class SalonService {
       throw new NotFoundException('Salon not found.');
     }
 
-    if (salon.ownerId !== ownerId) {
-      throw new ForbiddenException(
-        'You do not have permission to manage this salon.',
-      );
-    }
-
+    this.salonPolicy.assertCanManageSalon(currentUser, salon);
     return salon;
-  }
-
-  private assertOwnerRole(currentUser: JwtPayload): void {
-    if (currentUser.role !== Role.OWNER) {
-      throw new ForbiddenException('Only owners can manage salons.');
-    }
   }
 
   private normalizeWorkingHours(

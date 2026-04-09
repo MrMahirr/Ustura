@@ -4,15 +4,7 @@ import {
 import { Role } from '../../common/enums/role.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
-  customerCredentialsRequiredError,
-  customerGoogleOnlyError,
-  customerInactiveError,
-  customerOnlyManagedReservationError,
   emailAlreadyExistsError,
-  googleIdentityAlreadyLinkedError,
-  invalidEmployeeRoleError,
-  passwordRequiredError,
-  phoneRequiredError,
   userNotFoundError,
 } from './errors/user.errors';
 import {
@@ -22,11 +14,15 @@ import {
   User,
   UserProfile,
 } from './interfaces/user.types';
+import { UserAccountPolicy } from './policies/user-account.policy';
 import { UserRepository } from './repositories/user.repository';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly userAccountPolicy: UserAccountPolicy,
+  ) {}
 
   async findById(id: string): Promise<User | null> {
     return this.userRepository.findById(id);
@@ -66,14 +62,7 @@ export class UserService {
     const existingUser = await this.userRepository.findByEmail(normalizedEmail);
 
     if (existingUser) {
-      if (existingUser.role !== Role.CUSTOMER) {
-        throw customerOnlyManagedReservationError();
-      }
-
-      if (!existingUser.isActive) {
-        throw customerInactiveError();
-      }
-
+      this.userAccountPolicy.assertCanReuseManagedCustomer(existingUser);
       return existingUser;
     }
 
@@ -86,9 +75,7 @@ export class UserService {
   }
 
   async createEmployee(input: CreateEmployeeInput): Promise<User> {
-    if (input.role !== Role.BARBER && input.role !== Role.RECEPTIONIST) {
-      throw invalidEmployeeRoleError();
-    }
+    this.userAccountPolicy.assertValidEmployeeRole(input.role);
 
     return this.createUser(input);
   }
@@ -129,15 +116,11 @@ export class UserService {
       throw userNotFoundError();
     }
 
-    if (user.role !== Role.CUSTOMER) {
-      throw customerGoogleOnlyError();
-    }
-
     const normalizedFirebaseUid = firebaseUid.trim();
-
-    if (user.firebaseUid && user.firebaseUid !== normalizedFirebaseUid) {
-      throw googleIdentityAlreadyLinkedError();
-    }
+    this.userAccountPolicy.assertCanLinkFirebaseIdentity(
+      user,
+      normalizedFirebaseUid,
+    );
 
     if (user.firebaseUid === normalizedFirebaseUid) {
       return user;
@@ -161,21 +144,14 @@ export class UserService {
     const normalizedFirebaseUid = this.normalizeFirebaseUid(input.firebaseUid);
     const hasPassword = this.hasCredential(input.passwordHash);
     const hasFirebaseIdentity = this.hasCredential(normalizedFirebaseUid);
-
-    if (input.role === Role.CUSTOMER) {
-      if (!hasPassword && !hasFirebaseIdentity && !input.allowPasswordless) {
-        throw customerCredentialsRequiredError();
-      }
-    } else if (!hasPassword) {
-      throw passwordRequiredError();
-    }
-
-    const canOmitPhone =
-      input.role === Role.CUSTOMER && input.allowEmptyPhone === true;
-
-    if (!normalizedPhone && !canOmitPhone) {
-      throw phoneRequiredError();
-    }
+    this.userAccountPolicy.assertCreateUserRequirements({
+      role: input.role,
+      hasPassword,
+      hasFirebaseIdentity,
+      allowPasswordless: input.allowPasswordless,
+      hasPhone: normalizedPhone.length > 0,
+      allowEmptyPhone: input.allowEmptyPhone,
+    });
 
     const existingUser = await this.userRepository.findByEmail(normalizedEmail);
 

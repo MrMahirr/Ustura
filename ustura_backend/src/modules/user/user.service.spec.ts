@@ -2,6 +2,7 @@ import { ConflictException, HttpException, NotFoundException } from '@nestjs/com
 import { ERROR_CODES } from '../../common/errors/error-codes';
 import { Role } from '../../common/enums/role.enum';
 import { CreateEmployeeInput, User } from './interfaces/user.types';
+import { UserAccountPolicy } from './policies/user-account.policy';
 import { UserRepository } from './repositories/user.repository';
 import { UserService } from './user.service';
 
@@ -54,7 +55,7 @@ describe('UserService', () => {
       linkFirebaseIdentity: jest.fn(),
     } as unknown as jest.Mocked<UserRepository>;
 
-    userService = new UserService(userRepository);
+    userService = new UserService(userRepository, new UserAccountPolicy());
   });
 
   it('creates a customer with normalized email and reserved customer role', async () => {
