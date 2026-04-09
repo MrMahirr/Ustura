@@ -1,7 +1,8 @@
 import { createHmac } from 'node:crypto';
-import { UnauthorizedException } from '@nestjs/common';
+import { HttpException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { ERROR_CODES } from '../../common/errors/error-codes';
 import { Role } from '../../common/enums/role.enum';
 import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
@@ -10,6 +11,7 @@ import type { User } from '../user/interfaces/user.types';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { FirebaseTokenVerifierService } from './firebase-token-verifier.service';
+import { GoogleWebTokenVerifierService } from './google-web-token-verifier.service';
 import { AuthRepository } from './repositories/auth.repository';
 
 jest.mock('bcrypt', () => ({
@@ -33,6 +35,20 @@ function createUser(overrides: Partial<User> = {}): User {
   };
 }
 
+function getExceptionCode(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) {
+    return undefined;
+  }
+
+  const response = error.getResponse();
+
+  if (typeof response !== 'object' || response == null || !('code' in response)) {
+    return undefined;
+  }
+
+  return typeof response.code === 'string' ? response.code : undefined;
+}
+
 describe('AuthService', () => {
   let authService: AuthService;
   let authRepository: jest.Mocked<AuthRepository>;
@@ -40,6 +56,7 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
   let databaseService: jest.Mocked<DatabaseService>;
   let firebaseTokenVerifierService: jest.Mocked<FirebaseTokenVerifierService>;
+  let googleWebTokenVerifierService: jest.Mocked<GoogleWebTokenVerifierService>;
   let configService: AppConfigService;
   let transactionExecutor: DatabaseTransaction;
   let bcryptHashMock: jest.Mock;
@@ -92,6 +109,10 @@ describe('AuthService', () => {
       verifyGoogleCustomerToken: jest.fn(),
     } as unknown as jest.Mocked<FirebaseTokenVerifierService>;
 
+    googleWebTokenVerifierService = {
+      verifyCustomerAccessToken: jest.fn(),
+    } as unknown as jest.Mocked<GoogleWebTokenVerifierService>;
+
     configService = {
       jwt: {
         secret: 'test-secret',
@@ -103,6 +124,9 @@ describe('AuthService', () => {
         certsUrl:
           'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com',
       },
+      google: {
+        webClientId: 'ustura-web-client.apps.googleusercontent.com',
+      },
     } as AppConfigService;
 
     authService = new AuthService(
@@ -112,6 +136,7 @@ describe('AuthService', () => {
       configService,
       databaseService,
       firebaseTokenVerifierService,
+      googleWebTokenVerifierService,
     );
 
     bcryptHashMock = bcrypt.hash as jest.Mock;
@@ -183,7 +208,11 @@ describe('AuthService', () => {
         email: 'john@example.com',
         password: 'wrong-password',
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: ERROR_CODES.AUTH.INVALID_CREDENTIALS,
+      }),
+    });
 
     expect(saveRefreshTokenMock).not.toHaveBeenCalled();
   });
@@ -270,6 +299,7 @@ describe('AuthService', () => {
       email: 'google@example.com',
       phone: '+905551119999',
       firebaseUid: 'firebase-uid-1',
+      allowEmptyPhone: false,
     });
     expect(result.tokens.accessToken).toBe('google-access-token');
   });
@@ -307,6 +337,68 @@ describe('AuthService', () => {
     );
   });
 
+  it('returns a stable code when a Google email is linked to another account', async () => {
+    firebaseTokenVerifierService.verifyGoogleCustomerToken.mockResolvedValue({
+      firebaseUid: 'firebase-uid-2',
+      email: 'linked@example.com',
+      name: 'Linked Customer',
+    });
+    userService.findByFirebaseUid.mockResolvedValue(null);
+    userService.findByEmail.mockResolvedValue(
+      createUser({
+        email: 'linked@example.com',
+        firebaseUid: 'firebase-uid-1',
+      }),
+    );
+
+    let capturedError: unknown;
+
+    try {
+      await authService.authenticateCustomerWithGoogle({
+        idToken: 'firebase-id-token',
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(HttpException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.AUTH.GOOGLE_EMAIL_ALREADY_LINKED,
+    );
+  });
+
+  it('creates a new customer from a verified Google web access token when the email is new', async () => {
+    const googleCustomer = createUser({
+      email: 'google-web@example.com',
+      passwordHash: null,
+    });
+
+    googleWebTokenVerifierService.verifyCustomerAccessToken.mockResolvedValue({
+      googleSubject: 'google-sub-1',
+      email: 'google-web@example.com',
+      name: 'Google Web Customer',
+    });
+    userService.findByEmail.mockResolvedValue(null);
+    createCustomerMock.mockResolvedValue(googleCustomer);
+    jwtService.signAsync.mockReset();
+    jwtService.signAsync
+      .mockResolvedValueOnce('google-web-access-token')
+      .mockResolvedValueOnce('google-web-refresh-token');
+
+    const result = await authService.authenticateCustomerWithGoogleWeb({
+      accessToken: 'google-oauth-access-token',
+    });
+
+    expect(createCustomerMock).toHaveBeenCalledWith({
+      name: 'Google Web Customer',
+      email: 'google-web@example.com',
+      phone: '',
+      allowPasswordless: true,
+      allowEmptyPhone: true,
+    });
+    expect(result.tokens.accessToken).toBe('google-web-access-token');
+  });
+
   it('rejects password login for a Google-only account', async () => {
     userService.findByEmail.mockResolvedValue(
       createUser({
@@ -320,7 +412,11 @@ describe('AuthService', () => {
         email: 'john@example.com',
         password: 'secret123',
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: ERROR_CODES.AUTH.INVALID_CREDENTIALS,
+      }),
+    });
 
     expect(bcryptCompareMock).not.toHaveBeenCalled();
   });

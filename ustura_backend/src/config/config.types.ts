@@ -29,6 +29,10 @@ export interface FirebaseConfig {
   certsUrl: string;
 }
 
+export interface GoogleAuthConfig {
+  webClientId: string;
+}
+
 export interface RedisConfig {
   host: string;
   port: number;
@@ -61,6 +65,7 @@ export interface EnvironmentVariables {
   JWT_REFRESH_EXPIRATION: string;
   FIREBASE_PROJECT_ID: string;
   FIREBASE_CERTS_URL: string;
+  GOOGLE_WEB_CLIENT_ID: string;
   CORS_ORIGINS: string[];
   CORS_CREDENTIALS: boolean;
 }

@@ -7,6 +7,7 @@ import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { FirebaseTokenVerifierService } from './firebase-token-verifier.service';
 import { AuthService } from './auth.service';
+import { GoogleWebTokenVerifierService } from './google-web-token-verifier.service';
 import { AuthRepository } from './repositories/auth.repository';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -28,6 +29,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthRepository,
     JwtStrategy,
     FirebaseTokenVerifierService,
+    GoogleWebTokenVerifierService,
   ],
   exports: [AuthService],
 })

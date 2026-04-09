@@ -1,10 +1,5 @@
 import { createHmac } from 'node:crypto';
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
@@ -15,6 +10,7 @@ import { Role } from '../../common/enums/role.enum';
 import { UserService } from '../user/user.service';
 import type { User, UserProfile } from '../user/interfaces/user.types';
 import { GoogleCustomerAuthDto } from './dto/google-customer-auth.dto';
+import { GoogleWebCustomerAuthDto } from './dto/google-web-customer-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -24,6 +20,15 @@ import {
   VerifiedRefreshToken,
 } from './interfaces/auth.types';
 import { FirebaseTokenVerifierService } from './firebase-token-verifier.service';
+import { GoogleWebTokenVerifierService } from './google-web-token-verifier.service';
+import {
+  accountInactiveError,
+  customerGoogleOnlyError,
+  generatedTokenInvalidError,
+  googleEmailAlreadyLinkedError,
+  invalidCredentialsError,
+  refreshTokenInvalidError,
+} from './errors/auth.errors';
 import { AuthRepository } from './repositories/auth.repository';
 
 @Injectable()
@@ -37,7 +42,16 @@ export class AuthService {
     private readonly configService: AppConfigService,
     private readonly databaseService: DatabaseService,
     private readonly firebaseTokenVerifierService: FirebaseTokenVerifierService,
+    private readonly googleWebTokenVerifierService: GoogleWebTokenVerifierService,
   ) {}
+
+  getGoogleCustomerWebConfiguration(): { clientId: string | null } {
+    const clientId = this.configService.google.webClientId.trim();
+
+    return {
+      clientId: clientId || null,
+    };
+  }
 
   async register(registerDto: RegisterDto): Promise<AuthSessionResponse> {
     const passwordHash = await this.hashPassword(registerDto.password);
@@ -56,7 +70,7 @@ export class AuthService {
     const user = await this.userService.findByEmail(loginDto.email);
 
     if (!user?.isActive || !user.passwordHash) {
-      throw new UnauthorizedException('Invalid email or password.');
+      throw invalidCredentialsError();
     }
 
     const isPasswordValid = await this.validatePassword(
@@ -65,7 +79,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password.');
+      throw invalidCredentialsError();
     }
 
     return this.createSession(user);
@@ -99,9 +113,7 @@ export class AuthService {
         userByEmail.firebaseUid &&
         userByEmail.firebaseUid !== googleIdentity.firebaseUid
       ) {
-        throw new ConflictException(
-          'This email is already linked to another Google account.',
-        );
+        throw googleEmailAlreadyLinkedError();
       }
 
       const linkedUser = userByEmail.firebaseUid
@@ -114,19 +126,39 @@ export class AuthService {
       return this.createSession(linkedUser);
     }
 
-    const phone = googleCustomerAuthDto.phone?.trim();
-
-    if (!phone) {
-      throw new BadRequestException(
-        'Phone is required when creating a new customer with Google sign-in.',
-      );
-    }
+    const phone = googleCustomerAuthDto.phone?.trim() ?? '';
 
     const customer = await this.userService.createCustomer({
       name: googleIdentity.name,
       email: googleIdentity.email,
       phone,
       firebaseUid: googleIdentity.firebaseUid,
+      allowEmptyPhone: phone.length === 0,
+    });
+
+    return this.createSession(customer);
+  }
+
+  async authenticateCustomerWithGoogleWeb(
+    googleWebCustomerAuthDto: GoogleWebCustomerAuthDto,
+  ): Promise<AuthSessionResponse> {
+    const googleIdentity =
+      await this.googleWebTokenVerifierService.verifyCustomerAccessToken(
+        googleWebCustomerAuthDto.accessToken,
+      );
+    const existingUser = await this.userService.findByEmail(googleIdentity.email);
+
+    if (existingUser) {
+      this.assertCustomerGoogleEligibility(existingUser);
+      return this.createSession(existingUser);
+    }
+
+    const customer = await this.userService.createCustomer({
+      name: googleIdentity.name,
+      email: googleIdentity.email,
+      phone: '',
+      allowPasswordless: true,
+      allowEmptyPhone: true,
     });
 
     return this.createSession(customer);
@@ -147,13 +179,13 @@ export class AuthService {
       storedToken.userId !== verifiedToken.sub ||
       storedToken.expiresAt.getTime() <= Date.now()
     ) {
-      throw new UnauthorizedException('Refresh token is invalid or expired.');
+      throw refreshTokenInvalidError();
     }
 
     const user = await this.userService.findById(verifiedToken.sub);
 
     if (!user?.isActive) {
-      throw new UnauthorizedException('Refresh token is invalid or expired.');
+      throw refreshTokenInvalidError();
     }
 
     return this.databaseService.transaction(async (transaction) => {
@@ -164,7 +196,7 @@ export class AuthService {
       );
 
       if (!revoked) {
-        throw new UnauthorizedException('Refresh token is invalid or expired.');
+        throw refreshTokenInvalidError();
       }
 
       return this.createSession(user, transaction);
@@ -179,7 +211,7 @@ export class AuthService {
     const revoked = await this.authRepository.revokeToken(tokenHash, userId);
 
     if (!revoked) {
-      throw new UnauthorizedException(
+      throw refreshTokenInvalidError(
         'Refresh token is invalid or already revoked.',
       );
     }
@@ -270,12 +302,12 @@ export class AuthService {
       );
 
       if (payload.tokenType !== 'refresh') {
-        throw new UnauthorizedException('Refresh token is invalid or expired.');
+        throw refreshTokenInvalidError();
       }
 
       return payload as VerifiedRefreshToken;
     } catch {
-      throw new UnauthorizedException('Refresh token is invalid or expired.');
+      throw refreshTokenInvalidError();
     }
   }
 
@@ -283,7 +315,7 @@ export class AuthService {
     const decodedToken: unknown = this.jwtService.decode(token);
 
     if (!this.hasNumericExpiration(decodedToken)) {
-      throw new UnauthorizedException('Generated token payload is invalid.');
+      throw generatedTokenInvalidError();
     }
 
     return new Date(decodedToken.exp * 1000);
@@ -303,13 +335,11 @@ export class AuthService {
 
   private assertCustomerGoogleEligibility(user: User): void {
     if (!user.isActive) {
-      throw new UnauthorizedException('User account is inactive.');
+      throw accountInactiveError();
     }
 
     if (user.role !== Role.CUSTOMER) {
-      throw new ConflictException(
-        'Firebase Google sign-in is only available for customer accounts.',
-      );
+      throw customerGoogleOnlyError();
     }
   }
 

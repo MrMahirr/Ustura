@@ -1,9 +1,14 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import { AppConfigService } from './config.service';
-import { resolveEnvFilePaths, validateEnvironment } from './env.validation';
+import {
+  applyEnvFileOverrides,
+  resolveEnvFilePaths,
+  validateEnvironment,
+} from './env.validation';
 
 const envFilePaths = resolveEnvFilePaths();
+applyEnvFileOverrides(envFilePaths);
 
 @Global()
 @Module({

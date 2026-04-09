@@ -23,6 +23,7 @@ describe('validateEnvironment', () => {
     FIREBASE_PROJECT_ID: '',
     FIREBASE_CERTS_URL:
       'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com',
+    GOOGLE_WEB_CLIENT_ID: '',
     CORS_ORIGINS: 'http://localhost:3000, http://localhost:8081',
     CORS_CREDENTIALS: 'true',
   };
@@ -52,6 +53,7 @@ describe('validateEnvironment', () => {
       FIREBASE_PROJECT_ID: '',
       FIREBASE_CERTS_URL:
         'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com',
+      GOOGLE_WEB_CLIENT_ID: '',
       CORS_ORIGINS: ['http://localhost:3000', 'http://localhost:8081'],
       CORS_CREDENTIALS: true,
     });
@@ -73,6 +75,27 @@ describe('validateEnvironment', () => {
         ...validEnvironment,
         NODE_ENV: 'production',
         JWT_SECRET: 'change-me-in-production',
+      }),
+    ).toThrow('JWT_SECRET');
+  });
+
+  it('uses a development fallback jwt secret when JWT_SECRET is omitted', () => {
+    const result = validateEnvironment({
+      ...validEnvironment,
+      JWT_SECRET: '',
+    });
+
+    expect(result.JWT_SECRET).toBe(
+      'ustura-development-jwt-secret-change-before-production',
+    );
+  });
+
+  it('requires JWT_SECRET in production when the value is omitted', () => {
+    expect(() =>
+      validateEnvironment({
+        ...validEnvironment,
+        NODE_ENV: 'production',
+        JWT_SECRET: '',
       }),
     ).toThrow('JWT_SECRET');
   });

@@ -18,9 +18,11 @@ export type UserProfile = Omit<User, 'passwordHash' | 'firebaseUid'>;
 export interface CreateCustomerInput {
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   passwordHash?: string | null;
   firebaseUid?: string | null;
+  allowPasswordless?: boolean;
+  allowEmptyPhone?: boolean;
 }
 
 export interface CreateEmployeeInput {
@@ -34,9 +36,11 @@ export interface CreateEmployeeInput {
 export interface CreateUserRecordInput {
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   passwordHash?: string | null;
   firebaseUid?: string | null;
+  allowPasswordless?: boolean;
+  allowEmptyPhone?: boolean;
   role: Role;
 }
 
