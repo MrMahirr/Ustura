@@ -6,6 +6,7 @@ import {
 import { Role } from '../../common/enums/role.enum';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { Salon } from './interfaces/salon.types';
+import { SalonPolicy } from './policies/salon.policy';
 import { SalonRepository } from './repositories/salon.repository';
 import { SalonService } from './salon.service';
 
@@ -58,7 +59,7 @@ describe('SalonService', () => {
       deactivate: jest.fn(),
     } as unknown as jest.Mocked<SalonRepository>;
 
-    salonService = new SalonService(salonRepository);
+    salonService = new SalonService(salonRepository, new SalonPolicy());
   });
 
   it('creates a salon with normalized string fields and full working hours map', async () => {

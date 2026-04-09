@@ -8,6 +8,7 @@ import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { SalonRepository } from '../salon/repositories/salon.repository';
 import { StaffRepository } from '../staff/repositories/staff.repository';
 import { UserService } from '../user/user.service';
+import { ReservationPolicy } from './policies/reservation.policy';
 import { ReservationRepository } from './repositories/reservation.repository';
 import { ReservationService } from './reservation.service';
 import { SlotService } from './slot/slot.service';
@@ -80,6 +81,7 @@ describe('ReservationService', () => {
       salonRepository,
       staffRepository,
       databaseService,
+      new ReservationPolicy(),
     );
   });
 

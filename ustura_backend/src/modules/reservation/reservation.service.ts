@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ReservationStatus } from '../../common/enums/reservation-status.enum';
 import { Role } from '../../common/enums/role.enum';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
@@ -10,20 +7,15 @@ import { DatabaseService } from '../../database/database.service';
 import { UserService } from '../user/user.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ReservationRecord } from './interfaces/reservation.types';
+import { ReservationPolicy } from './policies/reservation.policy';
 import { ReservationRepository } from './repositories/reservation.repository';
 import { SlotService } from './slot/slot.service';
 import { SalonRepository } from '../salon/repositories/salon.repository';
 import { StaffRepository } from '../staff/repositories/staff.repository';
 import {
   barberNotFoundError,
-  barberScheduleOnlyError,
-  cancellationForbiddenError,
   customerDetailsRequiredError,
   customerNotFoundError,
-  onlyCustomersCanViewOwnReservationsError,
-  ownerSalonOnlyError,
-  receptionistSalonOnlyError,
-  reservationListAccessDeniedError,
   reservationNotFoundError,
   reservationSalonNotFoundError,
   slotAlreadyReservedError,
@@ -39,6 +31,7 @@ export class ReservationService {
     private readonly salonRepository: SalonRepository,
     private readonly staffRepository: StaffRepository,
     private readonly databaseService: DatabaseService,
+    private readonly reservationPolicy: ReservationPolicy,
   ) {}
 
   async create(
@@ -50,8 +43,17 @@ export class ReservationService {
       createReservationDto.staff_id,
       createReservationDto.salon_id,
     );
+    const membership = await this.findActiveMembershipForAuthorization(
+      currentUser,
+      salon.id,
+    );
 
-    await this.assertCreatePermission(currentUser, salon.id, staff.id);
+    this.reservationPolicy.assertCanCreate({
+      currentUser,
+      salonOwnerId: salon.ownerId,
+      membership,
+      targetStaffId: staff.id,
+    });
 
     const slot = await this.slotService.assertSlotReservable({
       salonId: salon.id,
@@ -114,9 +116,7 @@ export class ReservationService {
   }
 
   async findByCustomerId(currentUser: JwtPayload): Promise<ReservationRecord[]> {
-    if (currentUser.role !== Role.CUSTOMER) {
-      throw onlyCustomersCanViewOwnReservationsError();
-    }
+    this.reservationPolicy.assertCanViewOwnReservations(currentUser);
 
     return this.reservationRepository.findByCustomerId(currentUser.sub);
   }
@@ -126,29 +126,21 @@ export class ReservationService {
     salonId: string,
   ): Promise<ReservationRecord[]> {
     const salon = await this.requireSalon(salonId);
-
-    if (currentUser.role === Role.OWNER) {
-      if (salon.ownerId !== currentUser.sub) {
-        throw reservationListAccessDeniedError();
-      }
-
-      return this.reservationRepository.findBySalonId(salonId);
-    }
-
-    const membership = await this.staffRepository.findActiveByUserIdAndSalon(
-      currentUser.sub,
+    const membership = await this.findActiveMembershipForAuthorization(
+      currentUser,
       salonId,
     );
-
-    if (!membership) {
-      throw reservationListAccessDeniedError();
-    }
+    const accessScope = this.reservationPolicy.determineSalonListScope({
+      currentUser,
+      salonOwnerId: salon.ownerId,
+      membership,
+    });
 
     const reservations = await this.reservationRepository.findBySalonId(salonId);
 
-    if (currentUser.role === Role.BARBER) {
+    if (accessScope === 'assigned_only') {
       return reservations.filter(
-        (reservation) => reservation.staffId === membership.id,
+        (reservation) => reservation.staffId === membership!.id,
       );
     }
 
@@ -165,7 +157,18 @@ export class ReservationService {
       throw reservationNotFoundError();
     }
 
-    await this.assertCancellationPermission(currentUser, reservation);
+    const salon = await this.requireSalon(reservation.salonId);
+    const membership = await this.findActiveMembershipForAuthorization(
+      currentUser,
+      reservation.salonId,
+    );
+
+    this.reservationPolicy.assertCanCancel({
+      currentUser,
+      reservation,
+      salonOwnerId: salon.ownerId,
+      membership,
+    });
 
     if (reservation.status === ReservationStatus.CANCELLED) {
       return reservation;
@@ -219,86 +222,6 @@ export class ReservationService {
     return customer.id;
   }
 
-  private async assertCreatePermission(
-    currentUser: JwtPayload,
-    salonId: string,
-    staffId: string,
-  ): Promise<void> {
-    if (currentUser.role === Role.CUSTOMER) {
-      return;
-    }
-
-    if (currentUser.role === Role.OWNER) {
-      const salon = await this.requireSalon(salonId);
-
-      if (salon.ownerId !== currentUser.sub) {
-        throw ownerSalonOnlyError();
-      }
-
-      return;
-    }
-
-    const membership = await this.staffRepository.findActiveByUserIdAndSalon(
-      currentUser.sub,
-      salonId,
-    );
-
-    if (!membership) {
-      throw reservationListAccessDeniedError();
-    }
-
-    if (
-      currentUser.role === Role.BARBER &&
-      (membership.role !== Role.BARBER || membership.id !== staffId)
-    ) {
-      throw barberScheduleOnlyError();
-    }
-
-    if (
-      currentUser.role === Role.RECEPTIONIST &&
-      membership.role !== Role.RECEPTIONIST
-    ) {
-      throw receptionistSalonOnlyError();
-    }
-  }
-
-  private async assertCancellationPermission(
-    currentUser: JwtPayload,
-    reservation: ReservationRecord,
-  ): Promise<void> {
-    if (
-      currentUser.role === Role.CUSTOMER &&
-      reservation.customerId === currentUser.sub
-    ) {
-      return;
-    }
-
-    const salon = await this.requireSalon(reservation.salonId);
-
-    if (
-      currentUser.role === Role.OWNER &&
-      salon.ownerId === currentUser.sub
-    ) {
-      return;
-    }
-
-    const membership = await this.staffRepository.findActiveByUserIdAndSalon(
-      currentUser.sub,
-      reservation.salonId,
-    );
-
-    if (!membership) {
-      throw cancellationForbiddenError();
-    }
-
-    if (
-      currentUser.role === Role.BARBER &&
-      membership.id !== reservation.staffId
-    ) {
-      throw barberScheduleOnlyError();
-    }
-  }
-
   private async requireSalon(salonId: string) {
     const salon = await this.salonRepository.findById(salonId);
 
@@ -322,5 +245,22 @@ export class ReservationService {
     }
 
     return staff;
+  }
+
+  private async findActiveMembershipForAuthorization(
+    currentUser: JwtPayload,
+    salonId: string,
+  ) {
+    if (
+      currentUser.role !== Role.BARBER &&
+      currentUser.role !== Role.RECEPTIONIST
+    ) {
+      return null;
+    }
+
+    return this.staffRepository.findActiveByUserIdAndSalon(
+      currentUser.sub,
+      salonId,
+    );
   }
 }
