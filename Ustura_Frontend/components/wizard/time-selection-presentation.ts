@@ -8,7 +8,10 @@ export interface BookingDateOption {
 export interface BookingTimeSlot {
   id: string;
   label: string;
-  status: 'available' | 'locked';
+  startsAt: string;
+  endsAt: string;
+  status: 'available' | 'reserved' | 'held';
+  availableStaffIds: string[];
 }
 
 export const BOOKING_TIME_SELECTION_COPY = {
@@ -28,29 +31,6 @@ export const BOOKING_TIME_SELECTION_COPY = {
 export const BOOKING_LOCATION_IMAGE_URI =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBHoOkTa3hxqZjSm4ALThGJOLRyKQkbNsWR5UrRJZvs9OEXDbBLlFibOm9xZKYiVrdWlNPXHIy4ZLpm_No0qazOwDrPgs_V81k13jgw5qnpfY0GdGggfZrz8UyOYhommmbyNtlnak4ZCEq-lsX20Qckm4QVe-ienFl2SLY38I9hLkqKSWSdFil0uMVOIgwJx0l1C81u8tjSdEfUjtfd8D-Zf9hAy5VxFFKc-2UemWx5TcAHQp5WpS6AFpdftIBHmvH1sKyBFZq7P5c';
 
-const SLOT_LABELS = [
-  '09:00',
-  '09:30',
-  '10:00',
-  '10:30',
-  '11:00',
-  '11:30',
-  '12:00',
-  '12:30',
-  '14:00',
-  '14:30',
-  '15:00',
-  '15:30',
-  '16:00',
-  '16:30',
-  '17:00',
-  '17:30',
-  '18:00',
-  '18:30',
-  '19:00',
-];
-
-const LOCKED_SLOT_IDS = new Set(['09:30', '15:00', '15:30']);
 const DAY_LABELS = ['Paz', 'Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt'] as const;
 const MONTH_LABELS = [
   'Ocak',
@@ -94,12 +74,4 @@ export function createBookingDateOptions(weekOffset: number) {
       fullDateLabel: `${currentDate.getDate()} ${MONTH_LABELS[currentDate.getMonth()]} ${DAY_LABELS[currentDate.getDay()]}`,
     };
   });
-}
-
-export function createBookingTimeSlots(): BookingTimeSlot[] {
-  return SLOT_LABELS.map((label) => ({
-    id: label,
-    label,
-    status: LOCKED_SLOT_IDS.has(label) ? 'locked' : 'available',
-  }));
 }

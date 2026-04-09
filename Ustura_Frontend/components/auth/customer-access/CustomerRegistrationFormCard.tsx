@@ -20,6 +20,8 @@ interface CustomerRegistrationFormCardProps {
   email: string;
   password: string;
   selectedRoleLabel: string;
+  submitLabel: string;
+  submitDisabled?: boolean;
   fullNameError?: string;
   phoneError?: string;
   emailError?: string;
@@ -43,6 +45,8 @@ export default function CustomerRegistrationFormCard({
   email,
   password,
   selectedRoleLabel,
+  submitLabel,
+  submitDisabled = false,
   fullNameError,
   phoneError,
   emailError,
@@ -166,9 +170,10 @@ export default function CustomerRegistrationFormCard({
         </View>
 
         <Button
-          title={CUSTOMER_REGISTRATION_COPY.submitLabel}
+          title={submitLabel}
           onPress={onSubmit}
           interactionPreset="cta"
+          disabled={submitDisabled}
           style={{ width: '100%' }}
         />
 

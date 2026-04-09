@@ -2,18 +2,14 @@ import React from 'react';
 
 import {
   CUSTOMER_BOOKINGS_TABS,
-  MOCK_CUSTOMER_BOOKINGS,
   getNextUpcomingBooking,
-  sortBookingsByDate,
-  type CustomerBookingRecord,
   type CustomerBookingsTabId,
 } from '@/components/customer-bookings/presentation';
+import { useMyBookings } from '@/hooks/use-my-bookings';
 
 export function useCustomerBookings() {
   const [activeTab, setActiveTab] = React.useState<CustomerBookingsTabId>('upcoming');
-  const [bookings, setBookings] = React.useState<CustomerBookingRecord[]>(() =>
-    sortBookingsByDate(MOCK_CUSTOMER_BOOKINGS)
-  );
+  const { bookings, isLoading, error, reload, cancelBooking } = useMyBookings();
 
   const bookingsByTab = React.useMemo(
     () => ({
@@ -40,22 +36,15 @@ export function useCustomerBookings() {
     [bookingsByTab]
   );
 
-  const cancelBooking = React.useCallback((bookingId: string) => {
-    setBookings((currentBookings) =>
-      sortBookingsByDate(
-        currentBookings.map((booking) =>
-          booking.id === bookingId ? { ...booking, status: 'cancelled' } : booking
-        )
-      )
-    );
-  }, []);
-
   return {
     tabs: CUSTOMER_BOOKINGS_TABS,
     activeTab,
     visibleBookings,
     highlightedBooking,
     tabCounts,
+    isLoading,
+    error,
+    reload,
     setActiveTab,
     cancelBooking,
   };

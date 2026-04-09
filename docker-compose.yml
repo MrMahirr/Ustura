@@ -17,7 +17,6 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./ustura_backend/src/database/migrations/001_init_tables.sql:/docker-entrypoint-initdb.d/001_init_tables.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ustura}"]
       interval: 10s
@@ -32,7 +31,7 @@ services:
     container_name: ustura_redis
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6380}:6379"
+      - "${REDIS_PORT:-6379}:6379"
     command: redis-server --requirepass ${REDIS_PASSWORD:-ustura_redis_secret} --appendonly yes
     volumes:
       - redis_data:/data

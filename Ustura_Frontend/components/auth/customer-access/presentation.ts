@@ -1,7 +1,6 @@
 import type { Href } from 'expo-router';
 
 import type { AuthStatusTone } from '@/components/auth/shared/AuthStatusNotice';
-import { MOCK_CUSTOMER_CREDENTIALS } from '@/constants/mock-auth';
 
 export interface CustomerAuthNotice {
   badge: string;
@@ -14,10 +13,16 @@ export type CustomerAccessState =
   | 'idle'
   | 'validationError'
   | 'invalidCredentials'
+  | 'requestError'
   | 'forgotPassword'
   | 'providerPreview'
   | 'testReady';
-export type CustomerRegistrationState = 'idle' | 'validationError' | 'alternateRoute' | 'testReady';
+export type CustomerRegistrationState =
+  | 'idle'
+  | 'validationError'
+  | 'alternateRoute'
+  | 'requestError'
+  | 'testReady';
 
 export interface CustomerAccessBarberProfile {
   id: string;
@@ -34,8 +39,8 @@ export const CUSTOMER_ACCESS_COPY = {
     'Favori berberini sec, zamanini rezerve et. En iyi grooming deneyimi seni bekliyor.',
   brandRosterLabel: '50+ Premium Berber',
   formTitle: 'Giris Yap',
-  formDescription: 'USTURA hesabina giris yap',
-  identifierLabel: 'E-posta veya Telefon',
+  formDescription: 'USTURA musteri hesabina giris yap',
+  identifierLabel: 'E-posta',
   identifierPlaceholder: 'isim@ornek.com',
   passwordLabel: 'Sifre',
   passwordPlaceholder: '********',
@@ -48,13 +53,6 @@ export const CUSTOMER_ACCESS_COPY = {
   registerPromptAction: 'Kayit Ol',
   staffLabel: 'Personel Girisi',
   adminLabel: 'Super Admin',
-  mockAccountTitle: 'Gecici Test Hesabi',
-  mockAccountDescription: 'Backend auth tamamlanana kadar giris icin bu sabit musteri hesabini kullan.',
-  mockAccountIdentifierLabel: 'E-posta',
-  mockAccountIdentifierValue: MOCK_CUSTOMER_CREDENTIALS.identifier,
-  mockAccountPasswordLabel: 'Sifre',
-  mockAccountPasswordValue: MOCK_CUSTOMER_CREDENTIALS.password,
-  mockAccountFootnote: 'Not: Backend auth entegrasyonu tamamlandiginda bu sabit kullanici kaldirilacak.',
 } as const;
 
 export const CUSTOMER_ACCESS_BARBER_PROFILES: CustomerAccessBarberProfile[] = [
@@ -150,10 +148,16 @@ export function getCustomerAccessNotice(state: CustomerAccessState): CustomerAut
       };
     case 'invalidCredentials':
       return {
-        badge: 'Test Kullanici',
-        title: 'Sabit demo kullanici bilgileri gerekli.',
-        description:
-          'Asagidaki gecici test hesabi ile giris yap. Bu bilgi backend auth entegrasyonu tamamlandiginda kaldirilacak.',
+        badge: 'Kimlik Dogrulama',
+        title: 'Email veya sifre dogrulanamadi.',
+        description: 'Hesap bilgilerini kontrol edip tekrar dene.',
+        tone: 'warning',
+      };
+    case 'requestError':
+      return {
+        badge: 'API',
+        title: 'Giris islemi tamamlanamadi.',
+        description: 'Sunucu, Google saglayicisi veya ag baglantisi su anda cevap vermiyor olabilir.',
         tone: 'warning',
       };
     case 'providerPreview':
@@ -167,7 +171,7 @@ export function getCustomerAccessNotice(state: CustomerAccessState): CustomerAut
       return {
         badge: 'Oturum',
         title: 'Musteri oturumu baslatildi.',
-        description: 'Giris bilgileri dogrulandi ve seni bir sonraki ekrana yonlendiriyoruz.',
+        description: 'Kimlik dogrulandi ve seni bir sonraki ekrana yonlendiriyoruz.',
         tone: 'success',
       };
     case 'idle':
@@ -201,6 +205,13 @@ export function getCustomerRegistrationNotice(
           selectedRole.href != null
             ? 'Bu secim self-service kaydi acmiyor. Ilgili giris ekranina giderek dogru akistan devam et.'
             : 'Bu rol icin self-service kayit acik degil.',
+        tone: 'warning',
+      };
+    case 'requestError':
+      return {
+        badge: 'API',
+        title: 'Kayit istegi tamamlanamadi.',
+        description: 'Girilen bilgiler sunucuda islenemedi. Birazdan tekrar dene.',
         tone: 'warning',
       };
     case 'testReady':

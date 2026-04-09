@@ -4,7 +4,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import CustomerAccessField from '@/components/auth/customer-access/CustomerAccessField';
 import CustomerAccessGoogleButton from '@/components/auth/customer-access/CustomerAccessGoogleButton';
-import CustomerAccessMockCredentials from '@/components/auth/customer-access/CustomerAccessMockCredentials';
 import CustomerAccessNoticeStrip from '@/components/auth/customer-access/CustomerAccessNoticeStrip';
 import {
   CUSTOMER_ACCESS_COPY,
@@ -23,6 +22,8 @@ interface CustomerAccessFormCardProps {
   identifier: string;
   password: string;
   rememberMe: boolean;
+  submitLabel: string;
+  submitDisabled?: boolean;
   identifierError?: string;
   passwordError?: string;
   onIdentifierChange: (value: string) => void;
@@ -30,6 +31,8 @@ interface CustomerAccessFormCardProps {
   onToggleRememberMe: () => void;
   onForgotPassword: () => void;
   onSubmit: () => void;
+  googleAccessLabel: string;
+  googleAccessDisabled?: boolean;
   onGoogleAccess: () => void;
   onRegisterPress: () => void;
 }
@@ -41,6 +44,8 @@ export default function CustomerAccessFormCard({
   identifier,
   password,
   rememberMe,
+  submitLabel,
+  submitDisabled = false,
   identifierError,
   passwordError,
   onIdentifierChange,
@@ -48,6 +53,8 @@ export default function CustomerAccessFormCard({
   onToggleRememberMe,
   onForgotPassword,
   onSubmit,
+  googleAccessLabel,
+  googleAccessDisabled = false,
   onGoogleAccess,
   onRegisterPress,
 }: CustomerAccessFormCardProps) {
@@ -154,13 +161,12 @@ export default function CustomerAccessFormCard({
         </Pressable>
 
         <Button
-          title={CUSTOMER_ACCESS_COPY.submitLabel}
+          title={submitLabel}
           onPress={onSubmit}
           interactionPreset="cta"
+          disabled={submitDisabled}
           style={{ width: '100%' }}
         />
-
-        <CustomerAccessMockCredentials />
 
         {showNotice ? <CustomerAccessNoticeStrip notice={notice} /> : null}
 
@@ -181,7 +187,8 @@ export default function CustomerAccessFormCard({
         </View>
 
         <CustomerAccessGoogleButton
-          label={CUSTOMER_ACCESS_COPY.googleLabel}
+          label={googleAccessLabel}
+          disabled={googleAccessDisabled}
           onPress={onGoogleAccess}
         />
 

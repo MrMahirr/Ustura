@@ -29,6 +29,8 @@ interface StepTimeSelectProps {
   onPreviousWeek: () => void;
   onNextWeek: () => void;
   previousWeekDisabled?: boolean;
+  isLoadingSlots?: boolean;
+  slotErrorMessage?: string | null;
 }
 
 export default function StepTimeSelect({
@@ -45,6 +47,8 @@ export default function StepTimeSelect({
   onPreviousWeek,
   onNextWeek,
   previousWeekDisabled = false,
+  isLoadingSlots = false,
+  slotErrorMessage = null,
 }: StepTimeSelectProps) {
   const { width } = useWindowDimensions();
   const onSurface = useThemeColor({}, 'onSurface');
@@ -102,6 +106,21 @@ export default function StepTimeSelect({
                   {selectedDateLabel ? (
                     <Text className="font-body text-xs" style={{ color: hexToRgba(onSurfaceVariant, 0.82) }}>
                       {selectedDateLabel}
+                    </Text>
+                  ) : null}
+                  {isLoadingSlots ? (
+                    <Text className="font-body text-xs" style={{ color: hexToRgba(onSurfaceVariant, 0.82) }}>
+                      Musait saatler yukleniyor.
+                    </Text>
+                  ) : null}
+                  {!isLoadingSlots && slotErrorMessage ? (
+                    <Text className="font-body text-xs" style={{ color: hexToRgba(onSurfaceVariant, 0.82) }}>
+                      {slotErrorMessage}
+                    </Text>
+                  ) : null}
+                  {!isLoadingSlots && !slotErrorMessage && timeSlots.length === 0 ? (
+                    <Text className="font-body text-xs" style={{ color: hexToRgba(onSurfaceVariant, 0.82) }}>
+                      Bu tarih icin uygun slot bulunamadi.
                     </Text>
                   ) : null}
                 </View>

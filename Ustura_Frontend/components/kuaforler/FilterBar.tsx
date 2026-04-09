@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, useWindowDimensions, Pressable, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -7,7 +7,21 @@ import Input from '@/components/ui/Input';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { hexToRgba } from '@/utils/color';
 
-export default function FilterBar() {
+interface FilterBarProps {
+  searchQuery: string;
+  activeCity: string;
+  cities: string[];
+  onSearchChange: (value: string) => void;
+  onCityChange: (city: string) => void;
+}
+
+export default function FilterBar({
+  searchQuery,
+  activeCity,
+  cities,
+  onSearchChange,
+  onCityChange,
+}: FilterBarProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -16,11 +30,6 @@ export default function FilterBar() {
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
   const surface = useThemeColor({}, 'surface');
   const outlineVariant = useThemeColor({}, 'outlineVariant');
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCity, setActiveCity] = useState('Tumu');
-
-  const cities = ['Tumu', 'Istanbul', 'Ankara', 'Izmir'];
 
   return (
     <View className="my-12 w-full gap-6">
@@ -39,7 +48,7 @@ export default function FilterBar() {
         <View className="self-stretch" style={{ width: isDesktop ? 384 : '100%' }}>
           <Input
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={onSearchChange}
             placeholder="Salon veya hizmet ara..."
             iconLeft="search"
             containerStyle={{ marginTop: 0, borderBottomWidth: 2 }}
@@ -52,7 +61,7 @@ export default function FilterBar() {
         style={{ flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'center' : 'flex-start' }}>
         <View className="flex-row flex-wrap gap-3">
           {cities.map((city) => (
-            <Badge key={city} label={city} isActive={activeCity === city} onPress={() => setActiveCity(city)} />
+            <Badge key={city} label={city} isActive={activeCity === city} onPress={() => onCityChange(city)} />
           ))}
         </View>
 
