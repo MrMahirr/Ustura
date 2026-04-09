@@ -1,4 +1,4 @@
-import { ReservationStatus } from '../../../common/enums/reservation-status.enum';
+import { ReservationStatus } from '../enums/reservation-status.enum';
 
 export interface ReservationRecord {
   id: string;
@@ -9,6 +9,10 @@ export interface ReservationRecord {
   slotEnd: Date;
   status: ReservationStatus;
   notes: string | null;
+  cancelledAt: Date | null;
+  cancelledByUserId: string | null;
+  statusChangedAt: Date | null;
+  statusChangedByUserId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

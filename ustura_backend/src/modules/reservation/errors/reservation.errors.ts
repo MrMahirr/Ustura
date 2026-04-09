@@ -1,10 +1,10 @@
-import { ERROR_CODES } from '../../../common/errors/error-codes';
+import { ERROR_CODES } from '../../../shared/errors/error-codes';
 import {
   badRequestError,
   conflictError,
   forbiddenError,
   notFoundError,
-} from '../../../common/errors/http-exception.factory';
+} from '../../../shared/errors/http-exception.factory';
 
 export function barberNotFoundError() {
   return notFoundError(
@@ -24,6 +24,16 @@ export function cancellationForbiddenError() {
   return forbiddenError(
     'You do not have permission to cancel this reservation.',
     ERROR_CODES.RESERVATION.CANCELLATION_FORBIDDEN,
+  );
+}
+
+export function invalidReservationStatusTransitionError(
+  currentStatus: string,
+  nextStatus: string,
+) {
+  return conflictError(
+    `Reservation status cannot transition from ${currentStatus} to ${nextStatus}.`,
+    ERROR_CODES.RESERVATION.INVALID_STATUS_TRANSITION,
   );
 }
 
@@ -66,6 +76,13 @@ export function receptionistSalonOnlyError() {
   return forbiddenError(
     'Receptionists can only create reservations for salons they belong to.',
     ERROR_CODES.RESERVATION.RECEPTIONIST_SALON_ONLY,
+  );
+}
+
+export function reservationStatusUpdateForbiddenError() {
+  return forbiddenError(
+    'You do not have permission to update this reservation status.',
+    ERROR_CODES.RESERVATION.STATUS_UPDATE_FORBIDDEN,
   );
 }
 

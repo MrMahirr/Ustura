@@ -24,6 +24,14 @@ export interface JwtConfig {
   refreshExpiresIn: string;
 }
 
+export interface ReservationConfig {
+  slotDurationMinutes: number;
+  slotSelectionTtlSeconds: number;
+  slotLockTtlSeconds: number;
+  businessUtcOffset: string;
+  businessTimeZone: string;
+}
+
 export interface FirebaseConfig {
   projectId: string;
   certsUrl: string;

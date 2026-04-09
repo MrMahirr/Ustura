@@ -9,7 +9,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AuthSessionResponseDto } from './dto/auth-session-response.dto';
 import { GoogleCustomerAuthDto } from './dto/google-customer-auth.dto';
 import { GoogleWebCustomerAuthDto } from './dto/google-web-customer-auth.dto';

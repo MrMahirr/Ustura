@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Role } from '../../../common/enums/role.enum';
-import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
+import { Role } from '../../../shared/auth/role.enum';
+import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
 import type { User } from '../../user/interfaces/user.types';
 import {
   staffAlreadyAssignedError,

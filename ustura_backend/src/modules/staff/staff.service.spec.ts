@@ -1,9 +1,9 @@
 import { ConflictException, ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
-import { ERROR_CODES } from '../../common/errors/error-codes';
-import { Role } from '../../common/enums/role.enum';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
-import { SalonRepository } from '../salon/repositories/salon.repository';
+import { ERROR_CODES } from '../../shared/errors/error-codes';
+import { Role } from '../../shared/auth/role.enum';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import type { Salon } from '../salon/interfaces/salon.types';
+import { SalonService } from '../salon/salon.service';
 import type { User } from '../user/interfaces/user.types';
 import { UserService } from '../user/user.service';
 import { StaffPolicy } from './policies/staff.policy';
@@ -86,7 +86,7 @@ function getExceptionCode(error: unknown): string | undefined {
 describe('StaffService', () => {
   let service: StaffService;
   let staffRepository: jest.Mocked<StaffRepository>;
-  let salonRepository: jest.Mocked<SalonRepository>;
+  let salonService: jest.Mocked<Pick<SalonService, 'findActiveById'>>;
   let userService: jest.Mocked<UserService>;
 
   beforeEach(() => {
@@ -101,16 +101,16 @@ describe('StaffService', () => {
       update: jest.fn(),
       deactivate: jest.fn(),
     } as unknown as jest.Mocked<StaffRepository>;
-    salonRepository = {
-      findById: jest.fn(),
-    } as unknown as jest.Mocked<SalonRepository>;
+    salonService = {
+      findActiveById: jest.fn(),
+    } as jest.Mocked<Pick<SalonService, 'findActiveById'>>;
     userService = {
       findById: jest.fn(),
     } as unknown as jest.Mocked<UserService>;
 
     service = new StaffService(
       staffRepository,
-      salonRepository,
+      salonService as unknown as SalonService,
       userService,
       new StaffPolicy(),
     );
@@ -118,7 +118,7 @@ describe('StaffService', () => {
 
   it('lists active staff members for an active salon', async () => {
     const staffList = [createStaffMember()];
-    salonRepository.findById.mockResolvedValue(createSalon());
+    salonService.findActiveById.mockResolvedValue(createSalon());
     staffRepository.findActiveBySalonId.mockResolvedValue(staffList);
 
     const result = await service.findBySalonId('salon-1');
@@ -128,7 +128,7 @@ describe('StaffService', () => {
   });
 
   it('reactivates an existing inactive staff assignment instead of creating a duplicate row', async () => {
-    salonRepository.findById.mockResolvedValue(createSalon());
+    salonService.findActiveById.mockResolvedValue(createSalon());
     userService.findById.mockResolvedValue(createUser());
     staffRepository.findByUserIdAndSalon.mockResolvedValue(
       createStaffMember({
@@ -162,7 +162,7 @@ describe('StaffService', () => {
   });
 
   it('rejects creating staff assignments with user roles that do not match the staff role', async () => {
-    salonRepository.findById.mockResolvedValue(createSalon());
+    salonService.findActiveById.mockResolvedValue(createSalon());
     userService.findById.mockResolvedValue(
       createUser({
         role: Role.RECEPTIONIST,
@@ -188,7 +188,7 @@ describe('StaffService', () => {
   });
 
   it('rejects deleting staff from salons owned by another owner', async () => {
-    salonRepository.findById.mockResolvedValue(
+    salonService.findActiveById.mockResolvedValue(
       createSalon({
         ownerId: 'owner-2',
       }),
@@ -209,7 +209,7 @@ describe('StaffService', () => {
   });
 
   it('returns not found when updating a staff member outside the requested salon scope', async () => {
-    salonRepository.findById.mockResolvedValue(createSalon());
+    salonService.findActiveById.mockResolvedValue(createSalon());
     staffRepository.findById.mockResolvedValue(
       createStaffMember({
         salonId: 'salon-2',

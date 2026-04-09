@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { Role } from '../src/common/enums/role.enum';
+import { Role } from '../src/shared/auth/role.enum';
 import { AuthController } from '../src/modules/auth/auth.controller';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { googleWebNotConfiguredError } from '../src/modules/auth/errors/auth.errors';

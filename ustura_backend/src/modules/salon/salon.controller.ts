@@ -21,10 +21,10 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { Role } from '../../common/enums/role.enum';
+import { Role } from '../../shared/auth/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { SalonResponseDto } from './dto/salon-response.dto';

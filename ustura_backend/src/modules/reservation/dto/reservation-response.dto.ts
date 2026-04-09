@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ReservationStatus } from '../enums/reservation-status.enum';
 
 export class ReservationResponseDto {
   @ApiProperty()
@@ -19,11 +20,23 @@ export class ReservationResponseDto {
   @ApiProperty()
   slotEnd: string;
 
-  @ApiProperty({ enum: ['pending', 'confirmed', 'cancelled'] })
-  status: 'pending' | 'confirmed' | 'cancelled';
+  @ApiProperty({ enum: ReservationStatus })
+  status: ReservationStatus;
 
   @ApiProperty({ nullable: true })
   notes: string | null;
+
+  @ApiProperty({ nullable: true })
+  cancelledAt: string | null;
+
+  @ApiProperty({ nullable: true })
+  cancelledByUserId: string | null;
+
+  @ApiProperty({ nullable: true })
+  statusChangedAt: string | null;
+
+  @ApiProperty({ nullable: true })
+  statusChangedByUserId: string | null;
 
   @ApiProperty()
   createdAt: string;

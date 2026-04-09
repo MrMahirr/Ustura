@@ -153,6 +153,40 @@ async function columnExists(client, tableName, columnName) {
   return result.rows[0]?.exists === true;
 }
 
+async function constraintExists(client, tableName, constraintName) {
+  const result = await client.query(
+    `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = 'public'
+          AND table_name = $1
+          AND constraint_name = $2
+      ) AS exists
+    `,
+    [tableName, constraintName],
+  );
+
+  return result.rows[0]?.exists === true;
+}
+
+async function indexExists(client, tableName, indexName) {
+  const result = await client.query(
+    `
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+          AND tablename = $1
+          AND indexname = $2
+      ) AS exists
+    `,
+    [tableName, indexName],
+  );
+
+  return result.rows[0]?.exists === true;
+}
+
 async function baselineLegacySetupIfNeeded(client, appliedMigrations) {
   if (appliedMigrations.size > 0) {
     return;
@@ -189,6 +223,36 @@ async function baselineLegacySetupIfNeeded(client, appliedMigrations) {
     );
     appliedMigrations.set('002_add_customer_google_auth.sql', new Date());
     console.log('Baselined legacy migration: 002_add_customer_google_auth.sql');
+  }
+
+  const reservationSchemaUpdated =
+    (await columnExists(client, 'reservations', 'cancelled_at')) &&
+    (await columnExists(client, 'reservations', 'cancelled_by_user_id')) &&
+    (await columnExists(client, 'reservations', 'status_changed_at')) &&
+    (await columnExists(client, 'reservations', 'status_changed_by_user_id')) &&
+    (await constraintExists(
+      client,
+      'reservations',
+      'chk_reservations_status_lifecycle',
+    )) &&
+    (await constraintExists(
+      client,
+      'reservations',
+      'chk_reservations_slot_duration',
+    )) &&
+    (await indexExists(client, 'reservations', 'uq_reservations_active_staff_slot'));
+
+  if (reservationSchemaUpdated) {
+    await client.query(
+      `
+        INSERT INTO schema_migrations (filename)
+        VALUES ($1)
+        ON CONFLICT (filename) DO NOTHING
+      `,
+      ['003_rework_reservation_schema.sql'],
+    );
+    appliedMigrations.set('003_rework_reservation_schema.sql', new Date());
+    console.log('Baselined legacy migration: 003_rework_reservation_schema.sql');
   }
 }
 

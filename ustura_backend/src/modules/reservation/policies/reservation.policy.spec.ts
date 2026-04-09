@@ -1,8 +1,9 @@
 import { ForbiddenException, HttpException } from '@nestjs/common';
-import { ERROR_CODES } from '../../../common/errors/error-codes';
-import { Role } from '../../../common/enums/role.enum';
-import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
+import { ERROR_CODES } from '../../../shared/errors/error-codes';
+import { Role } from '../../../shared/auth/role.enum';
+import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
 import type { StaffMember } from '../../staff/interfaces/staff.types';
+import { ReservationStatus } from '../enums/reservation-status.enum';
 import type { ReservationRecord } from '../interfaces/reservation.types';
 import { ReservationPolicy } from './reservation.policy';
 
@@ -43,8 +44,12 @@ function createReservation(
     staffId: 'staff-1',
     slotStart: new Date('2026-04-10T10:00:00.000Z'),
     slotEnd: new Date('2026-04-10T10:30:00.000Z'),
-    status: 'confirmed' as ReservationRecord['status'],
+    status: ReservationStatus.CONFIRMED,
     notes: null,
+    cancelledAt: null,
+    cancelledByUserId: null,
+    statusChangedAt: new Date('2026-04-09T00:00:00.000Z'),
+    statusChangedByUserId: 'owner-1',
     createdAt: new Date('2026-04-09T00:00:00.000Z'),
     updatedAt: new Date('2026-04-09T00:00:00.000Z'),
     ...overrides,
@@ -149,6 +154,39 @@ describe('ReservationPolicy', () => {
     expect(capturedError).toBeInstanceOf(ForbiddenException);
     expect(getExceptionCode(capturedError)).toBe(
       ERROR_CODES.RESERVATION.BARBER_SCHEDULE_ONLY,
+    );
+  });
+
+  it('allows receptionists to update statuses for reservations in their salon', () => {
+    expect(() =>
+      policy.assertCanUpdateStatus({
+        currentUser: createUser({
+          role: Role.RECEPTIONIST,
+        }),
+        reservation: createReservation(),
+        salonOwnerId: 'owner-1',
+        membership: createMembership({
+          role: Role.RECEPTIONIST,
+        }),
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects invalid reservation status transitions', () => {
+    let capturedError: unknown;
+
+    try {
+      policy.assertCanTransitionStatus(
+        ReservationStatus.PENDING,
+        ReservationStatus.COMPLETED,
+      );
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(HttpException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.RESERVATION.INVALID_STATUS_TRANSITION,
     );
   });
 });

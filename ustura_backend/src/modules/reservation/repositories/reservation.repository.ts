@@ -1,12 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { QueryResultRow } from 'pg';
-import { ReservationStatus } from '../../../common/enums/reservation-status.enum';
 import { DatabaseService } from '../../../database/database.service';
 import { SqlQueryExecutor } from '../../../database/database.types';
+import {
+  ReservationStatus,
+  type OperationalReservationStatus,
+} from '../enums/reservation-status.enum';
 import {
   CreateReservationInput,
   ReservationRecord,
 } from '../interfaces/reservation.types';
+
+const ACTIVE_RESERVATION_STATUSES = [
+  ReservationStatus.PENDING,
+  ReservationStatus.CONFIRMED,
+] as const;
 
 @Injectable()
 export class ReservationRepository {
@@ -38,6 +46,10 @@ export class ReservationRepository {
           slot_end,
           status,
           notes,
+          cancelled_at,
+          cancelled_by_user_id,
+          status_changed_at,
+          status_changed_by_user_id,
           created_at,
           updated_at
       `,
@@ -68,6 +80,10 @@ export class ReservationRepository {
           slot_end,
           status,
           notes,
+          cancelled_at,
+          cancelled_by_user_id,
+          status_changed_at,
+          status_changed_by_user_id,
           created_at,
           updated_at
         FROM reservations
@@ -93,6 +109,10 @@ export class ReservationRepository {
           slot_end,
           status,
           notes,
+          cancelled_at,
+          cancelled_by_user_id,
+          status_changed_at,
+          status_changed_by_user_id,
           created_at,
           updated_at
         FROM reservations
@@ -118,6 +138,10 @@ export class ReservationRepository {
           slot_end,
           status,
           notes,
+          cancelled_at,
+          cancelled_by_user_id,
+          status_changed_at,
+          status_changed_by_user_id,
           created_at,
           updated_at
         FROM reservations
@@ -151,16 +175,20 @@ export class ReservationRepository {
           slot_end,
           status,
           notes,
+          cancelled_at,
+          cancelled_by_user_id,
+          status_changed_at,
+          status_changed_by_user_id,
           created_at,
           updated_at
         FROM reservations
         WHERE staff_id = ANY($1::uuid[])
           AND slot_start >= $2
           AND slot_start < $3
-          AND status <> $4
+          AND status = ANY($4::varchar[])
         ORDER BY slot_start ASC
       `,
-      values: [staffIds, rangeStart, rangeEnd, ReservationStatus.CANCELLED],
+      values: [staffIds, rangeStart, rangeEnd, ACTIVE_RESERVATION_STATUSES],
     });
 
     return result.rows.map((row) => this.mapRow(row) as ReservationRecord);
@@ -168,13 +196,19 @@ export class ReservationRepository {
 
   async cancel(
     id: string,
+    actorUserId: string,
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<ReservationRecord | null> {
     const result = await executor.query<ReservationRow>({
       name: 'reservation.cancel',
       text: `
         UPDATE reservations
-        SET status = $2
+        SET
+          status = $2,
+          cancelled_at = NOW(),
+          cancelled_by_user_id = $3,
+          status_changed_at = NOW(),
+          status_changed_by_user_id = $3
         WHERE id = $1
         RETURNING
           id,
@@ -185,10 +219,51 @@ export class ReservationRepository {
           slot_end,
           status,
           notes,
+          cancelled_at,
+          cancelled_by_user_id,
+          status_changed_at,
+          status_changed_by_user_id,
           created_at,
           updated_at
       `,
-      values: [id, ReservationStatus.CANCELLED],
+      values: [id, ReservationStatus.CANCELLED, actorUserId],
+    });
+
+    return this.mapRow(result.rows[0]);
+  }
+
+  async updateStatus(
+    id: string,
+    status: OperationalReservationStatus,
+    actorUserId: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<ReservationRecord | null> {
+    const result = await executor.query<ReservationRow>({
+      name: 'reservation.update-status',
+      text: `
+        UPDATE reservations
+        SET
+          status = $2,
+          status_changed_at = NOW(),
+          status_changed_by_user_id = $3
+        WHERE id = $1
+        RETURNING
+          id,
+          customer_id,
+          salon_id,
+          staff_id,
+          slot_start,
+          slot_end,
+          status,
+          notes,
+          cancelled_at,
+          cancelled_by_user_id,
+          status_changed_at,
+          status_changed_by_user_id,
+          created_at,
+          updated_at
+      `,
+      values: [id, status, actorUserId],
     });
 
     return this.mapRow(result.rows[0]);
@@ -208,6 +283,10 @@ export class ReservationRepository {
       slotEnd: row.slot_end,
       status: row.status,
       notes: row.notes,
+      cancelledAt: row.cancelled_at,
+      cancelledByUserId: row.cancelled_by_user_id,
+      statusChangedAt: row.status_changed_at,
+      statusChangedByUserId: row.status_changed_by_user_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -223,6 +302,10 @@ interface ReservationRow extends QueryResultRow {
   slot_end: Date;
   status: ReservationStatus;
   notes: string | null;
+  cancelled_at: Date | null;
+  cancelled_by_user_id: string | null;
+  status_changed_at: Date | null;
+  status_changed_by_user_id: string | null;
   created_at: Date;
   updated_at: Date;
 }

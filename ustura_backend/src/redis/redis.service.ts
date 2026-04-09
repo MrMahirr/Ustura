@@ -101,6 +101,10 @@ export class RedisService implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldSuppressDevelopmentConnectionError(error)) {
+        return;
+      }
+
       this.logger.error('Unexpected Redis client error.', error.stack);
     });
 
@@ -145,6 +149,42 @@ export class RedisService implements OnModuleDestroy {
         cause instanceof Error ? cause.message : String(cause)
       }`,
     );
+  }
+
+  private shouldSuppressDevelopmentConnectionError(error: unknown): boolean {
+    if (this.configService.app.nodeEnv === 'production') {
+      return false;
+    }
+
+    const errorMessages = this.collectErrorMessages(error);
+
+    return errorMessages.some((message) => {
+      return (
+        message.includes('ECONNREFUSED') ||
+        message.includes('Connection is closed')
+      );
+    });
+  }
+
+  private collectErrorMessages(error: unknown): string[] {
+    if (error instanceof AggregateError) {
+      return [
+        ...(error.message ? [error.message] : []),
+        ...error.errors.flatMap((nestedError) =>
+          this.collectErrorMessages(nestedError),
+        ),
+      ];
+    }
+
+    if (error instanceof Error) {
+      return error.message ? [error.message] : [];
+    }
+
+    if (typeof error === 'string' && error.trim()) {
+      return [error];
+    }
+
+    return [];
   }
 }
 

@@ -4,9 +4,10 @@ import {
   HttpException,
   NotFoundException,
 } from '@nestjs/common';
-import { ERROR_CODES } from '../../common/errors/error-codes';
-import { Role } from '../../common/enums/role.enum';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import { ERROR_CODES } from '../../shared/errors/error-codes';
+import { Role } from '../../shared/auth/role.enum';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { AppConfigService } from '../../config/config.service';
 import { Salon } from './interfaces/salon.types';
 import { SalonPolicy } from './policies/salon.policy';
 import { SalonRepository } from './repositories/salon.repository';
@@ -64,6 +65,7 @@ function getExceptionCode(error: unknown): string | undefined {
 describe('SalonService', () => {
   let salonService: SalonService;
   let salonRepository: jest.Mocked<SalonRepository>;
+  let configService: Pick<AppConfigService, 'reservation'>;
 
   beforeEach(() => {
     salonRepository = {
@@ -74,8 +76,21 @@ describe('SalonService', () => {
       update: jest.fn(),
       deactivate: jest.fn(),
     } as unknown as jest.Mocked<SalonRepository>;
+    configService = {
+      reservation: {
+        slotDurationMinutes: 30,
+        slotSelectionTtlSeconds: 45,
+        slotLockTtlSeconds: 5,
+        businessUtcOffset: '+03:00',
+        businessTimeZone: 'Europe/Istanbul',
+      },
+    };
 
-    salonService = new SalonService(salonRepository, new SalonPolicy());
+    salonService = new SalonService(
+      configService as AppConfigService,
+      salonRepository,
+      new SalonPolicy(),
+    );
   });
 
   it('creates a salon with normalized string fields and full working hours map', async () => {

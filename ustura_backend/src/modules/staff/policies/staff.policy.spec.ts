@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, HttpException } from '@nestjs/common';
-import { ERROR_CODES } from '../../../common/errors/error-codes';
-import { Role } from '../../../common/enums/role.enum';
-import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
+import { ERROR_CODES } from '../../../shared/errors/error-codes';
+import { Role } from '../../../shared/auth/role.enum';
+import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
 import type { User } from '../../user/interfaces/user.types';
 import type { StaffMember } from '../interfaces/staff.types';
 import { StaffPolicy } from './staff.policy';

@@ -10,6 +10,7 @@ import type {
 const REQUIRED_MIGRATIONS = [
   '001_init_tables.sql',
   '002_add_customer_google_auth.sql',
+  '003_rework_reservation_schema.sql',
 ] as const;
 
 const REQUIRED_USER_COLUMNS = [
@@ -23,6 +24,34 @@ const REQUIRED_USER_COLUMNS = [
   },
 ] as const;
 
+const REQUIRED_RESERVATION_COLUMNS = [
+  {
+    name: 'cancelled_at',
+    isNullable: 'YES',
+  },
+  {
+    name: 'cancelled_by_user_id',
+    isNullable: 'YES',
+  },
+  {
+    name: 'status_changed_at',
+    isNullable: 'YES',
+  },
+  {
+    name: 'status_changed_by_user_id',
+    isNullable: 'YES',
+  },
+] as const;
+
+const REQUIRED_RESERVATION_CONSTRAINTS = [
+  'chk_reservations_status_lifecycle',
+  'chk_reservations_slot_duration',
+] as const;
+
+const REQUIRED_RESERVATION_INDEXES = [
+  'uq_reservations_active_staff_slot',
+] as const;
+
 const DATABASE_UNAVAILABLE_CHECKS = {
   schemaMigrations: {
     status: 'down',
@@ -32,7 +61,14 @@ const DATABASE_UNAVAILABLE_CHECKS = {
     status: 'down',
     message: 'Skipped because PostgreSQL is unavailable.',
   },
-} as const satisfies Pick<ReadinessReport['checks'], 'schemaMigrations' | 'usersTableSchema'>;
+  reservationsTableSchema: {
+    status: 'down',
+    message: 'Skipped because PostgreSQL is unavailable.',
+  },
+} as const satisfies Pick<
+  ReadinessReport['checks'],
+  'schemaMigrations' | 'usersTableSchema' | 'reservationsTableSchema'
+>;
 
 @Injectable()
 export class HealthService {
@@ -58,11 +94,21 @@ export class HealthService {
       database.status === 'up'
         ? await this.checkUsersTableSchema()
         : DATABASE_UNAVAILABLE_CHECKS.usersTableSchema;
+    const reservationsTableSchema =
+      database.status === 'up'
+        ? await this.checkReservationsTableSchema()
+        : DATABASE_UNAVAILABLE_CHECKS.reservationsTableSchema;
     const redis = await this.checkRedisConnectivity();
 
     return {
       status:
-        [database, schemaMigrations, usersTableSchema, redis].every(
+        [
+          database,
+          schemaMigrations,
+          usersTableSchema,
+          reservationsTableSchema,
+          redis,
+        ].every(
           (check) => check.status === 'up',
         )
           ? 'ready'
@@ -72,6 +118,7 @@ export class HealthService {
         database,
         schemaMigrations,
         usersTableSchema,
+        reservationsTableSchema,
         redis,
       },
     };
@@ -180,7 +227,7 @@ export class HealthService {
 
   private async checkUsersTableSchema(): Promise<HealthCheckResult> {
     try {
-      const result = await this.databaseService.query<UserColumnRow>({
+      const result = await this.databaseService.query<InformationSchemaColumnRow>({
         name: 'health.users-table-columns',
         text: `
           SELECT
@@ -233,6 +280,115 @@ export class HealthService {
     }
   }
 
+  private async checkReservationsTableSchema(): Promise<HealthCheckResult> {
+    try {
+      const columnsResult =
+        await this.databaseService.query<InformationSchemaColumnRow>({
+          name: 'health.reservations-table-columns',
+          text: `
+            SELECT
+              column_name,
+              is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'reservations'
+              AND column_name = ANY($1::text[])
+          `,
+          values: [REQUIRED_RESERVATION_COLUMNS.map((column) => column.name)],
+        });
+      const columnsByName = new Map(
+        columnsResult.rows.map((row) => [row.column_name, row.is_nullable]),
+      );
+      const missingColumns = REQUIRED_RESERVATION_COLUMNS.filter((column) => {
+        return !columnsByName.has(column.name);
+      }).map((column) => column.name);
+
+      if (missingColumns.length > 0) {
+        return {
+          status: 'down',
+          message: `Reservations table is missing required column(s): ${missingColumns.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      const invalidNullability = REQUIRED_RESERVATION_COLUMNS.filter((column) => {
+        return columnsByName.get(column.name) !== column.isNullable;
+      }).map((column) => `${column.name} should be nullable`);
+
+      if (invalidNullability.length > 0) {
+        return {
+          status: 'down',
+          message: `Reservations table schema is outdated: ${invalidNullability.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      const constraintsResult =
+        await this.databaseService.query<InformationSchemaConstraintRow>({
+          name: 'health.reservations-table-constraints',
+          text: `
+            SELECT constraint_name
+            FROM information_schema.table_constraints
+            WHERE table_schema = 'public'
+              AND table_name = 'reservations'
+          `,
+        });
+      const constraintNames = new Set(
+        constraintsResult.rows.map((row) => row.constraint_name),
+      );
+      const missingConstraints = REQUIRED_RESERVATION_CONSTRAINTS.filter(
+        (constraintName) => !constraintNames.has(constraintName),
+      );
+
+      if (missingConstraints.length > 0) {
+        return {
+          status: 'down',
+          message: `Reservations table is missing required constraint(s): ${missingConstraints.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      if (constraintNames.has('uq_reservation_staff_slot')) {
+        return {
+          status: 'down',
+          message:
+            'Reservations table still exposes the legacy slot uniqueness constraint. Run `npm run migrate`.',
+        };
+      }
+
+      const indexesResult = await this.databaseService.query<PgIndexRow>({
+        name: 'health.reservations-table-indexes',
+        text: `
+          SELECT indexname
+          FROM pg_indexes
+          WHERE schemaname = 'public'
+            AND tablename = 'reservations'
+        `,
+      });
+      const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
+      const missingIndexes = REQUIRED_RESERVATION_INDEXES.filter(
+        (indexName) => !indexNames.has(indexName),
+      );
+
+      if (missingIndexes.length > 0) {
+        return {
+          status: 'down',
+          message: `Reservations table is missing required index(es): ${missingIndexes.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      return {
+        status: 'up',
+        message: 'Reservations table schema is up to date.',
+      };
+    } catch (error) {
+      return {
+        status: 'down',
+        message: this.appendCause(
+          'Unable to inspect the reservations table schema. Check the configured PostgreSQL database.',
+          error,
+        ),
+      };
+    }
+  }
+
   private async checkRedisConnectivity(): Promise<HealthCheckResult> {
     try {
       await this.redisService.connect();
@@ -275,7 +431,15 @@ export class HealthService {
   }
 }
 
-interface UserColumnRow {
+interface InformationSchemaColumnRow {
   column_name: string;
   is_nullable: 'YES' | 'NO';
+}
+
+interface InformationSchemaConstraintRow {
+  constraint_name: string;
+}
+
+interface PgIndexRow {
+  indexname: string;
 }

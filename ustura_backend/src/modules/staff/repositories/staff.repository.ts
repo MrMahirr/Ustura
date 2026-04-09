@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { QueryResultRow } from 'pg';
-import { Role } from '../../../common/enums/role.enum';
+import { Role } from '../../../shared/auth/role.enum';
 import { DatabaseService } from '../../../database/database.service';
 import {
   CreateStaffInput,

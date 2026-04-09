@@ -3,8 +3,8 @@ import {
   ConflictException,
   HttpException,
 } from '@nestjs/common';
-import { ERROR_CODES } from '../../../common/errors/error-codes';
-import { Role } from '../../../common/enums/role.enum';
+import { ERROR_CODES } from '../../../shared/errors/error-codes';
+import { Role } from '../../../shared/auth/role.enum';
 import type { User } from '../interfaces/user.types';
 import { UserAccountPolicy } from './user-account.policy';
 

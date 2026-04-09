@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
-import { SalonRepository } from '../salon/repositories/salon.repository';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { SalonService } from '../salon/salon.service';
 import { UserService } from '../user/user.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
@@ -19,7 +19,7 @@ import { StaffRepository } from './repositories/staff.repository';
 export class StaffService {
   constructor(
     private readonly staffRepository: StaffRepository,
-    private readonly salonRepository: SalonRepository,
+    private readonly salonService: SalonService,
     private readonly userService: UserService,
     private readonly staffPolicy: StaffPolicy,
   ) {}
@@ -144,10 +144,25 @@ export class StaffService {
     return deactivatedStaffMember;
   }
 
-  private async requireSalon(salonId: string) {
-    const salon = await this.salonRepository.findById(salonId);
+  async findById(staffId: string): Promise<StaffMember | null> {
+    return this.staffRepository.findById(staffId);
+  }
 
-    if (!salon?.isActive) {
+  async findActiveBarbersBySalonId(salonId: string): Promise<StaffMember[]> {
+    return this.staffRepository.findActiveBarbersBySalonId(salonId);
+  }
+
+  async findActiveByUserIdAndSalon(
+    userId: string,
+    salonId: string,
+  ): Promise<StaffMember | null> {
+    return this.staffRepository.findActiveByUserIdAndSalon(userId, salonId);
+  }
+
+  private async requireSalon(salonId: string) {
+    const salon = await this.salonService.findActiveById(salonId);
+
+    if (!salon) {
       throw staffSalonNotFoundError();
     }
 
