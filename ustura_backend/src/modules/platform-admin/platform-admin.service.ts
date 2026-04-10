@@ -3,7 +3,10 @@ import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../../database/database.service';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
-import { SalonService } from '../salon/salon.service';
+import {
+  SALON_OWNER_PROVISIONING_SERVICE,
+  type SalonOwnerProvisioningServiceContract,
+} from '../salon/interfaces/salon.contracts';
 import {
   USER_PROVISIONING_SERVICE,
   type UserProvisioningServiceContract,
@@ -31,7 +34,8 @@ export class PlatformAdminService {
     private readonly databaseService: DatabaseService,
     @Inject(USER_PROVISIONING_SERVICE)
     private readonly userProvisioningService: UserProvisioningServiceContract,
-    private readonly salonService: SalonService,
+    @Inject(SALON_OWNER_PROVISIONING_SERVICE)
+    private readonly salonOwnerProvisioningService: SalonOwnerProvisioningServiceContract,
     private readonly domainEventBus: DomainEventBus,
   ) {}
 
@@ -50,7 +54,8 @@ export class PlatformAdminService {
       throw ownerApplicationAlreadyExistsError();
     }
 
-    const normalizedSalonInput = this.salonService.prepareOwnedSalonInput({
+    const normalizedSalonInput =
+      this.salonOwnerProvisioningService.prepareOwnedSalonInput({
       name: createOwnerApplicationDto.salonName,
       address: createOwnerApplicationDto.salonAddress,
       city: createOwnerApplicationDto.salonCity,
@@ -115,7 +120,7 @@ export class PlatformAdminService {
         },
         transaction,
       );
-      const salon = await this.salonService.createOwnedSalon(
+      const salon = await this.salonOwnerProvisioningService.createOwnedSalon(
         owner.id,
         {
           name: application.salonName,

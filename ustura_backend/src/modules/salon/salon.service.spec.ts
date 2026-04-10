@@ -4,14 +4,19 @@ import {
   HttpException,
   NotFoundException,
 } from '@nestjs/common';
+import { AppConfigService } from '../../config/config.service';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
-import { AppConfigService } from '../../config/config.service';
-import { Salon } from './interfaces/salon.types';
+import type { Salon } from './interfaces/salon.types';
 import { SalonPolicy } from './policies/salon.policy';
+import { SalonProjectionService } from './salon-projection.service';
+import { SalonOwnershipService } from './salon-ownership.service';
+import { SalonQueryService } from './salon-query.service';
+import { SalonManagementService } from './salon-management.service';
 import { SalonRepository } from './repositories/salon.repository';
 import { SalonService } from './salon.service';
+import { SalonWorkingHoursService } from './salon-working-hours.service';
 
 function createOwnerPayload(overrides: Partial<JwtPayload> = {}): JwtPayload {
   return {
@@ -65,7 +70,6 @@ function getExceptionCode(error: unknown): string | undefined {
 describe('SalonService', () => {
   let salonService: SalonService;
   let salonRepository: jest.Mocked<SalonRepository>;
-  let configService: Pick<AppConfigService, 'reservation'>;
 
   beforeEach(() => {
     salonRepository = {
@@ -76,7 +80,8 @@ describe('SalonService', () => {
       update: jest.fn(),
       deactivate: jest.fn(),
     } as unknown as jest.Mocked<SalonRepository>;
-    configService = {
+
+    const configService = {
       reservation: {
         slotDurationMinutes: 30,
         slotSelectionTtlSeconds: 45,
@@ -84,18 +89,55 @@ describe('SalonService', () => {
         businessUtcOffset: '+03:00',
         businessTimeZone: 'Europe/Istanbul',
       },
-    };
-
-    salonService = new SalonService(
-      configService as AppConfigService,
+    } as AppConfigService;
+    const salonPolicy = new SalonPolicy();
+    const salonProjectionService = new SalonProjectionService();
+    const salonOwnershipService = new SalonOwnershipService(
       salonRepository,
-      new SalonPolicy(),
+      salonPolicy,
     );
+    const salonWorkingHoursService = new SalonWorkingHoursService(configService);
+    const salonQueryService = new SalonQueryService(
+      salonRepository,
+      salonPolicy,
+      salonProjectionService,
+    );
+    const salonManagementService = new SalonManagementService(
+      salonRepository,
+      salonPolicy,
+      salonWorkingHoursService,
+      salonOwnershipService,
+      salonProjectionService,
+    );
+
+    salonService = new SalonService(salonQueryService, salonManagementService);
   });
 
-  it('creates a salon with normalized string fields and full working hours map', async () => {
-    const createdSalon = createSalon();
-    salonRepository.create.mockResolvedValue(createdSalon);
+  it('returns simplified public salon summaries for discovery', async () => {
+    salonRepository.findAll.mockResolvedValue([createSalon()]);
+
+    const result = await salonService.findAll({
+      city: ' Istanbul ',
+      search: ' Barber ',
+    });
+
+    expect(salonRepository.findAll).toHaveBeenCalledWith({
+      city: 'Istanbul',
+      search: 'Barber',
+    });
+    expect(result).toEqual([
+      {
+        id: 'salon-1',
+        name: 'Ustura Barber',
+        city: 'Istanbul',
+        district: 'Besiktas',
+        photoUrl: 'https://example.com/photo.jpg',
+      },
+    ]);
+  });
+
+  it('creates a salon with normalized string fields and owner detail projection', async () => {
+    salonRepository.create.mockResolvedValue(createSalon());
 
     const result = await salonService.create(createOwnerPayload(), {
       name: '  Ustura Barber  ',
@@ -109,27 +151,41 @@ describe('SalonService', () => {
       },
     });
 
-    expect(salonRepository.create).toHaveBeenCalledWith({
-      ownerId: 'owner-1',
+    expect(salonRepository.create).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        name: 'Ustura Barber',
+        address: 'Istanbul Street 10',
+        city: 'Istanbul',
+        district: 'Besiktas',
+        photoUrl: 'https://example.com/photo.jpg',
+        workingHours: {
+          monday: { open: '09:00', close: '19:00' },
+          tuesday: null,
+          wednesday: null,
+          thursday: null,
+          friday: null,
+          saturday: { open: '10:00', close: '18:00' },
+          sunday: null,
+        },
+      },
+      undefined,
+    );
+    expect(result).toEqual({
+      id: 'salon-1',
       name: 'Ustura Barber',
       address: 'Istanbul Street 10',
       city: 'Istanbul',
       district: 'Besiktas',
       photoUrl: 'https://example.com/photo.jpg',
-      workingHours: {
-        monday: { open: '09:00', close: '19:00' },
-        tuesday: null,
-        wednesday: null,
-        thursday: null,
-        friday: null,
-        saturday: { open: '10:00', close: '18:00' },
-        sunday: null,
-      },
+      workingHours: createSalon().workingHours,
+      isActive: true,
+      createdAt: new Date('2026-04-08T00:00:00.000Z'),
+      updatedAt: new Date('2026-04-08T00:00:00.000Z'),
     });
-    expect(result).toBe(createdSalon);
   });
 
-  it('rejects working hours shorter than one slot', async () => {
+  it('rejects working hours entries with unsupported nested keys', async () => {
     let capturedError: unknown;
 
     try {
@@ -138,9 +194,13 @@ describe('SalonService', () => {
         address: 'Istanbul Street 10',
         city: 'Istanbul',
         working_hours: {
-          monday: { open: '09:00', close: '09:15' },
+          monday: {
+            open: '09:00',
+            close: '19:00',
+            note: 'extra',
+          },
         },
-      });
+      } as never);
     } catch (error) {
       capturedError = error;
     }
@@ -149,6 +209,48 @@ describe('SalonService', () => {
     expect(getExceptionCode(capturedError)).toBe(
       ERROR_CODES.SALON.INVALID_WORKING_HOURS,
     );
+  });
+
+  it('rejects field updates on inactive salons until they are reactivated', async () => {
+    salonRepository.findById.mockResolvedValue(
+      createSalon({
+        isActive: false,
+      }),
+    );
+
+    let capturedError: unknown;
+
+    try {
+      await salonService.update(createOwnerPayload(), 'salon-1', {
+        city: 'Ankara',
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(BadRequestException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.SALON.INACTIVE_UPDATE_FORBIDDEN,
+    );
+    expect(salonRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('allows owners to reactivate inactive salons without changing other fields', async () => {
+    salonRepository.findById.mockResolvedValue(
+      createSalon({
+        isActive: false,
+      }),
+    );
+    salonRepository.update.mockResolvedValue(createSalon());
+
+    const result = await salonService.update(createOwnerPayload(), 'salon-1', {
+      is_active: true,
+    });
+
+    expect(salonRepository.update).toHaveBeenCalledWith('salon-1', {
+      isActive: true,
+    });
+    expect(result.isActive).toBe(true);
   });
 
   it('rejects access when the owner tries to update a salon they do not own', async () => {
@@ -190,8 +292,6 @@ describe('SalonService', () => {
     }
 
     expect(capturedError).toBeInstanceOf(NotFoundException);
-    expect(getExceptionCode(capturedError)).toBe(
-      ERROR_CODES.SALON.NOT_FOUND,
-    );
+    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.SALON.NOT_FOUND);
   });
 });

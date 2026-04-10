@@ -5,7 +5,10 @@ import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
-import { SalonService } from '../salon/salon.service';
+import {
+  SALON_CATALOG_SERVICE,
+  type SalonCatalogServiceContract,
+} from '../salon/interfaces/salon.contracts';
 import {
   USER_QUERY_SERVICE,
   type UserQueryServiceContract,
@@ -26,7 +29,8 @@ import { StaffRepository } from './repositories/staff.repository';
 export class StaffService {
   constructor(
     private readonly staffRepository: StaffRepository,
-    private readonly salonService: SalonService,
+    @Inject(SALON_CATALOG_SERVICE)
+    private readonly salonCatalogService: SalonCatalogServiceContract,
     @Inject(USER_QUERY_SERVICE)
     private readonly userQueryService: UserQueryServiceContract,
     private readonly staffPolicy: StaffPolicy,
@@ -210,7 +214,7 @@ export class StaffService {
   }
 
   private async requireSalon(salonId: string) {
-    const salon = await this.salonService.findActiveById(salonId);
+    const salon = await this.salonCatalogService.findActiveById(salonId);
 
     if (!salon) {
       throw staffSalonNotFoundError();

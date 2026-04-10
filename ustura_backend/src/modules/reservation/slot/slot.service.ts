@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Role } from '../../../shared/auth/role.enum';
 import { AppConfigService } from '../../../config/config.service';
 import { RedisService } from '../../../redis/redis.service';
-import { SalonService } from '../../salon/salon.service';
+import {
+  SALON_CATALOG_SERVICE,
+  type SalonCatalogServiceContract,
+} from '../../salon/interfaces/salon.contracts';
 import { StaffService } from '../../staff/staff.service';
 import { ReservationRepository } from '../repositories/reservation.repository';
 import { GetSlotsQueryDto } from './dto/get-slots-query.dto';
@@ -31,7 +34,8 @@ interface ReservationLock {
 export class SlotService {
   constructor(
     private readonly configService: AppConfigService,
-    private readonly salonService: SalonService,
+    @Inject(SALON_CATALOG_SERVICE)
+    private readonly salonCatalogService: SalonCatalogServiceContract,
     private readonly staffService: StaffService,
     private readonly reservationRepository: ReservationRepository,
     private readonly redisService: RedisService,
@@ -41,7 +45,7 @@ export class SlotService {
     salonId: string,
     query: GetSlotsQueryDto,
   ): Promise<AvailableSlot[]> {
-    const salon = await this.salonService.findActiveById(salonId);
+    const salon = await this.salonCatalogService.findActiveById(salonId);
 
     if (!salon) {
       throw slotSalonNotFoundError();
