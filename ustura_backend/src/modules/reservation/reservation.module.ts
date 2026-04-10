@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
-import { AuditLogModule } from '../audit-log/audit-log.module';
-import { NotificationModule } from '../notification/notification.module';
+import { EventsModule } from '../../events/events.module';
 import { SalonModule } from '../salon/salon.module';
 import { StaffModule } from '../staff/staff.module';
 import { UserModule } from '../user/user.module';
@@ -16,8 +15,7 @@ import { SlotGateway } from './slot/slot.gateway';
 @Module({
   imports: [
     DatabaseModule,
-    AuditLogModule,
-    NotificationModule,
+    EventsModule,
     UserModule,
     SalonModule,
     StaffModule,

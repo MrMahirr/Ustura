@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
+import { EventsModule } from '../../events/events.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { SalonModule } from '../salon/salon.module';
 import { UserModule } from '../user/user.module';
@@ -9,7 +10,7 @@ import { StaffService } from './staff.service';
 import { StaffRepository } from './repositories/staff.repository';
 
 @Module({
-  imports: [DatabaseModule, AuditLogModule, SalonModule, UserModule],
+  imports: [DatabaseModule, EventsModule, AuditLogModule, SalonModule, UserModule],
   controllers: [StaffController],
   providers: [StaffService, StaffRepository, StaffPolicy],
   exports: [StaffService],

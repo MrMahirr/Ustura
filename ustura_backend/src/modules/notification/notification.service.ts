@@ -1,7 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   NotificationChannel,
-  NotificationChannelName,
   OwnerApprovedNotificationPayload,
   ReservationCancelledNotificationPayload,
   ReservationCreatedNotificationPayload,

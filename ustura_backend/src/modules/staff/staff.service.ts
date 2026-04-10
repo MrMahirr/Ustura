@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
@@ -26,6 +27,7 @@ export class StaffService {
     private readonly userService: UserService,
     private readonly staffPolicy: StaffPolicy,
     private readonly auditLogService: AuditLogService,
+    private readonly domainEventBus: DomainEventBus,
   ) {}
 
   async findBySalonId(salonId: string): Promise<StaffMember[]> {
@@ -91,16 +93,18 @@ export class StaffService {
     try {
       const createdStaffMember = await this.staffRepository.create(normalizedInput);
 
-      this.recordStaffAudit(
-        currentUser,
-        AuditLogAction.STAFF_CREATED,
-        createdStaffMember,
-        {
-          salonId,
+      this.domainEventBus.publish({
+        name: 'staff.created',
+        occurredAt: new Date(),
+        payload: {
+          actorUserId: currentUser.sub,
+          actorRole: currentUser.role,
+          staffId: createdStaffMember.id,
           userId: user.id,
-          reactivated: false,
+          salonId,
+          staffRole: createdStaffMember.role,
         },
-      );
+      });
 
       return createdStaffMember;
     } catch (error) {

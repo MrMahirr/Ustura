@@ -6,6 +6,7 @@ import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
 import type { SqlQueryExecutor } from '../../database/database.types';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { Role } from '../../shared/auth/role.enum';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
@@ -47,6 +48,7 @@ export class AuthService {
     private readonly firebaseTokenVerifierService: FirebaseTokenVerifierService,
     private readonly googleWebTokenVerifierService: GoogleWebTokenVerifierService,
     private readonly auditLogService: AuditLogService,
+    private readonly domainEventBus: DomainEventBus,
   ) {}
 
   getGoogleCustomerWebConfiguration(): { clientId: string | null } {
@@ -293,12 +295,11 @@ export class AuthService {
       );
     }
 
-    this.auditLogService.recordBestEffort({
-      actorUserId: userId,
-      action: AuditLogAction.AUTH_LOGGED_OUT,
-      entityType: AuditLogEntityType.USER,
-      entityId: userId,
-      metadata: {
+    this.domainEventBus.publish({
+      name: 'auth.logged_out',
+      occurredAt: new Date(),
+      payload: {
+        userId,
         provider: 'refresh_token',
       },
     });

@@ -78,14 +78,14 @@ Durum tarihi: 2026-04-09
 
 ## 7. Event-Driven Yan Etkileri Kur
 
-- [ ] Modüller arası yan etkiler için event yayınlama modeli belirle.
-- [ ] `reservation.created` event'ini yayınla.
-- [ ] `reservation.cancelled` event'ini yayınla.
-- [ ] `reservation.status_changed` event'ini yayınla.
-- [ ] `staff.created` event'ini yayınla.
-- [ ] `owner.approved` event'ini yayınla.
-- [ ] `auth.logged_out` event'ini yayınla.
-- [ ] Notification ve AuditLog modüllerini event consumer olarak bağla.
+- [x] Modüller arası yan etkiler için event yayınlama modeli belirle.
+- [x] `reservation.created` event'ini yayınla.
+- [x] `reservation.cancelled` event'ini yayınla.
+- [x] `reservation.status_changed` event'ini yayınla.
+- [x] `staff.created` event'ini yayınla.
+- [x] `owner.approved` event'ini yayınla.
+- [x] `auth.logged_out` event'ini yayınla.
+- [x] Notification ve AuditLog modüllerini event consumer olarak bağla.
 - [ ] Gerekirse ileri aşama için `outbox_events` tablosunu ekle.
 
 ## 8. Auth ve Session Tarafını Sertleştir

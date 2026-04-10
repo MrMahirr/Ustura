@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
@@ -93,6 +94,7 @@ describe('StaffService', () => {
   let salonService: jest.Mocked<Pick<SalonService, 'findActiveById'>>;
   let userService: jest.Mocked<UserService>;
   let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
+  let domainEventBus: jest.Mocked<Pick<DomainEventBus, 'publish'>>;
 
   beforeEach(() => {
     staffRepository = {
@@ -115,6 +117,9 @@ describe('StaffService', () => {
     auditLogService = {
       recordBestEffort: jest.fn(),
     };
+    domainEventBus = {
+      publish: jest.fn(),
+    };
 
     service = new StaffService(
       staffRepository,
@@ -122,6 +127,7 @@ describe('StaffService', () => {
       userService,
       new StaffPolicy(),
       auditLogService as AuditLogService,
+      domainEventBus as DomainEventBus,
     );
   });
 
@@ -180,7 +186,33 @@ describe('StaffService', () => {
         reactivated: true,
       },
     });
+    expect(domainEventBus.publish).not.toHaveBeenCalled();
     expect(result.id).toBe('staff-9');
+  });
+
+  it('publishes a staff.created event when a new staff row is created', async () => {
+    salonService.findActiveById.mockResolvedValue(createSalon());
+    userService.findById.mockResolvedValue(createUser());
+    staffRepository.findByUserIdAndSalon.mockResolvedValue(null);
+    staffRepository.create.mockResolvedValue(createStaffMember());
+
+    await service.create(createOwnerPayload(), 'salon-1', {
+      user_id: 'user-1',
+      role: Role.BARBER,
+    });
+
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'staff.created',
+      occurredAt: expect.any(Date),
+      payload: {
+        actorUserId: 'owner-1',
+        actorRole: Role.OWNER,
+        staffId: 'staff-1',
+        userId: 'user-1',
+        salonId: 'salon-1',
+        staffRole: Role.BARBER,
+      },
+    });
   });
 
   it('rejects creating staff assignments with user roles that do not match the staff role', async () => {
