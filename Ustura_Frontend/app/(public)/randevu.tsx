@@ -11,7 +11,24 @@ import StepTimeSelect from '@/components/wizard/StepTimeSelect';
 import { BOOKING_TIME_SELECTION_COPY } from '@/components/wizard/time-selection-presentation';
 import { useBookingTimeSelection } from '@/components/wizard/use-booking-time-selection';
 import { useSalonById } from '@/hooks/use-salons';
+import { useStaffBySalonId } from '@/hooks/use-staff';
 import { createReservation } from '@/services/reservation.service';
+import type { StaffRecord } from '@/services/staff.service';
+
+const STAFF_IMAGE_FALLBACK =
+  'https://images.unsplash.com/photo-1517832606299-7ae9b720a186?auto=format&fit=crop&w=400&q=80';
+
+function mapStaffToBookingProfile(staffMember: StaffRecord): BookingStaffProfile {
+  return {
+    id: staffMember.id,
+    salonId: staffMember.salonId,
+    name: staffMember.displayName,
+    specialty: staffMember.bio?.trim() || 'Berber Uzmani',
+    rating: 0,
+    reviewCount: 0,
+    imageUri: staffMember.photoUrl ?? STAFF_IMAGE_FALLBACK,
+  };
+}
 
 function formatSalonLocation(city?: string, district?: string | null) {
   if (!city) {
@@ -30,13 +47,25 @@ function BookingRouteScreen() {
   const salonName = routeParams.salonName ?? liveSalon?.name ?? 'USTURA Salonu';
   const salonLocation =
     routeParams.salonLocation ?? formatSalonLocation(liveSalon?.city, liveSalon?.district);
-  const staffMembers = React.useMemo<BookingStaffProfile[]>(() => [], []);
+  const {
+    staffMembers: liveStaffMembers,
+    isLoading: isLoadingStaffMembers,
+    error: staffLoadError,
+  } = useStaffBySalonId(salonId);
+  const staffMembers = React.useMemo<BookingStaffProfile[]>(
+    () => liveStaffMembers.map(mapStaffToBookingProfile),
+    [liveStaffMembers],
+  );
   const [selectedStaffId, setSelectedStaffId] = React.useState<string | null>(null);
   const [isSubmittingReservation, setIsSubmittingReservation] = React.useState(false);
 
   React.useEffect(() => {
+    if (selectedStaffId && staffMembers.some((member) => member.id === selectedStaffId)) {
+      return;
+    }
+
     setSelectedStaffId(staffMembers[0]?.id ?? null);
-  }, [staffMembers]);
+  }, [selectedStaffId, staffMembers]);
 
   const selectedStaff = staffMembers.find((member) => member.id === selectedStaffId) ?? null;
   const {
@@ -205,6 +234,8 @@ function BookingRouteScreen() {
         salonName={salonName}
         salonLocation={salonLocation}
         staffMembers={staffMembers}
+        isLoading={isLoadingStaffMembers}
+        errorMessage={staffLoadError}
         selectedStaffId={selectedStaffId}
         onSelectAny={() => setSelectedStaffId(null)}
         onSelectStaff={setSelectedStaffId}

@@ -17,17 +17,19 @@ export class StaffRepository {
       name: 'staff.find-by-id',
       text: `
         SELECT
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
-        FROM staff
-        WHERE id = $1
+          s.id,
+          s.user_id,
+          s.salon_id,
+          u.name AS display_name,
+          s.role,
+          s.bio,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM staff s
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.id = $1
         LIMIT 1
       `,
       values: [id],
@@ -41,18 +43,20 @@ export class StaffRepository {
       name: 'staff.find-by-salon-id',
       text: `
         SELECT
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
-        FROM staff
-        WHERE salon_id = $1
-        ORDER BY created_at ASC
+          s.id,
+          s.user_id,
+          s.salon_id,
+          u.name AS display_name,
+          s.role,
+          s.bio,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM staff s
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.salon_id = $1
+        ORDER BY s.created_at ASC
       `,
       values: [salonId],
     });
@@ -65,19 +69,21 @@ export class StaffRepository {
       name: 'staff.find-active-by-salon-id',
       text: `
         SELECT
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
-        FROM staff
-        WHERE salon_id = $1
-          AND is_active = TRUE
-        ORDER BY created_at ASC
+          s.id,
+          s.user_id,
+          s.salon_id,
+          u.name AS display_name,
+          s.role,
+          s.bio,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM staff s
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.salon_id = $1
+          AND s.is_active = TRUE
+        ORDER BY s.created_at ASC
       `,
       values: [salonId],
     });
@@ -90,20 +96,22 @@ export class StaffRepository {
       name: 'staff.find-active-barbers-by-salon-id',
       text: `
         SELECT
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
-        FROM staff
-        WHERE salon_id = $1
-          AND role = $2
-          AND is_active = TRUE
-        ORDER BY created_at ASC
+          s.id,
+          s.user_id,
+          s.salon_id,
+          u.name AS display_name,
+          s.role,
+          s.bio,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM staff s
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.salon_id = $1
+          AND s.role = $2
+          AND s.is_active = TRUE
+        ORDER BY s.created_at ASC
       `,
       values: [salonId, Role.BARBER],
     });
@@ -119,19 +127,21 @@ export class StaffRepository {
       name: 'staff.find-active-by-user-id-and-salon',
       text: `
         SELECT
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
-        FROM staff
-        WHERE user_id = $1
-          AND salon_id = $2
-          AND is_active = TRUE
+          s.id,
+          s.user_id,
+          s.salon_id,
+          u.name AS display_name,
+          s.role,
+          s.bio,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM staff s
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.user_id = $1
+          AND s.salon_id = $2
+          AND s.is_active = TRUE
         LIMIT 1
       `,
       values: [userId, salonId],
@@ -148,18 +158,20 @@ export class StaffRepository {
       name: 'staff.find-by-user-id-and-salon',
       text: `
         SELECT
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
-        FROM staff
-        WHERE user_id = $1
-          AND salon_id = $2
+          s.id,
+          s.user_id,
+          s.salon_id,
+          u.name AS display_name,
+          s.role,
+          s.bio,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM staff s
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.user_id = $1
+          AND s.salon_id = $2
         LIMIT 1
       `,
       values: [userId, salonId],
@@ -169,7 +181,7 @@ export class StaffRepository {
   }
 
   async create(input: CreateStaffInput): Promise<StaffMember> {
-    const result = await this.databaseService.query<StaffRow>({
+    const result = await this.databaseService.query<StaffIdentityRow>({
       name: 'staff.create',
       text: `
         INSERT INTO staff (
@@ -181,16 +193,7 @@ export class StaffRepository {
           is_active
         )
         VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
+        RETURNING id
       `,
       values: [
         input.userId,
@@ -202,7 +205,7 @@ export class StaffRepository {
       ],
     });
 
-    return this.mapRow(result.rows[0]) as StaffMember;
+    return (await this.findById(result.rows[0]?.id)) as StaffMember;
   }
 
   async update(id: string, input: UpdateStaffInput): Promise<StaffMember | null> {
@@ -235,51 +238,41 @@ export class StaffRepository {
 
     values.push(id);
 
-    const result = await this.databaseService.query<StaffRow>({
+    const result = await this.databaseService.query<StaffIdentityRow>({
       name: 'staff.update',
       text: `
         UPDATE staff
         SET ${updates.join(', ')}
         WHERE id = $${values.length}
-        RETURNING
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
+        RETURNING id
       `,
       values,
     });
 
-    return this.mapRow(result.rows[0]);
+    if (!result.rows[0]?.id) {
+      return null;
+    }
+
+    return this.findById(result.rows[0].id);
   }
 
   async deactivate(id: string): Promise<StaffMember | null> {
-    const result = await this.databaseService.query<StaffRow>({
+    const result = await this.databaseService.query<StaffIdentityRow>({
       name: 'staff.deactivate',
       text: `
         UPDATE staff
         SET is_active = FALSE
         WHERE id = $1
-        RETURNING
-          id,
-          user_id,
-          salon_id,
-          role,
-          bio,
-          photo_url,
-          is_active,
-          created_at,
-          updated_at
+        RETURNING id
       `,
       values: [id],
     });
 
-    return this.mapRow(result.rows[0]);
+    if (!result.rows[0]?.id) {
+      return null;
+    }
+
+    return this.findById(result.rows[0].id);
   }
 
   private mapRow(row?: StaffRow): StaffMember | null {
@@ -291,6 +284,7 @@ export class StaffRepository {
       id: row.id,
       userId: row.user_id,
       salonId: row.salon_id,
+      displayName: row.display_name,
       role: row.role,
       bio: row.bio,
       photoUrl: row.photo_url,
@@ -305,10 +299,15 @@ interface StaffRow extends QueryResultRow {
   id: string;
   user_id: string;
   salon_id: string;
+  display_name: string;
   role: Role.BARBER | Role.RECEPTIONIST;
   bio: string | null;
   photo_url: string | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+interface StaffIdentityRow extends QueryResultRow {
+  id: string;
 }

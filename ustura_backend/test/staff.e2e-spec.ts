@@ -29,6 +29,7 @@ describe('StaffController (e2e)', () => {
     id: 'staff-1',
     userId: 'user-1',
     salonId: '11111111-1111-1111-1111-111111111111',
+    displayName: 'Barber User',
     role: Role.BARBER,
     bio: 'Senior barber',
     photoUrl: 'https://example.com/barber.jpg',

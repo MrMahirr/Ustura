@@ -9,6 +9,7 @@ import type { DatabaseTransaction } from '../../database/database.types';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
+import { NotificationService } from '../notification/notification.service';
 import type { Salon } from '../salon/interfaces/salon.types';
 import { SalonService } from '../salon/salon.service';
 import type { User } from '../user/interfaces/user.types';
@@ -120,6 +121,9 @@ describe('PlatformAdminService', () => {
   let salonService: jest.Mocked<
     Pick<SalonService, 'prepareOwnedSalonInput' | 'createOwnedSalon'>
   >;
+  let notificationService: jest.Mocked<
+    Pick<NotificationService, 'sendOwnerApprovedBestEffort'>
+  >;
 
   beforeEach(() => {
     repository = {
@@ -140,6 +144,9 @@ describe('PlatformAdminService', () => {
       prepareOwnedSalonInput: jest.fn(),
       createOwnedSalon: jest.fn(),
     };
+    notificationService = {
+      sendOwnerApprovedBestEffort: jest.fn(),
+    };
 
     databaseService.transaction.mockImplementation(async (operation) => {
       const transaction = {
@@ -154,6 +161,7 @@ describe('PlatformAdminService', () => {
       databaseService as DatabaseService,
       userService as UserService,
       salonService as unknown as SalonService,
+      notificationService as NotificationService,
     );
   });
 
@@ -257,6 +265,12 @@ describe('PlatformAdminService', () => {
       },
       expect.any(Object),
     );
+    expect(notificationService.sendOwnerApprovedBestEffort).toHaveBeenCalledWith({
+      recipientEmail: pendingApplication.applicantEmail,
+      recipientName: pendingApplication.applicantName,
+      salonName: pendingApplication.salonName,
+      approvedAt: new Date('2026-04-09T12:00:00.000Z'),
+    });
     expect(result.status).toBe(OwnerApplicationStatus.APPROVED);
   });
 

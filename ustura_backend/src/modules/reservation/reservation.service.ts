@@ -1,8 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DatabaseService } from '../../database/database.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
+import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
+import { NotificationService } from '../notification/notification.service';
 import { SalonService } from '../salon/salon.service';
 import { StaffService } from '../staff/staff.service';
 import { UserService } from '../user/user.service';
@@ -25,6 +29,8 @@ import {
 
 @Injectable()
 export class ReservationService {
+  private readonly logger = new Logger(ReservationService.name);
+
   constructor(
     private readonly reservationRepository: ReservationRepository,
     private readonly userService: UserService,
@@ -33,6 +39,8 @@ export class ReservationService {
     private readonly staffService: StaffService,
     private readonly databaseService: DatabaseService,
     private readonly reservationPolicy: ReservationPolicy,
+    private readonly auditLogService: AuditLogService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async create(
@@ -103,6 +111,23 @@ export class ReservationService {
           createReservationDto.selection_owner_id,
         );
       }
+
+      this.recordReservationAudit(
+        currentUser,
+        AuditLogAction.RESERVATION_CREATED,
+        reservation,
+        {
+          customerId: reservation.customerId,
+          createdByRole: currentUser.role,
+        },
+      );
+      void this.notifyReservationCreatedBestEffort(
+        reservation.customerId,
+        salon.name,
+        staff.displayName,
+        reservation.slotStart,
+        reservation.slotEnd,
+      );
 
       return reservation;
     } catch (error) {
@@ -184,6 +209,24 @@ export class ReservationService {
       throw reservationNotFoundError();
     }
 
+    this.recordReservationAudit(
+      currentUser,
+      AuditLogAction.RESERVATION_CANCELLED,
+      cancelledReservation,
+      {
+        previousStatus: reservation.status,
+        cancelledByUserId: currentUser.sub,
+      },
+    );
+    void this.notifyReservationCancelledBestEffort(
+      cancelledReservation.customerId,
+      salon.name,
+      reservation.staffId,
+      cancelledReservation.slotStart,
+      cancelledReservation.slotEnd,
+      currentUser.role,
+    );
+
     return cancelledReservation;
   }
 
@@ -229,6 +272,16 @@ export class ReservationService {
     if (!updatedReservation) {
       throw reservationNotFoundError();
     }
+
+    this.recordReservationAudit(
+      currentUser,
+      AuditLogAction.RESERVATION_STATUS_UPDATED,
+      updatedReservation,
+      {
+        previousStatus: reservation.status,
+        nextStatus: updatedReservation.status,
+      },
+    );
 
     return updatedReservation;
   }
@@ -310,5 +363,98 @@ export class ReservationService {
       currentUser.sub,
       salonId,
     );
+  }
+
+  private recordReservationAudit(
+    currentUser: JwtPayload,
+    action: AuditLogAction,
+    reservation: ReservationRecord,
+    metadata?: Record<string, unknown>,
+  ): void {
+    this.auditLogService.recordBestEffort({
+      actorUserId: currentUser.sub,
+      actorRole: currentUser.role,
+      action,
+      entityType: AuditLogEntityType.RESERVATION,
+      entityId: reservation.id,
+      metadata: {
+        customerId: reservation.customerId,
+        salonId: reservation.salonId,
+        staffId: reservation.staffId,
+        status: reservation.status,
+        slotStart: reservation.slotStart.toISOString(),
+        slotEnd: reservation.slotEnd.toISOString(),
+        ...metadata,
+      },
+    });
+  }
+
+  private async notifyReservationCreatedBestEffort(
+    customerId: string,
+    salonName: string,
+    staffDisplayName: string,
+    slotStart: Date,
+    slotEnd: Date,
+  ): Promise<void> {
+    try {
+      const customer = await this.userService.findById(customerId);
+
+      if (!customer?.email) {
+        return;
+      }
+
+      this.notificationService.sendReservationCreatedBestEffort({
+        recipientEmail: customer.email,
+        recipientName: customer.name,
+        salonName,
+        staffDisplayName,
+        slotStart,
+        slotEnd,
+      });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown notification setup error.';
+
+      this.logger.warn(
+        `Reservation created notification setup skipped: ${message}`,
+      );
+    }
+  }
+
+  private async notifyReservationCancelledBestEffort(
+    customerId: string,
+    salonName: string,
+    staffId: string,
+    slotStart: Date,
+    slotEnd: Date,
+    cancelledByRole: Role,
+  ): Promise<void> {
+    try {
+      const [customer, staff] = await Promise.all([
+        this.userService.findById(customerId),
+        this.staffService.findById(staffId),
+      ]);
+
+      if (!customer?.email) {
+        return;
+      }
+
+      this.notificationService.sendReservationCancelledBestEffort({
+        recipientEmail: customer.email,
+        recipientName: customer.name,
+        salonName,
+        staffDisplayName: staff?.displayName ?? 'Berber',
+        slotStart,
+        slotEnd,
+        cancelledByRole,
+      });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown notification setup error.';
+
+      this.logger.warn(
+        `Reservation cancelled notification setup skipped: ${message}`,
+      );
+    }
   }
 }

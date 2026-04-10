@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
+import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
 import { SalonService } from '../salon/salon.service';
 import { UserService } from '../user/user.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
@@ -22,6 +25,7 @@ export class StaffService {
     private readonly salonService: SalonService,
     private readonly userService: UserService,
     private readonly staffPolicy: StaffPolicy,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async findBySalonId(salonId: string): Promise<StaffMember[]> {
@@ -70,11 +74,35 @@ export class StaffService {
         throw staffNotFoundError();
       }
 
+      this.recordStaffAudit(
+        currentUser,
+        AuditLogAction.STAFF_UPDATED,
+        reactivatedStaffMember,
+        {
+          salonId,
+          userId: user.id,
+          reactivated: true,
+        },
+      );
+
       return reactivatedStaffMember;
     }
 
     try {
-      return await this.staffRepository.create(normalizedInput);
+      const createdStaffMember = await this.staffRepository.create(normalizedInput);
+
+      this.recordStaffAudit(
+        currentUser,
+        AuditLogAction.STAFF_CREATED,
+        createdStaffMember,
+        {
+          salonId,
+          userId: user.id,
+          reactivated: false,
+        },
+      );
+
+      return createdStaffMember;
     } catch (error) {
       if (error instanceof DatabaseConstraintViolationError) {
         throw staffAlreadyAssignedError();
@@ -116,6 +144,11 @@ export class StaffService {
       throw staffNotFoundError();
     }
 
+    this.recordStaffAudit(currentUser, AuditLogAction.STAFF_UPDATED, updatedStaffMember, {
+      salonId,
+      changes: normalizedInput,
+    });
+
     return updatedStaffMember;
   }
 
@@ -140,6 +173,15 @@ export class StaffService {
     if (!deactivatedStaffMember) {
       throw staffNotFoundError();
     }
+
+    this.recordStaffAudit(
+      currentUser,
+      AuditLogAction.STAFF_DEACTIVATED,
+      deactivatedStaffMember,
+      {
+        salonId,
+      },
+    );
 
     return deactivatedStaffMember;
   }
@@ -218,5 +260,26 @@ export class StaffService {
   private normalizeOptionalString(value?: string | null): string | undefined {
     const normalizedValue = value?.trim();
     return normalizedValue ? normalizedValue : undefined;
+  }
+
+  private recordStaffAudit(
+    currentUser: JwtPayload,
+    action: AuditLogAction,
+    staffMember: StaffMember,
+    metadata?: Record<string, unknown>,
+  ): void {
+    this.auditLogService.recordBestEffort({
+      actorUserId: currentUser.sub,
+      actorRole: currentUser.role,
+      action,
+      entityType: AuditLogEntityType.STAFF,
+      entityId: staffMember.id,
+      metadata: {
+        salonId: staffMember.salonId,
+        userId: staffMember.userId,
+        role: staffMember.role,
+        ...metadata,
+      },
+    });
   }
 }

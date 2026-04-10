@@ -1,6 +1,9 @@
 import { ConflictException, ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
+import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import type { Salon } from '../salon/interfaces/salon.types';
 import { SalonService } from '../salon/salon.service';
@@ -59,6 +62,7 @@ function createStaffMember(overrides: Partial<StaffMember> = {}): StaffMember {
     id: 'staff-1',
     userId: 'user-1',
     salonId: 'salon-1',
+    displayName: 'Barber User',
     role: Role.BARBER,
     bio: null,
     photoUrl: null,
@@ -88,6 +92,7 @@ describe('StaffService', () => {
   let staffRepository: jest.Mocked<StaffRepository>;
   let salonService: jest.Mocked<Pick<SalonService, 'findActiveById'>>;
   let userService: jest.Mocked<UserService>;
+  let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
 
   beforeEach(() => {
     staffRepository = {
@@ -107,12 +112,16 @@ describe('StaffService', () => {
     userService = {
       findById: jest.fn(),
     } as unknown as jest.Mocked<UserService>;
+    auditLogService = {
+      recordBestEffort: jest.fn(),
+    };
 
     service = new StaffService(
       staffRepository,
       salonService as unknown as SalonService,
       userService,
       new StaffPolicy(),
+      auditLogService as AuditLogService,
     );
   });
 
@@ -158,6 +167,19 @@ describe('StaffService', () => {
       isActive: true,
     });
     expect(staffRepository.create).not.toHaveBeenCalled();
+    expect(auditLogService.recordBestEffort).toHaveBeenCalledWith({
+      actorUserId: 'owner-1',
+      actorRole: Role.OWNER,
+      action: AuditLogAction.STAFF_UPDATED,
+      entityType: AuditLogEntityType.STAFF,
+      entityId: 'staff-9',
+      metadata: {
+        salonId: 'salon-1',
+        userId: 'user-1',
+        role: Role.BARBER,
+        reactivated: true,
+      },
+    });
     expect(result.id).toBe('staff-9');
   });
 

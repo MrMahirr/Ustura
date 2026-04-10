@@ -12,6 +12,7 @@ const REQUIRED_MIGRATIONS = [
   '002_add_customer_google_auth.sql',
   '003_rework_reservation_schema.sql',
   '004_create_owner_applications.sql',
+  '005_create_audit_logs.sql',
 ] as const;
 
 const REQUIRED_USER_COLUMNS = [

@@ -12,6 +12,8 @@ interface StepStaffSelectProps {
   salonName: string;
   salonLocation: string;
   staffMembers: BookingStaffProfile[];
+  isLoading?: boolean;
+  errorMessage?: string | null;
   selectedStaffId: string | null;
   onSelectAny: () => void;
   onSelectStaff: (staffId: string) => void;
@@ -22,6 +24,8 @@ export default function StepStaffSelect({
   salonName,
   salonLocation,
   staffMembers,
+  isLoading = false,
+  errorMessage = null,
   selectedStaffId,
   onSelectAny,
   onSelectStaff,
@@ -146,6 +150,24 @@ export default function StepStaffSelect({
       </Pressable>
 
       <View className="flex-row flex-wrap" style={{ gap: 24 }}>
+        {isLoading ? (
+          <Text className="font-body text-sm" style={{ color: onSurfaceVariant }}>
+            Personel listesi yukleniyor.
+          </Text>
+        ) : null}
+
+        {!isLoading && errorMessage ? (
+          <Text className="font-body text-sm" style={{ color: onSurfaceVariant }}>
+            {errorMessage}
+          </Text>
+        ) : null}
+
+        {!isLoading && !errorMessage && staffMembers.length === 0 ? (
+          <Text className="font-body text-sm" style={{ color: onSurfaceVariant }}>
+            Bu salon icin listelenecek aktif personel bulunamadi.
+          </Text>
+        ) : null}
+
         {staffMembers.map((member) => (
           <View
             key={member.id}
