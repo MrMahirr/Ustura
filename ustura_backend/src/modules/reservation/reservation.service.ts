@@ -1,12 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DatabaseService } from '../../database/database.service';
-import { AuditLogService } from '../audit-log/audit-log.service';
-import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
-import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
-import { NotificationService } from '../notification/notification.service';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { SalonService } from '../salon/salon.service';
 import { StaffService } from '../staff/staff.service';
 import { UserService } from '../user/user.service';
@@ -29,8 +26,6 @@ import {
 
 @Injectable()
 export class ReservationService {
-  private readonly logger = new Logger(ReservationService.name);
-
   constructor(
     private readonly reservationRepository: ReservationRepository,
     private readonly userService: UserService,
@@ -39,8 +34,7 @@ export class ReservationService {
     private readonly staffService: StaffService,
     private readonly databaseService: DatabaseService,
     private readonly reservationPolicy: ReservationPolicy,
-    private readonly auditLogService: AuditLogService,
-    private readonly notificationService: NotificationService,
+    private readonly domainEventBus: DomainEventBus,
   ) {}
 
   async create(
@@ -70,7 +64,7 @@ export class ReservationService {
       slotStart: createReservationDto.slot_start,
       requesterSelectionOwnerId: createReservationDto.selection_owner_id,
     });
-    const customerId = await this.resolveCustomerId(
+    const customer = await this.resolveCustomer(
       currentUser,
       createReservationDto,
     );
@@ -88,7 +82,7 @@ export class ReservationService {
         async (transaction) => {
           return this.reservationRepository.create(
             {
-              customerId,
+              customerId: customer.id,
               salonId: salon.id,
               staffId: staff.id,
               slotStart: slot.slotStart,
@@ -112,22 +106,25 @@ export class ReservationService {
         );
       }
 
-      this.recordReservationAudit(
-        currentUser,
-        AuditLogAction.RESERVATION_CREATED,
-        reservation,
-        {
-          customerId: reservation.customerId,
-          createdByRole: currentUser.role,
+      this.domainEventBus.publish({
+        name: 'reservation.created',
+        occurredAt: new Date(),
+        payload: {
+          actorUserId: currentUser.sub,
+          actorRole: currentUser.role,
+          reservationId: reservation.id,
+          customerId: customer.id,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          salonId: salon.id,
+          salonName: salon.name,
+          staffId: staff.id,
+          staffDisplayName: staff.displayName,
+          status: reservation.status,
+          slotStart: reservation.slotStart.toISOString(),
+          slotEnd: reservation.slotEnd.toISOString(),
         },
-      );
-      void this.notifyReservationCreatedBestEffort(
-        reservation.customerId,
-        salon.name,
-        staff.displayName,
-        reservation.slotStart,
-        reservation.slotEnd,
-      );
+      });
 
       return reservation;
     } catch (error) {
@@ -209,23 +206,31 @@ export class ReservationService {
       throw reservationNotFoundError();
     }
 
-    this.recordReservationAudit(
-      currentUser,
-      AuditLogAction.RESERVATION_CANCELLED,
-      cancelledReservation,
-      {
+    const [customer, staff] = await Promise.all([
+      this.findCustomerForEvent(cancelledReservation.customerId),
+      this.findStaffForEvent(cancelledReservation.staffId),
+    ]);
+
+    this.domainEventBus.publish({
+      name: 'reservation.cancelled',
+      occurredAt: new Date(),
+      payload: {
+        actorUserId: currentUser.sub,
+        actorRole: currentUser.role,
+        reservationId: cancelledReservation.id,
+        customerId: cancelledReservation.customerId,
+        customerName: customer?.name ?? null,
+        customerEmail: customer?.email ?? null,
+        salonId: cancelledReservation.salonId,
+        salonName: salon.name,
+        staffId: cancelledReservation.staffId,
+        staffDisplayName: staff?.displayName ?? null,
+        status: cancelledReservation.status,
         previousStatus: reservation.status,
-        cancelledByUserId: currentUser.sub,
+        slotStart: cancelledReservation.slotStart.toISOString(),
+        slotEnd: cancelledReservation.slotEnd.toISOString(),
       },
-    );
-    void this.notifyReservationCancelledBestEffort(
-      cancelledReservation.customerId,
-      salon.name,
-      reservation.staffId,
-      cancelledReservation.slotStart,
-      cancelledReservation.slotEnd,
-      currentUser.role,
-    );
+    });
 
     return cancelledReservation;
   }
@@ -273,25 +278,38 @@ export class ReservationService {
       throw reservationNotFoundError();
     }
 
-    this.recordReservationAudit(
-      currentUser,
-      AuditLogAction.RESERVATION_STATUS_UPDATED,
-      updatedReservation,
-      {
+    this.domainEventBus.publish({
+      name: 'reservation.status_changed',
+      occurredAt: new Date(),
+      payload: {
+        actorUserId: currentUser.sub,
+        actorRole: currentUser.role,
+        reservationId: updatedReservation.id,
+        customerId: updatedReservation.customerId,
+        salonId: updatedReservation.salonId,
+        staffId: updatedReservation.staffId,
         previousStatus: reservation.status,
         nextStatus: updatedReservation.status,
+        slotStart: updatedReservation.slotStart.toISOString(),
+        slotEnd: updatedReservation.slotEnd.toISOString(),
       },
-    );
+    });
 
     return updatedReservation;
   }
 
-  private async resolveCustomerId(
+  private async resolveCustomer(
     currentUser: JwtPayload,
     createReservationDto: CreateReservationDto,
-  ): Promise<string> {
+  ) {
     if (currentUser.role === Role.CUSTOMER) {
-      return currentUser.sub;
+      const customer = await this.userService.findById(currentUser.sub);
+
+      if (!customer || customer.role !== Role.CUSTOMER || !customer.isActive) {
+        throw customerNotFoundError();
+      }
+
+      return customer;
     }
 
     if (createReservationDto.customer_id) {
@@ -303,7 +321,7 @@ export class ReservationService {
         throw customerNotFoundError();
       }
 
-      return customer.id;
+      return customer;
     }
 
     if (
@@ -320,7 +338,7 @@ export class ReservationService {
       phone: createReservationDto.customer_phone,
     });
 
-    return customer.id;
+    return customer;
   }
 
   private async requireSalon(salonId: string) {
@@ -365,96 +383,25 @@ export class ReservationService {
     );
   }
 
-  private recordReservationAudit(
-    currentUser: JwtPayload,
-    action: AuditLogAction,
-    reservation: ReservationRecord,
-    metadata?: Record<string, unknown>,
-  ): void {
-    this.auditLogService.recordBestEffort({
-      actorUserId: currentUser.sub,
-      actorRole: currentUser.role,
-      action,
-      entityType: AuditLogEntityType.RESERVATION,
-      entityId: reservation.id,
-      metadata: {
-        customerId: reservation.customerId,
-        salonId: reservation.salonId,
-        staffId: reservation.staffId,
-        status: reservation.status,
-        slotStart: reservation.slotStart.toISOString(),
-        slotEnd: reservation.slotEnd.toISOString(),
-        ...metadata,
-      },
-    });
-  }
-
-  private async notifyReservationCreatedBestEffort(
-    customerId: string,
-    salonName: string,
-    staffDisplayName: string,
-    slotStart: Date,
-    slotEnd: Date,
-  ): Promise<void> {
+  private async findCustomerForEvent(customerId: string) {
     try {
       const customer = await this.userService.findById(customerId);
 
-      if (!customer?.email) {
-        return;
+      if (!customer || customer.role !== Role.CUSTOMER) {
+        return null;
       }
 
-      this.notificationService.sendReservationCreatedBestEffort({
-        recipientEmail: customer.email,
-        recipientName: customer.name,
-        salonName,
-        staffDisplayName,
-        slotStart,
-        slotEnd,
-      });
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown notification setup error.';
-
-      this.logger.warn(
-        `Reservation created notification setup skipped: ${message}`,
-      );
+      return customer;
+    } catch {
+      return null;
     }
   }
 
-  private async notifyReservationCancelledBestEffort(
-    customerId: string,
-    salonName: string,
-    staffId: string,
-    slotStart: Date,
-    slotEnd: Date,
-    cancelledByRole: Role,
-  ): Promise<void> {
+  private async findStaffForEvent(staffId: string) {
     try {
-      const [customer, staff] = await Promise.all([
-        this.userService.findById(customerId),
-        this.staffService.findById(staffId),
-      ]);
-
-      if (!customer?.email) {
-        return;
-      }
-
-      this.notificationService.sendReservationCancelledBestEffort({
-        recipientEmail: customer.email,
-        recipientName: customer.name,
-        salonName,
-        staffDisplayName: staff?.displayName ?? 'Berber',
-        slotStart,
-        slotEnd,
-        cancelledByRole,
-      });
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown notification setup error.';
-
-      this.logger.warn(
-        `Reservation cancelled notification setup skipped: ${message}`,
-      );
+      return await this.staffService.findById(staffId);
+    } catch {
+      return null;
     }
   }
 }

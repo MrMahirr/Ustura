@@ -7,6 +7,7 @@ import { Role } from '../../shared/auth/role.enum';
 import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
 import type { DatabaseTransaction } from '../../database/database.types';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
@@ -61,6 +62,7 @@ describe('AuthService', () => {
   let firebaseTokenVerifierService: jest.Mocked<FirebaseTokenVerifierService>;
   let googleWebTokenVerifierService: jest.Mocked<GoogleWebTokenVerifierService>;
   let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
+  let domainEventBus: jest.Mocked<Pick<DomainEventBus, 'publish'>>;
   let configService: AppConfigService;
   let transactionExecutor: DatabaseTransaction;
   let bcryptHashMock: jest.Mock;
@@ -119,6 +121,9 @@ describe('AuthService', () => {
     auditLogService = {
       recordBestEffort: jest.fn(),
     };
+    domainEventBus = {
+      publish: jest.fn(),
+    };
 
     configService = {
       jwt: {
@@ -145,6 +150,7 @@ describe('AuthService', () => {
       firebaseTokenVerifierService,
       googleWebTokenVerifierService,
       auditLogService as AuditLogService,
+      domainEventBus as DomainEventBus,
     );
 
     bcryptHashMock = bcrypt.hash as jest.Mock;
@@ -234,6 +240,7 @@ describe('AuthService', () => {
 
     expect(saveRefreshTokenMock).not.toHaveBeenCalled();
     expect(auditLogService.recordBestEffort).not.toHaveBeenCalled();
+    expect(domainEventBus.publish).not.toHaveBeenCalled();
   });
 
   it('rotates refresh tokens inside a database transaction', async () => {
@@ -463,12 +470,11 @@ describe('AuthService', () => {
     });
 
     expect(revokeTokenMock).toHaveBeenCalledWith(refreshHash, 'user-1');
-    expect(auditLogService.recordBestEffort).toHaveBeenCalledWith({
-      actorUserId: 'user-1',
-      action: AuditLogAction.AUTH_LOGGED_OUT,
-      entityType: AuditLogEntityType.USER,
-      entityId: 'user-1',
-      metadata: {
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'auth.logged_out',
+      occurredAt: expect.any(Date),
+      payload: {
+        userId: 'user-1',
         provider: 'refresh_token',
       },
     });

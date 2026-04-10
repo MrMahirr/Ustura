@@ -3,11 +3,8 @@ import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DatabaseService } from '../../database/database.service';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
-import { AuditLogService } from '../audit-log/audit-log.service';
-import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
-import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
-import { NotificationService } from '../notification/notification.service';
 import { SalonService } from '../salon/salon.service';
 import { StaffService } from '../staff/staff.service';
 import { UserService } from '../user/user.service';
@@ -50,13 +47,7 @@ describe('ReservationService', () => {
     Pick<StaffService, 'findById' | 'findActiveByUserIdAndSalon'>
   >;
   let databaseService: jest.Mocked<DatabaseService>;
-  let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
-  let notificationService: jest.Mocked<
-    Pick<
-      NotificationService,
-      'sendReservationCreatedBestEffort' | 'sendReservationCancelledBestEffort'
-    >
-  >;
+  let domainEventBus: jest.Mocked<Pick<DomainEventBus, 'publish'>>;
 
   beforeEach(() => {
     reservationRepository = {
@@ -89,12 +80,8 @@ describe('ReservationService', () => {
     databaseService = {
       transaction: jest.fn(),
     } as unknown as jest.Mocked<DatabaseService>;
-    auditLogService = {
-      recordBestEffort: jest.fn(),
-    };
-    notificationService = {
-      sendReservationCreatedBestEffort: jest.fn(),
-      sendReservationCancelledBestEffort: jest.fn(),
+    domainEventBus = {
+      publish: jest.fn(),
     };
 
     service = new ReservationService(
@@ -105,8 +92,7 @@ describe('ReservationService', () => {
       staffService as unknown as StaffService,
       databaseService,
       new ReservationPolicy(),
-      auditLogService as AuditLogService,
-      notificationService as NotificationService,
+      domainEventBus as DomainEventBus,
     );
   });
 
@@ -120,6 +106,13 @@ describe('ReservationService', () => {
       id: 'staff-1',
       salonId: 'salon-1',
       role: Role.BARBER,
+      isActive: true,
+    } as any);
+    userService.findById.mockResolvedValue({
+      id: 'customer-1',
+      name: 'Customer',
+      email: 'customer@example.com',
+      role: Role.CUSTOMER,
       isActive: true,
     } as any);
     slotService.assertSlotReservable.mockResolvedValue({
@@ -177,6 +170,13 @@ describe('ReservationService', () => {
       role: Role.BARBER,
       isActive: true,
     } as any);
+    userService.findById.mockResolvedValue({
+      id: 'customer-1',
+      name: 'Customer',
+      email: 'customer@example.com',
+      role: Role.CUSTOMER,
+      isActive: true,
+    } as any);
     slotService.assertSlotReservable.mockResolvedValue({
       slotStart: new Date('2026-04-10T10:00:00.000Z'),
       slotEnd: new Date('2026-04-10T10:30:00.000Z'),
@@ -208,14 +208,14 @@ describe('ReservationService', () => {
     expect(getExceptionCode(capturedError)).toBe(
       ERROR_CODES.RESERVATION.SLOT_ALREADY_RESERVED,
     );
-    expect(auditLogService.recordBestEffort).not.toHaveBeenCalled();
+    expect(domainEventBus.publish).not.toHaveBeenCalled();
     expect(slotService.releaseReservationLock).toHaveBeenCalledWith(
       'lock-key',
       'lock-token',
     );
   });
 
-  it('sends a best-effort notification after a reservation is created', async () => {
+  it('publishes reservation.created after a reservation is created', async () => {
     salonService.findActiveById.mockResolvedValue({
       id: 'salon-1',
       ownerId: 'owner-1',
@@ -271,15 +271,25 @@ describe('ReservationService', () => {
       staff_id: 'staff-1',
       slot_start: '2026-04-10T10:00:00.000Z',
     });
-    await new Promise(process.nextTick);
 
-    expect(notificationService.sendReservationCreatedBestEffort).toHaveBeenCalledWith({
-      recipientEmail: 'customer@example.com',
-      recipientName: 'Customer',
-      salonName: 'Ustura Premium',
-      staffDisplayName: 'Barber One',
-      slotStart: new Date('2026-04-10T10:00:00.000Z'),
-      slotEnd: new Date('2026-04-10T10:30:00.000Z'),
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'reservation.created',
+      occurredAt: expect.any(Date),
+      payload: {
+        actorUserId: 'customer-1',
+        actorRole: Role.CUSTOMER,
+        reservationId: 'reservation-1',
+        customerId: 'customer-1',
+        customerName: 'Customer',
+        customerEmail: 'customer@example.com',
+        salonId: 'salon-1',
+        salonName: 'Ustura Premium',
+        staffId: 'staff-1',
+        staffDisplayName: 'Barber One',
+        status: ReservationStatus.PENDING,
+        slotStart: '2026-04-10T10:00:00.000Z',
+        slotEnd: '2026-04-10T10:30:00.000Z',
+      },
     });
   });
 
@@ -341,21 +351,20 @@ describe('ReservationService', () => {
       ReservationStatus.CONFIRMED,
       'owner-1',
     );
-    expect(auditLogService.recordBestEffort).toHaveBeenCalledWith({
-      actorUserId: 'owner-1',
-      actorRole: Role.OWNER,
-      action: AuditLogAction.RESERVATION_STATUS_UPDATED,
-      entityType: AuditLogEntityType.RESERVATION,
-      entityId: 'reservation-1',
-      metadata: {
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'reservation.status_changed',
+      occurredAt: expect.any(Date),
+      payload: {
+        actorUserId: 'owner-1',
+        actorRole: Role.OWNER,
+        reservationId: 'reservation-1',
         customerId: 'customer-1',
         salonId: 'salon-1',
         staffId: 'staff-1',
-        status: ReservationStatus.CONFIRMED,
-        slotStart: '2026-04-10T10:00:00.000Z',
-        slotEnd: '2026-04-10T10:30:00.000Z',
         previousStatus: ReservationStatus.PENDING,
         nextStatus: ReservationStatus.CONFIRMED,
+        slotStart: '2026-04-10T10:00:00.000Z',
+        slotEnd: '2026-04-10T10:30:00.000Z',
       },
     });
   });
@@ -409,7 +418,7 @@ describe('ReservationService', () => {
     expect(reservationRepository.updateStatus).not.toHaveBeenCalled();
   });
 
-  it('sends a best-effort notification after a reservation is cancelled', async () => {
+  it('publishes reservation.cancelled after a reservation is cancelled', async () => {
     reservationRepository.findById.mockResolvedValue({
       id: 'reservation-1',
       customerId: 'customer-1',
@@ -464,16 +473,26 @@ describe('ReservationService', () => {
     } as any);
 
     await service.cancel(createCustomerPayload(), 'reservation-1');
-    await new Promise(process.nextTick);
 
-    expect(notificationService.sendReservationCancelledBestEffort).toHaveBeenCalledWith({
-      recipientEmail: 'customer@example.com',
-      recipientName: 'Customer',
-      salonName: 'Ustura Premium',
-      staffDisplayName: 'Barber One',
-      slotStart: new Date('2026-04-10T10:00:00.000Z'),
-      slotEnd: new Date('2026-04-10T10:30:00.000Z'),
-      cancelledByRole: Role.CUSTOMER,
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'reservation.cancelled',
+      occurredAt: expect.any(Date),
+      payload: {
+        actorUserId: 'customer-1',
+        actorRole: Role.CUSTOMER,
+        reservationId: 'reservation-1',
+        customerId: 'customer-1',
+        customerName: 'Customer',
+        customerEmail: 'customer@example.com',
+        salonId: 'salon-1',
+        salonName: 'Ustura Premium',
+        staffId: 'staff-1',
+        staffDisplayName: 'Barber One',
+        status: ReservationStatus.CANCELLED,
+        previousStatus: ReservationStatus.CONFIRMED,
+        slotStart: '2026-04-10T10:00:00.000Z',
+        slotEnd: '2026-04-10T10:30:00.000Z',
+      },
     });
   });
 });

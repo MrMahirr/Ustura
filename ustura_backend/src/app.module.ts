@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
+import { EventsModule } from './events/events.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
@@ -19,6 +20,7 @@ import { StartupValidationService } from './startup/startup-validation.service';
   imports: [
     ConfigModule,
     DatabaseModule,
+    EventsModule,
     RedisModule,
     ThrottlerModule.forRoot([
       {

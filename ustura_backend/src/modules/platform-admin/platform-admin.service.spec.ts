@@ -6,10 +6,10 @@ import {
 import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../../database/database.service';
 import type { DatabaseTransaction } from '../../database/database.types';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
-import { NotificationService } from '../notification/notification.service';
 import type { Salon } from '../salon/interfaces/salon.types';
 import { SalonService } from '../salon/salon.service';
 import type { User } from '../user/interfaces/user.types';
@@ -121,9 +121,7 @@ describe('PlatformAdminService', () => {
   let salonService: jest.Mocked<
     Pick<SalonService, 'prepareOwnedSalonInput' | 'createOwnedSalon'>
   >;
-  let notificationService: jest.Mocked<
-    Pick<NotificationService, 'sendOwnerApprovedBestEffort'>
-  >;
+  let domainEventBus: jest.Mocked<Pick<DomainEventBus, 'publish'>>;
 
   beforeEach(() => {
     repository = {
@@ -144,8 +142,8 @@ describe('PlatformAdminService', () => {
       prepareOwnedSalonInput: jest.fn(),
       createOwnedSalon: jest.fn(),
     };
-    notificationService = {
-      sendOwnerApprovedBestEffort: jest.fn(),
+    domainEventBus = {
+      publish: jest.fn(),
     };
 
     databaseService.transaction.mockImplementation(async (operation) => {
@@ -161,7 +159,7 @@ describe('PlatformAdminService', () => {
       databaseService as DatabaseService,
       userService as UserService,
       salonService as unknown as SalonService,
-      notificationService as NotificationService,
+      domainEventBus as DomainEventBus,
     );
   });
 
@@ -265,11 +263,19 @@ describe('PlatformAdminService', () => {
       },
       expect.any(Object),
     );
-    expect(notificationService.sendOwnerApprovedBestEffort).toHaveBeenCalledWith({
-      recipientEmail: pendingApplication.applicantEmail,
-      recipientName: pendingApplication.applicantName,
-      salonName: pendingApplication.salonName,
-      approvedAt: new Date('2026-04-09T12:00:00.000Z'),
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'owner.approved',
+      occurredAt: expect.any(Date),
+      payload: {
+        applicationId: pendingApplication.id,
+        applicantName: pendingApplication.applicantName,
+        applicantEmail: pendingApplication.applicantEmail,
+        salonName: pendingApplication.salonName,
+        approvedAt: '2026-04-09T12:00:00.000Z',
+        reviewedByUserId: 'super-admin-1',
+        approvedOwnerUserId: 'owner-1',
+        approvedSalonId: 'salon-1',
+      },
     });
     expect(result.status).toBe(OwnerApplicationStatus.APPROVED);
   });

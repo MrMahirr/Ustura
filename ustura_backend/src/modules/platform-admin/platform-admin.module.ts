@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
-import { NotificationModule } from '../notification/notification.module';
+import { EventsModule } from '../../events/events.module';
 import { SalonModule } from '../salon/salon.module';
 import { UserModule } from '../user/user.module';
 import { PlatformAdminController } from './platform-admin.controller';
@@ -9,7 +9,7 @@ import { PlatformAdminPolicy } from './policies/platform-admin.policy';
 import { PlatformAdminRepository } from './repositories/platform-admin.repository';
 
 @Module({
-  imports: [DatabaseModule, NotificationModule, UserModule, SalonModule],
+  imports: [DatabaseModule, EventsModule, UserModule, SalonModule],
   controllers: [PlatformAdminController],
   providers: [
     PlatformAdminService,
