@@ -24,9 +24,9 @@ export class UpdateStaffDto {
   @IsUrl({
     require_protocol: true,
   })
-  photo_url?: string;
+  photoUrl?: string;
 
   @IsOptional()
   @IsBoolean()
-  is_active?: boolean;
+  isActive?: boolean;
 }

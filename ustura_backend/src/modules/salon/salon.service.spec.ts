@@ -144,8 +144,8 @@ describe('SalonService', () => {
       address: '  Istanbul Street 10  ',
       city: '  Istanbul  ',
       district: '  Besiktas  ',
-      photo_url: 'https://example.com/photo.jpg',
-      working_hours: {
+      photoUrl: 'https://example.com/salon.jpg',
+      workingHours: {
         monday: { open: '09:00', close: '19:00' },
         saturday: { open: '10:00', close: '18:00' },
       },
@@ -158,7 +158,7 @@ describe('SalonService', () => {
         address: 'Istanbul Street 10',
         city: 'Istanbul',
         district: 'Besiktas',
-        photoUrl: 'https://example.com/photo.jpg',
+        photoUrl: 'https://example.com/salon.jpg',
         workingHours: {
           monday: { open: '09:00', close: '19:00' },
           tuesday: null,
@@ -193,7 +193,8 @@ describe('SalonService', () => {
         name: 'Ustura Barber',
         address: 'Istanbul Street 10',
         city: 'Istanbul',
-        working_hours: {
+        photoUrl: '  ',
+        workingHours: {
           monday: {
             open: '09:00',
             close: '19:00',
@@ -244,7 +245,7 @@ describe('SalonService', () => {
     salonRepository.update.mockResolvedValue(createSalon());
 
     const result = await salonService.update(createOwnerPayload(), 'salon-1', {
-      is_active: true,
+      isActive: true,
     });
 
     expect(salonRepository.update).toHaveBeenCalledWith('salon-1', {

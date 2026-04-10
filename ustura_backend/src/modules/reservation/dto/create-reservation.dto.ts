@@ -10,13 +10,13 @@ import {
 
 export class CreateReservationDto {
   @IsUUID()
-  salon_id: string;
+  salonId: string;
 
   @IsUUID()
-  staff_id: string;
+  staffId: string;
 
   @IsISO8601()
-  slot_start: string;
+  slotStart: string;
 
   @IsOptional()
   @IsString()
@@ -25,25 +25,25 @@ export class CreateReservationDto {
 
   @IsOptional()
   @IsUUID()
-  customer_id?: string;
+  customerId?: string;
 
   @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(100)
-  customer_name?: string;
+  customerName?: string;
 
   @IsOptional()
   @IsEmail()
-  customer_email?: string;
+  customerEmail?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(20)
-  customer_phone?: string;
+  customerPhone?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(128)
-  selection_owner_id?: string;
+  selectionOwnerId?: string;
 }

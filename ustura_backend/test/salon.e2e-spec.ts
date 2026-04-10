@@ -106,8 +106,9 @@ describe('SalonController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/api/salons')
       .expect(200)
-      .expect(({ body }) => {
-        expect(body).toEqual([publicSalonSummary]);
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual([publicSalonSummary]);
       });
 
     expect(salonQueryService.findPublicList).toHaveBeenCalledWith(
@@ -125,8 +126,9 @@ describe('SalonController (e2e)', () => {
         })}`,
       )
       .expect(200)
-      .expect(({ body }) => {
-        expect(body).toEqual([ownedSalonSummary]);
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual([ownedSalonSummary]);
       });
 
     expect(salonQueryService.findOwned).toHaveBeenCalledWith(
@@ -171,6 +173,7 @@ describe('SalonController (e2e)', () => {
       })
       .expect(400)
       .expect(({ body }) => {
+        expect(body.success).toBe(false);
         expect(body.statusCode).toBe(400);
         expect(body.path).toBe('/api/salons');
         expect(body.message).toContain(
@@ -182,7 +185,7 @@ describe('SalonController (e2e)', () => {
         expect(body.message).toContain(
           'city must be longer than or equal to 2 characters',
         );
-        expect(body.message).toContain('working_hours must be an object');
+        expect(body.message).toContain('workingHours must be an object');
         expect(body.message).toContain('property extra should not exist');
       });
 

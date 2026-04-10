@@ -5,14 +5,23 @@ import {
   IsUrl,
   IsUUID,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Role } from '../../../shared/auth/role.enum';
+import { CreateEmployeeAccountDto } from './create-employee-account.dto';
 
 const STAFF_ROLES = [Role.BARBER, Role.RECEPTIONIST] as const;
 
 export class CreateStaffDto {
+  @IsOptional()
   @IsUUID()
-  user_id: string;
+  userId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateEmployeeAccountDto)
+  employee?: CreateEmployeeAccountDto;
 
   @IsIn(STAFF_ROLES)
   role: Role.BARBER | Role.RECEPTIONIST;
@@ -26,5 +35,5 @@ export class CreateStaffDto {
   @IsUrl({
     require_protocol: true,
   })
-  photo_url?: string;
+  photoUrl?: string;
 }

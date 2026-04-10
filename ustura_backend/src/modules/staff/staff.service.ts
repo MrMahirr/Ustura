@@ -1,5 +1,8 @@
+import * as bcrypt from 'bcrypt';
 import { Inject, Injectable } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
+import { DatabaseService } from '../../database/database.service';
+import type { SqlQueryExecutor } from '../../database/database.types';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -10,29 +13,36 @@ import {
   type SalonCatalogServiceContract,
 } from '../salon/interfaces/salon.contracts';
 import {
+  USER_PROVISIONING_SERVICE,
   USER_QUERY_SERVICE,
+  type UserProvisioningServiceContract,
   type UserQueryServiceContract,
 } from '../user/interfaces/user.contracts';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import {
+  staffAlreadyAssignedError,
   staffNotFoundError,
   staffSalonNotFoundError,
   staffUserNotFoundError,
-  staffAlreadyAssignedError,
 } from './errors/staff.errors';
-import type { StaffMember, UpdateStaffInput } from './interfaces/staff.types';
+import type { CreateStaffInput, StaffMember, UpdateStaffInput } from './interfaces/staff.types';
 import { StaffPolicy } from './policies/staff.policy';
 import { StaffRepository } from './repositories/staff.repository';
 
 @Injectable()
 export class StaffService {
+  private readonly passwordCost = 12;
+
   constructor(
     private readonly staffRepository: StaffRepository,
+    private readonly databaseService: DatabaseService,
     @Inject(SALON_CATALOG_SERVICE)
     private readonly salonCatalogService: SalonCatalogServiceContract,
     @Inject(USER_QUERY_SERVICE)
     private readonly userQueryService: UserQueryServiceContract,
+    @Inject(USER_PROVISIONING_SERVICE)
+    private readonly userProvisioningService: UserProvisioningServiceContract,
     private readonly staffPolicy: StaffPolicy,
     private readonly auditLogService: AuditLogService,
     private readonly domainEventBus: DomainEventBus,
@@ -43,6 +53,11 @@ export class StaffService {
     return this.staffRepository.findActiveBySalonId(salonId);
   }
 
+  async findMyAssignments(currentUser: JwtPayload): Promise<StaffMember[]> {
+    this.staffPolicy.assertCanViewOwnAssignments(currentUser);
+    return this.staffRepository.findActiveByUserId(currentUser.sub);
+  }
+
   async create(
     currentUser: JwtPayload,
     salonId: string,
@@ -50,78 +65,54 @@ export class StaffService {
   ): Promise<StaffMember> {
     const salon = await this.requireSalon(salonId);
     this.staffPolicy.assertCanManageSalonStaff(currentUser, salon.ownerId);
+    this.staffPolicy.assertValidProvisioningSelection({
+      userId: createStaffDto.userId,
+      employee: createStaffDto.employee,
+    });
 
-    const user = await this.requireUser(createStaffDto.user_id);
-    this.staffPolicy.assertCanAssignUserToRole(user, createStaffDto.role);
-
-    const existingStaffMember = await this.staffRepository.findByUserIdAndSalon(
-      createStaffDto.user_id,
+    const membershipInput = {
       salonId,
-    );
-
-    this.staffPolicy.assertCanCreate(existingStaffMember);
-
-    const normalizedInput = {
-      salonId,
-      userId: createStaffDto.user_id,
       role: createStaffDto.role,
       bio: this.normalizeOptionalString(createStaffDto.bio) ?? null,
-      photoUrl: this.normalizeOptionalString(createStaffDto.photo_url) ?? null,
+      photoUrl: this.normalizeOptionalString(createStaffDto.photoUrl) ?? null,
     } as const;
 
-    if (existingStaffMember) {
-      const reactivatedStaffMember = await this.staffRepository.update(
-        existingStaffMember.id,
-        {
-          role: normalizedInput.role,
-          bio: normalizedInput.bio,
-          photoUrl: normalizedInput.photoUrl,
-          isActive: true,
-        },
-      );
+    if (createStaffDto.userId) {
+      const user = await this.requireUser(createStaffDto.userId);
+      this.staffPolicy.assertCanAssignUserToRole(user, createStaffDto.role);
 
-      if (!reactivatedStaffMember) {
-        throw staffNotFoundError();
-      }
-
-      this.recordStaffAudit(
+      return this.createOrReactivateMembership(
         currentUser,
-        AuditLogAction.STAFF_UPDATED,
-        reactivatedStaffMember,
         {
-          salonId,
+          ...membershipInput,
           userId: user.id,
-          reactivated: true,
         },
       );
-
-      return reactivatedStaffMember;
     }
 
-    try {
-      const createdStaffMember = await this.staffRepository.create(normalizedInput);
-
-      this.domainEventBus.publish({
-        name: 'staff.created',
-        occurredAt: new Date(),
-        payload: {
-          actorUserId: currentUser.sub,
-          actorRole: currentUser.role,
-          staffId: createdStaffMember.id,
-          userId: user.id,
-          salonId,
-          staffRole: createdStaffMember.role,
+    return this.databaseService.transaction(async (transaction) => {
+      const employee = createStaffDto.employee!;
+      const passwordHash = await bcrypt.hash(employee.password, this.passwordCost);
+      const user = await this.userProvisioningService.createEmployee(
+        {
+          name: employee.name,
+          email: employee.email,
+          phone: employee.phone,
+          passwordHash,
+          role: createStaffDto.role,
         },
-      });
+        transaction,
+      );
 
-      return createdStaffMember;
-    } catch (error) {
-      if (error instanceof DatabaseConstraintViolationError) {
-        throw staffAlreadyAssignedError();
-      }
-
-      throw error;
-    }
+      return this.createOrReactivateMembership(
+        currentUser,
+        {
+          ...membershipInput,
+          userId: user.id,
+        },
+        transaction,
+      );
+    });
   }
 
   async update(
@@ -136,7 +127,7 @@ export class StaffService {
     const existingStaffMember = await this.requireStaffMember(salonId, staffId);
     const nextRole = updateStaffDto.role ?? existingStaffMember.role;
 
-    if (updateStaffDto.role !== undefined || updateStaffDto.is_active === true) {
+    if (updateStaffDto.role !== undefined || updateStaffDto.isActive === true) {
       const user = await this.requireUser(existingStaffMember.userId);
       this.staffPolicy.assertCanAssignUserToRole(user, nextRole);
     }
@@ -213,6 +204,83 @@ export class StaffService {
     return this.staffRepository.findActiveByUserIdAndSalon(userId, salonId);
   }
 
+  private async createOrReactivateMembership(
+    currentUser: JwtPayload,
+    input: CreateStaffInput,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<StaffMember> {
+    const existingStaffMember = await this.staffRepository.findByUserIdAndSalon(
+      input.userId,
+      input.salonId,
+    );
+
+    this.staffPolicy.assertCanCreate(existingStaffMember);
+
+    if (existingStaffMember) {
+      const reactivatedStaffMember = await this.staffRepository.update(
+        existingStaffMember.id,
+        {
+          role: input.role,
+          bio: input.bio ?? null,
+          photoUrl: input.photoUrl ?? null,
+          isActive: true,
+        },
+      );
+
+      if (!reactivatedStaffMember) {
+        throw staffNotFoundError();
+      }
+
+      this.recordStaffAudit(
+        currentUser,
+        AuditLogAction.STAFF_UPDATED,
+        reactivatedStaffMember,
+        {
+          salonId: input.salonId,
+          userId: input.userId,
+          reactivated: true,
+        },
+      );
+
+      return reactivatedStaffMember;
+    }
+
+    try {
+      const createdStaffMember = await this.staffRepository.create(
+        {
+          userId: input.userId,
+          salonId: input.salonId,
+          role: input.role,
+          bio: input.bio ?? null,
+          photoUrl: input.photoUrl ?? null,
+          isActive: true,
+        },
+        executor,
+      );
+
+      this.domainEventBus.publish({
+        name: 'staff.created',
+        occurredAt: new Date(),
+        payload: {
+          actorUserId: currentUser.sub,
+          actorRole: currentUser.role,
+          staffId: createdStaffMember.id,
+          userId: input.userId,
+          salonId: input.salonId,
+          staffRole: createdStaffMember.role,
+        },
+      });
+
+      return createdStaffMember;
+    } catch (error) {
+      if (error instanceof DatabaseConstraintViolationError) {
+        throw staffAlreadyAssignedError();
+      }
+
+      throw error;
+    }
+  }
+
   private async requireSalon(salonId: string) {
     const salon = await this.salonCatalogService.findActiveById(salonId);
 
@@ -257,13 +325,13 @@ export class StaffService {
       normalizedInput.bio = this.normalizeOptionalString(updateStaffDto.bio) ?? null;
     }
 
-    if (updateStaffDto.photo_url !== undefined) {
+    if (updateStaffDto.photoUrl !== undefined) {
       normalizedInput.photoUrl =
-        this.normalizeOptionalString(updateStaffDto.photo_url) ?? null;
+        this.normalizeOptionalString(updateStaffDto.photoUrl) ?? null;
     }
 
-    if (updateStaffDto.is_active !== undefined) {
-      normalizedInput.isActive = updateStaffDto.is_active;
+    if (updateStaffDto.isActive !== undefined) {
+      normalizedInput.isActive = updateStaffDto.isActive;
     }
 
     return normalizedInput;

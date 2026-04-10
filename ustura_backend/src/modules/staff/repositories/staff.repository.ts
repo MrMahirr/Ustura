@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { QueryResultRow } from 'pg';
 import { Role } from '../../../shared/auth/role.enum';
 import { DatabaseService } from '../../../database/database.service';
+import type { SqlQueryExecutor } from '../../../database/database.types';
 import {
   CreateStaffInput,
   StaffMember,
@@ -12,8 +13,11 @@ import {
 export class StaffRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findById(id: string): Promise<StaffMember | null> {
-    const result = await this.databaseService.query<StaffRow>({
+  async findById(
+    id: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<StaffMember | null> {
+    const result = await executor.query<StaffRow>({
       name: 'staff.find-by-id',
       text: `
         SELECT
@@ -150,6 +154,33 @@ export class StaffRepository {
     return this.mapRow(result.rows[0]);
   }
 
+  async findActiveByUserId(userId: string): Promise<StaffMember[]> {
+    const result = await this.databaseService.query<StaffRow>({
+      name: 'staff.find-active-by-user-id',
+      text: `
+        SELECT
+          s.id,
+          s.user_id,
+          s.salon_id,
+          u.name AS display_name,
+          s.role,
+          s.bio,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM staff s
+        INNER JOIN users u ON u.id = s.user_id
+        WHERE s.user_id = $1
+          AND s.is_active = TRUE
+        ORDER BY s.created_at ASC
+      `,
+      values: [userId],
+    });
+
+    return result.rows.map((row) => this.mapRow(row) as StaffMember);
+  }
+
   async findByUserIdAndSalon(
     userId: string,
     salonId: string,
@@ -180,8 +211,11 @@ export class StaffRepository {
     return this.mapRow(result.rows[0]);
   }
 
-  async create(input: CreateStaffInput): Promise<StaffMember> {
-    const result = await this.databaseService.query<StaffIdentityRow>({
+  async create(
+    input: CreateStaffInput,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<StaffMember> {
+    const result = await executor.query<StaffIdentityRow>({
       name: 'staff.create',
       text: `
         INSERT INTO staff (
@@ -205,7 +239,7 @@ export class StaffRepository {
       ],
     });
 
-    return (await this.findById(result.rows[0]?.id)) as StaffMember;
+    return (await this.findById(result.rows[0]?.id, executor)) as StaffMember;
   }
 
   async update(id: string, input: UpdateStaffInput): Promise<StaffMember | null> {
@@ -239,7 +273,6 @@ export class StaffRepository {
     values.push(id);
 
     const result = await this.databaseService.query<StaffIdentityRow>({
-      name: 'staff.update',
       text: `
         UPDATE staff
         SET ${updates.join(', ')}

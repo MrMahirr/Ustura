@@ -64,6 +64,7 @@ describe('GlobalExceptionFilter', () => {
     expect(responseMock.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     expect(responseMock.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: false,
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Email is invalid',
         path: '/api/auth/register',
@@ -84,6 +85,7 @@ describe('GlobalExceptionFilter', () => {
     );
     expect(responseMock.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: false,
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
         message: 'Database is temporarily unavailable.',
         code: 'database_unavailable',
@@ -104,6 +106,7 @@ describe('GlobalExceptionFilter', () => {
     expect(responseMock.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
     expect(responseMock.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: false,
         statusCode: HttpStatus.CONFLICT,
         message: 'Request conflicts with the current database state.',
         code: 'database_constraint_violation',
@@ -124,6 +127,7 @@ describe('GlobalExceptionFilter', () => {
     );
     expect(responseMock.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: false,
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'A database operation failed.',
         code: 'database_operation_failed',
@@ -141,6 +145,7 @@ describe('GlobalExceptionFilter', () => {
     );
     expect(responseMock.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: false,
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Internal server error.',
         code: 'internal_server_error',
@@ -159,6 +164,7 @@ describe('GlobalExceptionFilter', () => {
 
     expect(responseMock.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: false,
         statusCode: HttpStatus.CONFLICT,
         message: 'User already exists.',
         code: 'user_conflict',

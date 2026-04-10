@@ -1,4 +1,5 @@
 import { Role } from '../../../shared/auth/role.enum';
+import type { CreateEmployeeAccountDto } from '../dto/create-employee-account.dto';
 
 export interface StaffMember {
   id: string;
@@ -27,4 +28,9 @@ export interface UpdateStaffInput {
   bio?: string | null;
   photoUrl?: string | null;
   isActive?: boolean;
+}
+
+export interface StaffProvisioningSelection {
+  userId?: string;
+  employee?: CreateEmployeeAccountDto;
 }

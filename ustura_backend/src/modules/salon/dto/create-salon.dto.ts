@@ -29,8 +29,8 @@ export class CreateSalonDto {
   @IsUrl({
     require_protocol: true,
   })
-  photo_url?: string;
+  photoUrl?: string;
 
   @IsObject()
-  working_hours: Record<string, unknown>;
+  workingHours: Record<string, unknown>;
 }

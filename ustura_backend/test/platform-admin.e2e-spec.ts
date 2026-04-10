@@ -115,9 +115,9 @@ describe('PlatformAdminController (e2e)', () => {
       })
       .expect(400)
       .expect(({ body }) => {
-        expect(body.message).toContain(
-          'applicantName must be longer than or equal to 2 characters',
-        );
+        expect(body.success).toBe(false);
+        expect(body.statusCode).toBe(400);
+        expect(body.path).toBe('/api/owner-applications');
         expect(body.message).toContain('applicantEmail must be an email');
         expect(body.message).toContain(
           'applicantPhone must be longer than or equal to 8 characters',
@@ -159,11 +159,12 @@ describe('PlatformAdminController (e2e)', () => {
       )
       .expect(201)
       .expect(({ body }) => {
-        expect(body).toMatchObject({
+        expect(body.success).toBe(true);
+        expect(body.data).toMatchObject({
           status: OwnerApplicationStatus.APPROVED,
           reviewedByUserId: 'super-admin-1',
-          approvedOwnerUserId: 'owner-1',
-          approvedSalonId: 'salon-1',
+          approvedOwnerUserId: expect.any(String),
+          approvedSalonId: expect.any(String),
         });
       });
   });

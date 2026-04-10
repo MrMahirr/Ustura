@@ -139,4 +139,53 @@ describe('StaffPolicy', () => {
       ERROR_CODES.STAFF.ALREADY_ASSIGNED,
     );
   });
+
+  it('rejects ambiguous provisioning input when both user_id and employee payload exist', () => {
+    let capturedError: unknown;
+
+    try {
+      policy.assertValidProvisioningSelection({
+        userId: 'user-1',
+        employee: {},
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(HttpException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.STAFF.PROVISIONING_MODE_INVALID,
+    );
+  });
+
+  it('allows barber and receptionist roles to access staff self view only', () => {
+    expect(() =>
+      policy.assertCanViewOwnAssignments(
+        createUserPayload({
+          role: Role.BARBER,
+        }),
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      policy.assertCanViewOwnAssignments(
+        createUserPayload({
+          role: Role.RECEPTIONIST,
+        }),
+      ),
+    ).not.toThrow();
+
+    let capturedError: unknown;
+
+    try {
+      policy.assertCanViewOwnAssignments(createUserPayload());
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ForbiddenException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.STAFF.SELF_VIEW_FORBIDDEN,
+    );
+  });
 });

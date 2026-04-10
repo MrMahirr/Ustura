@@ -97,7 +97,10 @@ describe('AuthController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/api/auth/google/customer/web/config')
       .expect(200)
-      .expect({ clientId: 'client-id.apps.googleusercontent.com' });
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual({ clientId: 'client-id.apps.googleusercontent.com' });
+      });
 
     expect(authService.getGoogleCustomerWebConfiguration).toHaveBeenCalledTimes(
       1,
@@ -116,6 +119,7 @@ describe('AuthController (e2e)', () => {
       })
       .expect(400)
       .expect(({ body }) => {
+        expect(body.success).toBe(false);
         expect(body.statusCode).toBe(400);
         expect(body.path).toBe('/api/auth/register');
         expect(body.message).toContain(
@@ -143,7 +147,10 @@ describe('AuthController (e2e)', () => {
         password: 'password123',
       })
       .expect(201)
-      .expect(sessionResponse);
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual(sessionResponse);
+      });
 
     expect(authService.login).toHaveBeenCalledWith({
       email: 'customer@example.com',
@@ -161,7 +168,10 @@ describe('AuthController (e2e)', () => {
         refreshToken: 'refresh-token-value',
       })
       .expect(201)
-      .expect(sessionResponse);
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual(sessionResponse);
+      });
 
     expect(authService.refreshToken).toHaveBeenCalledWith({
       refreshToken: 'refresh-token-value',
@@ -184,6 +194,7 @@ describe('AuthController (e2e)', () => {
       .expect(503)
       .expect(({ body }) => {
         expect(body).toMatchObject({
+          success: false,
           statusCode: 503,
           message: 'Google web sign-in is not configured on the backend.',
           code: 'auth.google_web_not_configured',
@@ -198,9 +209,12 @@ describe('AuthController (e2e)', () => {
       .post('/api/auth/logout-all')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(201)
-      .expect({
-        success: true,
-        revokedSessionCount: 2,
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual({
+          success: true,
+          revokedSessionCount: 2,
+        });
       });
 
     expect(authService.logoutAll).toHaveBeenCalledWith(expect.objectContaining({

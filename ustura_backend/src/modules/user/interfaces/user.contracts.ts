@@ -24,7 +24,10 @@ export interface UserProvisioningServiceContract {
     email: string;
     phone: string;
   }): Promise<User>;
-  createEmployee(input: CreateEmployeeInput): Promise<User>;
+  createEmployee(
+    input: CreateEmployeeInput,
+    executor?: SqlQueryExecutor,
+  ): Promise<User>;
   createOwner(
     input: CreateOwnerInput,
     executor?: SqlQueryExecutor,

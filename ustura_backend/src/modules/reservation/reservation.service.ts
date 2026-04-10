@@ -53,10 +53,10 @@ export class ReservationService {
     currentUser: JwtPayload,
     createReservationDto: CreateReservationDto,
   ): Promise<ReservationRecord> {
-    const salon = await this.requireSalon(createReservationDto.salon_id);
+    const salon = await this.requireSalon(createReservationDto.salonId);
     const staff = await this.requireBarber(
-      createReservationDto.staff_id,
-      createReservationDto.salon_id,
+      createReservationDto.staffId,
+      createReservationDto.salonId,
     );
     const membership = await this.findActiveMembershipForAuthorization(
       currentUser,
@@ -73,8 +73,8 @@ export class ReservationService {
     const slot = await this.slotService.assertSlotReservable({
       salonId: salon.id,
       staffId: staff.id,
-      slotStart: createReservationDto.slot_start,
-      requesterSelectionOwnerId: createReservationDto.selection_owner_id,
+      slotStart: createReservationDto.slotStart,
+      requesterSelectionOwnerId: createReservationDto.selectionOwnerId,
     });
     const customer = await this.resolveCustomer(
       currentUser,
@@ -106,7 +106,7 @@ export class ReservationService {
         },
       );
 
-      if (createReservationDto.selection_owner_id) {
+      if (createReservationDto.selectionOwnerId) {
         await this.slotService.releaseSelection(
           {
             salonId: salon.id,
@@ -114,7 +114,7 @@ export class ReservationService {
             staffId: staff.id,
           },
           slot.slotStart.toISOString(),
-          createReservationDto.selection_owner_id,
+          createReservationDto.selectionOwnerId,
         );
       }
 
@@ -324,9 +324,9 @@ export class ReservationService {
       return customer;
     }
 
-    if (createReservationDto.customer_id) {
+    if (createReservationDto.customerId) {
       const customer = await this.userQueryService.findById(
-        createReservationDto.customer_id,
+        createReservationDto.customerId,
       );
 
       if (!customer || customer.role !== Role.CUSTOMER || !customer.isActive) {
@@ -337,17 +337,17 @@ export class ReservationService {
     }
 
     if (
-      !createReservationDto.customer_name ||
-      !createReservationDto.customer_email ||
-      !createReservationDto.customer_phone
+      !createReservationDto.customerName ||
+      !createReservationDto.customerEmail ||
+      !createReservationDto.customerPhone
     ) {
       throw customerDetailsRequiredError();
     }
 
     const customer = await this.userProvisioningService.findOrCreateManagedCustomer({
-      name: createReservationDto.customer_name,
-      email: createReservationDto.customer_email,
-      phone: createReservationDto.customer_phone,
+      name: createReservationDto.customerName,
+      email: createReservationDto.customerEmail,
+      phone: createReservationDto.customerPhone,
     });
 
     return customer;

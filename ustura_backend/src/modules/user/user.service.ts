@@ -71,10 +71,13 @@ export class UserService
     });
   }
 
-  async createEmployee(input: CreateEmployeeInput): Promise<User> {
+  async createEmployee(
+    input: CreateEmployeeInput,
+    executor?: SqlQueryExecutor,
+  ): Promise<User> {
     this.userAccountPolicy.assertValidEmployeeRole(input.role);
 
-    return this.createUser(input);
+    return this.createUser(input, executor);
   }
 
   async createOwner(

@@ -6,10 +6,10 @@ export class GetSlotsQueryDto {
 
   @IsOptional()
   @IsUUID()
-  staff_id?: string;
+  staffId?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(128)
-  requester_selection_owner_id?: string;
+  requesterSelectionOwnerId?: string;
 }

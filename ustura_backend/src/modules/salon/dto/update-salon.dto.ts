@@ -33,13 +33,13 @@ export class UpdateSalonDto {
   @IsUrl({
     require_protocol: true,
   })
-  photo_url?: string;
+  photoUrl?: string;
 
   @IsOptional()
   @IsObject()
-  working_hours?: Record<string, unknown>;
+  workingHours?: Record<string, unknown>;
 
   @IsOptional()
   @IsBoolean()
-  is_active?: boolean;
+  isActive?: boolean;
 }

@@ -56,8 +56,10 @@ describe('HealthController (e2e)', () => {
       .get('/api/health/live')
       .expect(200)
       .expect(({ body }) => {
-        expect(body.status).toBe('ok');
-        expect(typeof body.timestamp).toBe('string');
+        expect(body.success).toBe(true);
+        expect(body.data.status).toBe('ok');
+        expect(typeof body.data.timestamp).toBe('string');
+        expect(body.timestamp).toBeDefined();
       });
   });
 
@@ -70,6 +72,10 @@ describe('HealthController (e2e)', () => {
           { filename: '001_init_tables.sql' },
           { filename: '002_add_customer_google_auth.sql' },
           { filename: '003_rework_reservation_schema.sql' },
+          { filename: '004_create_owner_applications.sql' },
+          { filename: '005_create_audit_logs.sql' },
+          { filename: '006_harden_refresh_tokens.sql' },
+          { filename: '007_enforce_user_phone_uniqueness.sql' },
         ],
       })
       .mockResolvedValueOnce({
@@ -77,6 +83,9 @@ describe('HealthController (e2e)', () => {
           { column_name: 'password_hash', is_nullable: 'YES' },
           { column_name: 'firebase_uid', is_nullable: 'YES' },
         ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_users_phone_non_empty' }],
       })
       .mockResolvedValueOnce({
         rows: [
@@ -94,21 +103,31 @@ describe('HealthController (e2e)', () => {
       })
       .mockResolvedValueOnce({
         rows: [{ indexname: 'uq_reservations_active_staff_slot' }],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'revoked_at', is_nullable: 'YES' },
+          { column_name: 'user_agent', is_nullable: 'YES' },
+          { column_name: 'ip_address', is_nullable: 'YES' },
+          { column_name: 'rotated_from', is_nullable: 'YES' },
+        ],
       });
 
     await request(app.getHttpServer())
       .get('/api/health/ready')
       .expect(200)
       .expect(({ body }) => {
-        expect(body.status).toBe('ready');
-        expect(body.checks.database.status).toBe('up');
-        expect(body.checks.schemaMigrations.status).toBe('up');
-        expect(body.checks.usersTableSchema.status).toBe('up');
-        expect(body.checks.reservationsTableSchema.status).toBe('up');
-        expect(body.checks.redis.status).toBe('up');
+        expect(body.success).toBe(true);
+        expect(body.data.status).toBe('ready');
+        expect(body.data.checks.database.status).toBe('up');
+        expect(body.data.checks.schemaMigrations.status).toBe('up');
+        expect(body.data.checks.usersTableSchema.status).toBe('up');
+        expect(body.data.checks.reservationsTableSchema.status).toBe('up');
+        expect(body.data.checks.refreshTokensTableSchema.status).toBe('up');
+        expect(body.data.checks.redis.status).toBe('up');
       });
 
-    expect(databaseService.query).toHaveBeenCalledTimes(7);
+    expect(databaseService.query).toHaveBeenCalledTimes(9);
     expect(redisService.connect).toHaveBeenCalledTimes(1);
     expect(redisPing).toHaveBeenCalledTimes(1);
   });
@@ -120,21 +139,22 @@ describe('HealthController (e2e)', () => {
       .get('/api/health/ready')
       .expect(503)
       .expect(({ body }) => {
-        expect(body.status).toBe('not_ready');
-        expect(body.checks.database.status).toBe('down');
-        expect(body.checks.database.message).toContain(
+        expect(body.success).toBe(true);
+        expect(body.data.status).toBe('not_ready');
+        expect(body.data.checks.database.status).toBe('down');
+        expect(body.data.checks.database.message).toContain(
           'PostgreSQL connection failed.',
         );
-        expect(body.checks.schemaMigrations.message).toBe(
+        expect(body.data.checks.schemaMigrations.message).toBe(
           'Skipped because PostgreSQL is unavailable.',
         );
-        expect(body.checks.usersTableSchema.message).toBe(
+        expect(body.data.checks.usersTableSchema.message).toBe(
           'Skipped because PostgreSQL is unavailable.',
         );
-        expect(body.checks.reservationsTableSchema.message).toBe(
+        expect(body.data.checks.reservationsTableSchema.message).toBe(
           'Skipped because PostgreSQL is unavailable.',
         );
-        expect(body.checks.redis.status).toBe('up');
+        expect(body.data.checks.redis.status).toBe('up');
       });
   });
 });

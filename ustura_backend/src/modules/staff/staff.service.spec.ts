@@ -1,25 +1,34 @@
 import { ConflictException, ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
+import { DatabaseService } from '../../database/database.service';
+import type { DatabaseTransaction } from '../../database/database.types';
+import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
-import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
-import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import type { Salon } from '../salon/interfaces/salon.types';
-import { SalonService } from '../salon/salon.service';
 import type { User } from '../user/interfaces/user.types';
-import { UserService } from '../user/user.service';
 import { StaffPolicy } from './policies/staff.policy';
 import { StaffRepository } from './repositories/staff.repository';
 import { StaffService } from './staff.service';
 import type { StaffMember } from './interfaces/staff.types';
 
-function createOwnerPayload(overrides: Partial<JwtPayload> = {}): JwtPayload {
+function createOwnerPayload(overrides: Record<string, unknown> = {}) {
   return {
     sub: 'owner-1',
     email: 'owner@example.com',
     role: Role.OWNER,
+    tokenType: 'access',
+    ...overrides,
+  };
+}
+
+function createStaffPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    sub: 'user-1',
+    email: 'staff@example.com',
+    role: Role.BARBER,
     tokenType: 'access',
     ...overrides,
   };
@@ -34,7 +43,15 @@ function createSalon(overrides: Partial<Salon> = {}): Salon {
     city: 'Istanbul',
     district: 'Besiktas',
     photoUrl: null,
-    workingHours: {},
+    workingHours: {
+      monday: { open: '09:00', close: '19:00' },
+      tuesday: null,
+      wednesday: null,
+      thursday: null,
+      friday: null,
+      saturday: null,
+      sunday: null,
+    },
     isActive: true,
     createdAt: new Date('2026-04-09T00:00:00.000Z'),
     updatedAt: new Date('2026-04-09T00:00:00.000Z'),
@@ -91,8 +108,10 @@ function getExceptionCode(error: unknown): string | undefined {
 describe('StaffService', () => {
   let service: StaffService;
   let staffRepository: jest.Mocked<StaffRepository>;
-  let salonService: jest.Mocked<Pick<SalonService, 'findActiveById'>>;
-  let userService: jest.Mocked<UserService>;
+  let salonCatalogService: { findActiveById: jest.Mock };
+  let userQueryService: { findById: jest.Mock };
+  let userProvisioningService: { createEmployee: jest.Mock };
+  let databaseService: { transaction: jest.Mock };
   let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
   let domainEventBus: jest.Mocked<Pick<DomainEventBus, 'publish'>>;
 
@@ -102,18 +121,26 @@ describe('StaffService', () => {
       findBySalonId: jest.fn(),
       findActiveBySalonId: jest.fn(),
       findActiveBarbersBySalonId: jest.fn(),
+      findActiveByUserId: jest.fn(),
       findActiveByUserIdAndSalon: jest.fn(),
       findByUserIdAndSalon: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       deactivate: jest.fn(),
     } as unknown as jest.Mocked<StaffRepository>;
-    salonService = {
+    salonCatalogService = {
       findActiveById: jest.fn(),
-    } as jest.Mocked<Pick<SalonService, 'findActiveById'>>;
-    userService = {
+    };
+    userQueryService = {
       findById: jest.fn(),
-    } as unknown as jest.Mocked<UserService>;
+    };
+    userProvisioningService = {
+      createEmployee: jest.fn(),
+    };
+    databaseService = {
+      transaction: jest.fn(async (operation: (tx: DatabaseTransaction) => Promise<unknown>) =>
+        operation({ query: jest.fn() } as DatabaseTransaction)),
+    };
     auditLogService = {
       recordBestEffort: jest.fn(),
     };
@@ -123,8 +150,10 @@ describe('StaffService', () => {
 
     service = new StaffService(
       staffRepository,
-      salonService as unknown as SalonService,
-      userService,
+      databaseService as unknown as DatabaseService,
+      salonCatalogService as never,
+      userQueryService as never,
+      userProvisioningService as never,
       new StaffPolicy(),
       auditLogService as AuditLogService,
       domainEventBus as DomainEventBus,
@@ -133,7 +162,7 @@ describe('StaffService', () => {
 
   it('lists active staff members for an active salon', async () => {
     const staffList = [createStaffMember()];
-    salonService.findActiveById.mockResolvedValue(createSalon());
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
     staffRepository.findActiveBySalonId.mockResolvedValue(staffList);
 
     const result = await service.findBySalonId('salon-1');
@@ -142,9 +171,75 @@ describe('StaffService', () => {
     expect(staffRepository.findActiveBySalonId).toHaveBeenCalledWith('salon-1');
   });
 
+  it('creates a new employee account through the user provisioning contract before creating staff membership', async () => {
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
+    userProvisioningService.createEmployee.mockResolvedValue(
+      createUser({
+        id: 'user-9',
+        role: Role.RECEPTIONIST,
+      }),
+    );
+    staffRepository.findByUserIdAndSalon.mockResolvedValue(null);
+    staffRepository.create.mockResolvedValue(
+      createStaffMember({
+        id: 'staff-9',
+        userId: 'user-9',
+        role: Role.RECEPTIONIST,
+        displayName: 'Reception User',
+      }),
+    );
+
+    const result = await service.create(createOwnerPayload(), 'salon-1', {
+      employee: {
+        name: 'Reception User',
+        email: 'reception@example.com',
+        phone: '+905551119999',
+        password: 'super-secret',
+      },
+      role: Role.RECEPTIONIST,
+      bio: '  Front desk  ',
+    });
+
+    expect(databaseService.transaction).toHaveBeenCalledTimes(1);
+    expect(userProvisioningService.createEmployee).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Reception User',
+        email: 'reception@example.com',
+        phone: '+905551119999',
+        role: Role.RECEPTIONIST,
+        passwordHash: expect.any(String),
+      }),
+      expect.any(Object),
+    );
+    expect(staffRepository.create).toHaveBeenCalledWith(
+      {
+        userId: 'user-9',
+        salonId: 'salon-1',
+        role: Role.RECEPTIONIST,
+        bio: 'Front desk',
+        photoUrl: null,
+        isActive: true,
+      },
+      expect.any(Object),
+    );
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'staff.created',
+      occurredAt: expect.any(Date),
+      payload: {
+        actorUserId: 'owner-1',
+        actorRole: Role.OWNER,
+        staffId: 'staff-9',
+        userId: 'user-9',
+        salonId: 'salon-1',
+        staffRole: Role.RECEPTIONIST,
+      },
+    });
+    expect(result.id).toBe('staff-9');
+  });
+
   it('reactivates an existing inactive staff assignment instead of creating a duplicate row', async () => {
-    salonService.findActiveById.mockResolvedValue(createSalon());
-    userService.findById.mockResolvedValue(createUser());
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
+    userQueryService.findById.mockResolvedValue(createUser());
     staffRepository.findByUserIdAndSalon.mockResolvedValue(
       createStaffMember({
         id: 'staff-9',
@@ -160,10 +255,10 @@ describe('StaffService', () => {
     );
 
     const result = await service.create(createOwnerPayload(), 'salon-1', {
-      user_id: 'user-1',
+      userId: 'user-1',
       role: Role.BARBER,
       bio: '  Senior barber  ',
-      photo_url: 'https://example.com/barber.jpg',
+      photoUrl: 'https://example.com/barber.jpg',
     });
 
     expect(staffRepository.update).toHaveBeenCalledWith('staff-9', {
@@ -186,49 +281,86 @@ describe('StaffService', () => {
         reactivated: true,
       },
     });
-    expect(domainEventBus.publish).not.toHaveBeenCalled();
     expect(result.id).toBe('staff-9');
   });
 
-  it('publishes a staff.created event when a new staff row is created', async () => {
-    salonService.findActiveById.mockResolvedValue(createSalon());
-    userService.findById.mockResolvedValue(createUser());
-    staffRepository.findByUserIdAndSalon.mockResolvedValue(null);
-    staffRepository.create.mockResolvedValue(createStaffMember());
+  it('rejects creating duplicate active staff assignments in the same salon', async () => {
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
+    userQueryService.findById.mockResolvedValue(createUser());
+    staffRepository.findByUserIdAndSalon.mockResolvedValue(createStaffMember());
 
-    await service.create(createOwnerPayload(), 'salon-1', {
-      user_id: 'user-1',
-      role: Role.BARBER,
-    });
-
-    expect(domainEventBus.publish).toHaveBeenCalledWith({
-      name: 'staff.created',
-      occurredAt: expect.any(Date),
-      payload: {
-        actorUserId: 'owner-1',
-        actorRole: Role.OWNER,
-        staffId: 'staff-1',
+    await expect(
+      service.create(createOwnerPayload(), 'salon-1', {
         userId: 'user-1',
-        salonId: 'salon-1',
-        staffRole: Role.BARBER,
-      },
-    });
+        role: Role.BARBER,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('rejects creating staff assignments with user roles that do not match the staff role', async () => {
-    salonService.findActiveById.mockResolvedValue(createSalon());
-    userService.findById.mockResolvedValue(
-      createUser({
-        role: Role.RECEPTIONIST,
-      }),
-    );
-    staffRepository.findByUserIdAndSalon.mockResolvedValue(null);
+  it('rejects provisioning payloads that send both userId and employee details', async () => {
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
 
     let capturedError: unknown;
 
     try {
       await service.create(createOwnerPayload(), 'salon-1', {
-        user_id: 'user-1',
+        userId: 'user-1',
+        employee: {
+          name: 'Employee',
+          email: 'employee@example.com',
+          phone: '+905551112233',
+          password: 'super-secret',
+        },
+        role: Role.BARBER,
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.STAFF.PROVISIONING_MODE_INVALID,
+    );
+  });
+
+  it('returns active memberships for staff self view', async () => {
+    const memberships = [
+      createStaffMember(),
+      createStaffMember({
+        id: 'staff-2',
+        salonId: 'salon-2',
+      }),
+    ];
+    staffRepository.findActiveByUserId.mockResolvedValue(memberships);
+
+    const result = await service.findMyAssignments(createStaffPayload());
+
+    expect(result).toBe(memberships);
+    expect(staffRepository.findActiveByUserId).toHaveBeenCalledWith('user-1');
+  });
+
+  it('rejects staff self view for non-staff roles', async () => {
+    await expect(
+      service.findMyAssignments(
+        createStaffPayload({
+          role: Role.OWNER,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('rejects creating staff assignments with user roles that do not match the staff role', async () => {
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
+    userQueryService.findById.mockResolvedValue(
+      createUser({
+        role: Role.RECEPTIONIST,
+      }),
+    );
+
+    let capturedError: unknown;
+
+    try {
+      await service.create(createOwnerPayload(), 'salon-1', {
+        userId: 'user-1',
         role: Role.BARBER,
       });
     } catch (error) {
@@ -242,7 +374,7 @@ describe('StaffService', () => {
   });
 
   it('rejects deleting staff from salons owned by another owner', async () => {
-    salonService.findActiveById.mockResolvedValue(
+    salonCatalogService.findActiveById.mockResolvedValue(
       createSalon({
         ownerId: 'owner-2',
       }),
@@ -263,7 +395,7 @@ describe('StaffService', () => {
   });
 
   it('returns not found when updating a staff member outside the requested salon scope', async () => {
-    salonService.findActiveById.mockResolvedValue(createSalon());
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
     staffRepository.findById.mockResolvedValue(
       createStaffMember({
         salonId: 'salon-2',

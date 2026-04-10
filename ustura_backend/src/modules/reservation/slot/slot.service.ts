@@ -59,7 +59,7 @@ export class SlotService {
 
     const { rangeStart, rangeEnd } = this.buildDateRange(query.date);
 
-    if (!query.staff_id) {
+    if (!query.staffId) {
       const activeBarbers =
         await this.staffService.findActiveBarbersBySalonId(salonId);
 
@@ -103,7 +103,7 @@ export class SlotService {
       });
     }
 
-    const staff = await this.staffService.findById(query.staff_id);
+    const staff = await this.staffService.findById(query.staffId);
 
     if (
       !staff ||
@@ -126,7 +126,7 @@ export class SlotService {
     const selections = await this.getSelectionMap({
       salonId,
       date: query.date,
-      staffId: query.staff_id,
+      staffId: query.staffId,
     });
 
     return generatedSlots.map((slot) => {
@@ -134,7 +134,7 @@ export class SlotService {
       const isReserved = reservedStarts.has(slot.start);
       const heldByOther =
         !!selection &&
-        selection.holderId !== query.requester_selection_owner_id;
+        selection.holderId !== query.requesterSelectionOwnerId;
 
       return {
         ...slot,
@@ -155,8 +155,8 @@ export class SlotService {
     const date = this.formatBusinessDate(slotStartDate);
     const availableSlots = await this.getAvailableSlots(input.salonId, {
       date,
-      staff_id: input.staffId,
-      requester_selection_owner_id: input.requesterSelectionOwnerId,
+      staffId: input.staffId,
+      requesterSelectionOwnerId: input.requesterSelectionOwnerId,
     });
     const matchingSlot = availableSlots.find(
       (slot) => slot.start === slotStartDate.toISOString(),

@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AppConfigService } from './config/config.service';
 
 async function bootstrap() {
@@ -19,6 +20,7 @@ async function bootstrap() {
   app.useWebSocketAdapter(new IoAdapter(app));
   app.use(helmet());
   app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({

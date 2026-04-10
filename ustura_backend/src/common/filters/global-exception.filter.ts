@@ -16,6 +16,7 @@ import {
 } from '../../database/database.errors';
 
 interface ErrorResponseBody {
+  success: boolean;
   statusCode: number;
   message: string;
   timestamp: string;
@@ -33,6 +34,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = httpContext.getRequest<Request>();
     const normalizedError = this.normalizeException(exception);
     const responseBody: ErrorResponseBody = {
+      success: false,
       statusCode: normalizedError.statusCode,
       message: normalizedError.message,
       timestamp: new Date().toISOString(),

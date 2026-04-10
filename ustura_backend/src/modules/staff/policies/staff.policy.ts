@@ -6,6 +6,8 @@ import {
   staffAlreadyAssignedError,
   staffInvalidAccountRoleError,
   staffManagementForbiddenError,
+  staffProvisioningModeInvalidError,
+  staffSelfViewForbiddenError,
   staffUserInactiveError,
 } from '../errors/staff.errors';
 import type { StaffMember } from '../interfaces/staff.types';
@@ -37,6 +39,27 @@ export class StaffPolicy {
   assertCanCreate(existingStaffMember: StaffMember | null): void {
     if (existingStaffMember?.isActive) {
       throw staffAlreadyAssignedError();
+    }
+  }
+
+  assertValidProvisioningSelection(input: {
+    userId?: string;
+    employee?: object;
+  }): void {
+    const hasUserId = typeof input.userId === 'string' && input.userId.trim().length > 0;
+    const hasEmployee = input.employee !== undefined;
+
+    if (hasUserId === hasEmployee) {
+      throw staffProvisioningModeInvalidError();
+    }
+  }
+
+  assertCanViewOwnAssignments(currentUser: JwtPayload): void {
+    if (
+      currentUser.role !== Role.BARBER &&
+      currentUser.role !== Role.RECEPTIONIST
+    ) {
+      throw staffSelfViewForbiddenError();
     }
   }
 }

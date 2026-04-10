@@ -88,7 +88,10 @@ describe('ReservationController (e2e)', () => {
         })}`,
       )
       .expect(200)
-      .expect([reservationResponse]);
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual([reservationResponse]);
+      });
 
     expect(reservationService.findByCustomerId).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -138,11 +141,12 @@ describe('ReservationController (e2e)', () => {
       })
       .expect(400)
       .expect(({ body }) => {
+        expect(body.success).toBe(false);
         expect(body.statusCode).toBe(400);
         expect(body.path).toBe('/api/reservations');
-        expect(body.message).toContain('salon_id must be a UUID');
-        expect(body.message).toContain('staff_id must be a UUID');
-        expect(body.message).toContain('slot_start must be a valid ISO 8601 date string');
+        expect(body.message).toContain('salonId must be a UUID');
+        expect(body.message).toContain('staffId must be a UUID');
+        expect(body.message).toContain('slotStart must be a valid ISO 8601 date string');
         expect(body.message).toContain('property extra should not exist');
       });
 
@@ -186,6 +190,7 @@ describe('ReservationController (e2e)', () => {
       })
       .expect(400)
       .expect(({ body }) => {
+        expect(body.success).toBe(false);
         expect(body.statusCode).toBe(400);
         expect(body.path).toBe(
           '/api/reservations/55555555-5555-5555-5555-555555555555/status',
@@ -211,7 +216,14 @@ describe('ReservationController (e2e)', () => {
       .send({
         status: ReservationStatus.COMPLETED,
       })
-      .expect(200);
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual({
+          ...reservationResponse,
+          status: 'completed',
+        });
+      });
 
     expect(reservationService.updateStatus).toHaveBeenCalledWith(
       expect.objectContaining({

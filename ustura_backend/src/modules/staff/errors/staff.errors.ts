@@ -1,5 +1,6 @@
 import { ERROR_CODES } from '../../../shared/errors/error-codes';
 import {
+  badRequestError,
   conflictError,
   forbiddenError,
   notFoundError,
@@ -26,12 +27,26 @@ export function staffManagementForbiddenError() {
   );
 }
 
+export function staffProvisioningModeInvalidError() {
+  return badRequestError(
+    'Provide either user_id or employee details when creating staff, but not both.',
+    ERROR_CODES.STAFF.PROVISIONING_MODE_INVALID,
+  );
+}
+
 export function staffNotFoundError() {
   return notFoundError('Staff member not found.', ERROR_CODES.STAFF.NOT_FOUND);
 }
 
 export function staffSalonNotFoundError() {
   return notFoundError('Salon not found.', ERROR_CODES.STAFF.SALON_NOT_FOUND);
+}
+
+export function staffSelfViewForbiddenError() {
+  return forbiddenError(
+    'Only barber and receptionist accounts can access staff self view.',
+    ERROR_CODES.STAFF.SELF_VIEW_FORBIDDEN,
+  );
 }
 
 export function staffUserInactiveError() {

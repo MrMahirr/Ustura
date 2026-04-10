@@ -192,7 +192,6 @@ export class UserRepository {
     values.push(id);
 
     const result = await executor.query<UserRow>({
-      name: 'user.update-profile',
       text: `
         UPDATE users
         SET ${updates.join(', ')}

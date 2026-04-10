@@ -7,6 +7,7 @@ import { Role } from '../src/shared/auth/role.enum';
 import type { JwtPayload } from '../src/shared/auth/jwt-payload.interface';
 import { RolesGuard } from '../src/common/guards/roles.guard';
 import { StaffController } from '../src/modules/staff/staff.controller';
+import { StaffSelfController } from '../src/modules/staff/staff-self.controller';
 import { staffAlreadyAssignedError } from '../src/modules/staff/errors/staff.errors';
 import { StaffService } from '../src/modules/staff/staff.service';
 import { createContractTestApp } from './helpers/create-contract-test-app';
@@ -19,6 +20,7 @@ describe('StaffController (e2e)', () => {
   let app: INestApplication;
   let staffService: {
     findBySalonId: jest.Mock;
+    findMyAssignments: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -41,6 +43,7 @@ describe('StaffController (e2e)', () => {
   beforeEach(async () => {
     staffService = {
       findBySalonId: jest.fn().mockResolvedValue([staffResponse]),
+      findMyAssignments: jest.fn().mockResolvedValue([staffResponse]),
       create: jest.fn().mockResolvedValue(staffResponse),
       update: jest.fn().mockResolvedValue(staffResponse),
       delete: jest.fn().mockResolvedValue({
@@ -55,7 +58,7 @@ describe('StaffController (e2e)', () => {
           defaultStrategy: 'jwt',
         }),
       ],
-      controllers: [StaffController],
+      controllers: [StaffController, StaffSelfController],
       providers: [
         {
           provide: StaffService,
@@ -76,10 +79,37 @@ describe('StaffController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/api/salons/11111111-1111-1111-1111-111111111111/staff')
       .expect(200)
-      .expect([staffResponse]);
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual([staffResponse]);
+      });
 
     expect(staffService.findBySalonId).toHaveBeenCalledWith(
       '11111111-1111-1111-1111-111111111111',
+    );
+  });
+
+  it('GET /api/staff/me returns active memberships for the authenticated staff user', async () => {
+    await request(app.getHttpServer())
+      .get('/api/staff/me')
+      .set(
+        'Authorization',
+        `Bearer ${createAccessToken({
+          role: Role.BARBER,
+          sub: 'user-1',
+        })}`,
+      )
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toEqual([staffResponse]);
+      });
+
+    expect(staffService.findMyAssignments).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: 'user-1',
+        role: Role.BARBER,
+      }),
     );
   });
 
@@ -93,22 +123,28 @@ describe('StaffController (e2e)', () => {
         })}`,
       )
       .send({
-        user_id: 'not-a-uuid',
+        userId: 'not-a-uuid',
         role: 'owner',
-        photo_url: 'not-a-url',
+        photoUrl: 'not-a-url',
+        employee: {
+          email: 'not-an-email',
+        },
         extra: 'not-allowed',
       })
       .expect(400)
       .expect(({ body }) => {
+        expect(body.success).toBe(false);
         expect(body.statusCode).toBe(400);
         expect(body.path).toBe(
           '/api/salons/11111111-1111-1111-1111-111111111111/staff',
         );
-        expect(body.message).toContain('user_id must be a UUID');
+        expect(body.message).toContain('userId must be a UUID');
         expect(body.message).toContain(
           'role must be one of the following values: barber, receptionist',
         );
-        expect(body.message).toContain('photo_url must be a URL address');
+        expect(body.message).toContain('photoUrl must be a URL address');
+        expect(body.message).toContain('employee.name must be a string');
+        expect(body.message).toContain('employee.email must be an email');
         expect(body.message).toContain('property extra should not exist');
       });
 
@@ -125,12 +161,13 @@ describe('StaffController (e2e)', () => {
         })}`,
       )
       .send({
-        user_id: '22222222-2222-4222-8222-222222222222',
+        userId: '22222222-2222-4222-8222-222222222222',
         role: Role.BARBER,
       })
       .expect(403)
       .expect(({ body }) => {
         expect(body).toMatchObject({
+          success: false,
           statusCode: 403,
           message: 'Forbidden resource',
           path: '/api/salons/11111111-1111-1111-1111-111111111111/staff',
@@ -150,12 +187,13 @@ describe('StaffController (e2e)', () => {
         })}`,
       )
       .send({
-        user_id: '22222222-2222-4222-8222-222222222222',
+        userId: '22222222-2222-4222-8222-222222222222',
         role: Role.BARBER,
       })
       .expect(409)
       .expect(({ body }) => {
         expect(body).toMatchObject({
+          success: false,
           statusCode: 409,
           message: 'This user is already assigned to the selected salon staff.',
           code: 'staff.already_assigned',

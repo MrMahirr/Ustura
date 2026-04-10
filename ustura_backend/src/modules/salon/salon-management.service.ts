@@ -39,8 +39,8 @@ export class SalonManagementService implements SalonOwnerProvisioningServiceCont
       address: createSalonDto.address,
       city: createSalonDto.city,
       district: createSalonDto.district,
-      photoUrl: createSalonDto.photo_url,
-      workingHours: createSalonDto.working_hours,
+      photoUrl: createSalonDto.photoUrl,
+      workingHours: createSalonDto.workingHours,
     });
 
     return this.salonProjectionService.toOwnedDetail(salon);
@@ -150,15 +150,15 @@ export class SalonManagementService implements SalonOwnerProvisioningServiceCont
             district: this.normalizeOptionalString(updateSalonDto.district) ?? null,
           }
         : {}),
-      ...(updateSalonDto.photo_url !== undefined
+      ...(updateSalonDto.photoUrl !== undefined
         ? {
-            photoUrl: this.normalizeOptionalString(updateSalonDto.photo_url) ?? null,
+            photoUrl: this.normalizeOptionalString(updateSalonDto.photoUrl) ?? null,
           }
         : {}),
-      ...(updateSalonDto.working_hours !== undefined
+      ...(updateSalonDto.workingHours !== undefined
         ? {
             workingHours: this.salonWorkingHoursService.normalize(
-              updateSalonDto.working_hours,
+              updateSalonDto.workingHours,
               {
                 base: existingSalon.workingHours,
                 requireAtLeastOneOpenDay: true,
@@ -166,9 +166,9 @@ export class SalonManagementService implements SalonOwnerProvisioningServiceCont
             ),
           }
         : {}),
-      ...(updateSalonDto.is_active !== undefined
+      ...(updateSalonDto.isActive !== undefined
         ? {
-            isActive: updateSalonDto.is_active,
+            isActive: updateSalonDto.isActive,
           }
         : {}),
     };

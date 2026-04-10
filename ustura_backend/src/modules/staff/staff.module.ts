@@ -5,13 +5,14 @@ import { AuditLogModule } from '../audit-log/audit-log.module';
 import { SalonModule } from '../salon/salon.module';
 import { UserModule } from '../user/user.module';
 import { StaffController } from './staff.controller';
+import { StaffSelfController } from './staff-self.controller';
 import { StaffPolicy } from './policies/staff.policy';
 import { StaffService } from './staff.service';
 import { StaffRepository } from './repositories/staff.repository';
 
 @Module({
   imports: [DatabaseModule, EventsModule, AuditLogModule, SalonModule, UserModule],
-  controllers: [StaffController],
+  controllers: [StaffController, StaffSelfController],
   providers: [StaffService, StaffRepository, StaffPolicy],
   exports: [StaffService],
 })

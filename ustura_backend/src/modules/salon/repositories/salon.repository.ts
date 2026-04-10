@@ -43,7 +43,6 @@ export class SalonRepository {
       clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
 
     const result = await this.databaseService.query<SalonRow>({
-      name: 'salon.find-all',
       text: `
         SELECT
           id,
@@ -194,7 +193,6 @@ export class SalonRepository {
     values.push(id);
 
     const result = await executor.query<SalonRow>({
-      name: 'salon.update',
       text: `
         UPDATE salons
         SET ${updates.join(', ')}

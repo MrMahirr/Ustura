@@ -127,9 +127,9 @@ describe('ReservationService', () => {
 
     try {
       await service.create(createCustomerPayload(), {
-        salon_id: 'salon-1',
-        staff_id: 'staff-1',
-        slot_start: '2026-04-10T10:00:00.000Z',
+        salonId: 'salon-1',
+        staffId: 'staff-1',
+        slotStart: '2026-04-10T10:00:00.000Z',
       });
     } catch (error) {
       capturedError = error;
@@ -157,6 +157,74 @@ describe('ReservationService', () => {
     expect(getExceptionCode(capturedError)).toBe(
       ERROR_CODES.RESERVATION.ONLY_CUSTOMERS_CAN_VIEW_OWN,
     );
+  });
+
+  it('denies salon reservation visibility for barbers without an active staff membership', async () => {
+    salonService.findActiveById.mockResolvedValue({
+      id: 'salon-1',
+      ownerId: 'owner-1',
+      isActive: true,
+    } as any);
+    staffService.findActiveByUserIdAndSalon.mockResolvedValue(null);
+
+    let capturedError: unknown;
+
+    try {
+      await service.findBySalonId(
+        {
+          sub: 'user-1',
+          email: 'barber@example.com',
+          role: Role.BARBER,
+          tokenType: 'access',
+        },
+        'salon-1',
+      );
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ForbiddenException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.RESERVATION.LIST_ACCESS_DENIED,
+    );
+  });
+
+  it('filters salon reservations down to the assigned barber when the membership is active', async () => {
+    salonService.findActiveById.mockResolvedValue({
+      id: 'salon-1',
+      ownerId: 'owner-1',
+      isActive: true,
+    } as any);
+    staffService.findActiveByUserIdAndSalon.mockResolvedValue({
+      id: 'staff-1',
+      salonId: 'salon-1',
+      userId: 'user-1',
+      role: Role.BARBER,
+      isActive: true,
+    } as any);
+    reservationRepository.findBySalonId.mockResolvedValue([
+      {
+        id: 'reservation-1',
+        staffId: 'staff-1',
+      },
+      {
+        id: 'reservation-2',
+        staffId: 'staff-2',
+      },
+    ] as any);
+
+    const result = await service.findBySalonId(
+      {
+        sub: 'user-1',
+        email: 'barber@example.com',
+        role: Role.BARBER,
+        tokenType: 'access',
+      },
+      'salon-1',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('reservation-1');
   });
 
   it('maps reservation uniqueness conflicts to a stable code', async () => {
@@ -196,9 +264,9 @@ describe('ReservationService', () => {
 
     try {
       await service.create(createCustomerPayload(), {
-        salon_id: 'salon-1',
-        staff_id: 'staff-1',
-        slot_start: '2026-04-10T10:00:00.000Z',
+        salonId: 'salon-1',
+        staffId: 'staff-1',
+        slotStart: '2026-04-10T10:00:00.000Z',
         notes: 'test',
       });
     } catch (error) {
@@ -268,9 +336,9 @@ describe('ReservationService', () => {
     slotService.releaseReservationLock.mockResolvedValue(undefined);
 
     await service.create(createCustomerPayload(), {
-      salon_id: 'salon-1',
-      staff_id: 'staff-1',
-      slot_start: '2026-04-10T10:00:00.000Z',
+      salonId: 'salon-1',
+      staffId: 'staff-1',
+      slotStart: '2026-04-10T10:00:00.000Z',
     });
 
     expect(domainEventBus.publish).toHaveBeenCalledWith({
@@ -494,6 +562,200 @@ describe('ReservationService', () => {
         slotStart: '2026-04-10T10:00:00.000Z',
         slotEnd: '2026-04-10T10:30:00.000Z',
       },
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Concurrency & Slot Safety
+  // -----------------------------------------------------------------------
+
+  describe('concurrency – slot booking race condition', () => {
+    function setupCommonMocks() {
+      salonService.findActiveById.mockResolvedValue({
+        id: 'salon-1',
+        ownerId: 'owner-1',
+        name: 'Ustura Premium',
+        isActive: true,
+      } as any);
+      staffService.findById.mockResolvedValue({
+        id: 'staff-1',
+        salonId: 'salon-1',
+        role: Role.BARBER,
+        displayName: 'Barber One',
+        isActive: true,
+      } as any);
+      userService.findById.mockResolvedValue({
+        id: 'customer-1',
+        name: 'Customer',
+        email: 'customer@example.com',
+        role: Role.CUSTOMER,
+        isActive: true,
+      } as any);
+      slotService.assertSlotReservable.mockResolvedValue({
+        slotStart: new Date('2026-04-10T10:00:00.000Z'),
+        slotEnd: new Date('2026-04-10T10:30:00.000Z'),
+        date: '2026-04-10',
+      });
+    }
+
+    it('the second concurrent caller receives SLOT_BEING_RESERVED when the lock is already held', async () => {
+      setupCommonMocks();
+
+      // First caller holds the lock
+      slotService.acquireReservationLock
+        .mockResolvedValueOnce({ key: 'lock-key', token: 'token-1' })
+        // Second caller gets null
+        .mockResolvedValueOnce(null);
+
+      databaseService.transaction.mockImplementation(async (operation) =>
+        operation({ query: jest.fn() } as any),
+      );
+      reservationRepository.create.mockResolvedValue({
+        id: 'reservation-1',
+        customerId: 'customer-1',
+        salonId: 'salon-1',
+        staffId: 'staff-1',
+        slotStart: new Date('2026-04-10T10:00:00.000Z'),
+        slotEnd: new Date('2026-04-10T10:30:00.000Z'),
+        status: ReservationStatus.PENDING,
+        notes: null,
+        cancelledAt: null,
+        cancelledByUserId: null,
+        statusChangedAt: null,
+        statusChangedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+      slotService.releaseReservationLock.mockResolvedValue(undefined);
+
+      const dto = {
+        salonId: 'salon-1',
+        staffId: 'staff-1',
+        slotStart: '2026-04-10T10:00:00.000Z',
+      };
+
+      // First call succeeds
+      const firstResult = await service.create(createCustomerPayload(), dto);
+      expect(firstResult.id).toBe('reservation-1');
+
+      // Second call fails with SLOT_BEING_RESERVED
+      let capturedError: unknown;
+
+      try {
+        await service.create(createCustomerPayload(), dto);
+      } catch (error) {
+        capturedError = error;
+      }
+
+      expect(capturedError).toBeInstanceOf(ConflictException);
+      expect(getExceptionCode(capturedError)).toBe(
+        ERROR_CODES.RESERVATION.SLOT_BEING_RESERVED,
+      );
+    });
+
+    it('allows rebooking the same slot after the previous reservation is cancelled', async () => {
+      setupCommonMocks();
+
+      // Cancel flow setup
+      const cancelledReservation = {
+        id: 'reservation-1',
+        customerId: 'customer-1',
+        salonId: 'salon-1',
+        staffId: 'staff-1',
+        slotStart: new Date('2026-04-10T10:00:00.000Z'),
+        slotEnd: new Date('2026-04-10T10:30:00.000Z'),
+        status: ReservationStatus.CANCELLED,
+        notes: null,
+        cancelledAt: new Date(),
+        cancelledByUserId: 'customer-1',
+        statusChangedAt: new Date(),
+        statusChangedByUserId: 'customer-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      reservationRepository.findById.mockResolvedValue({
+        ...cancelledReservation,
+        status: ReservationStatus.PENDING,
+        cancelledAt: null,
+        cancelledByUserId: null,
+      } as any);
+      reservationRepository.cancel.mockResolvedValue(cancelledReservation as any);
+
+      // Cancel the first reservation
+      await service.cancel(createCustomerPayload(), 'reservation-1');
+
+      // Now rebook the same slot
+      slotService.acquireReservationLock.mockResolvedValue({
+        key: 'lock-key',
+        token: 'token-2',
+      } as any);
+      databaseService.transaction.mockImplementation(async (operation) =>
+        operation({ query: jest.fn() } as any),
+      );
+      reservationRepository.create.mockResolvedValue({
+        id: 'reservation-2',
+        customerId: 'customer-1',
+        salonId: 'salon-1',
+        staffId: 'staff-1',
+        slotStart: new Date('2026-04-10T10:00:00.000Z'),
+        slotEnd: new Date('2026-04-10T10:30:00.000Z'),
+        status: ReservationStatus.PENDING,
+        notes: null,
+        cancelledAt: null,
+        cancelledByUserId: null,
+        statusChangedAt: null,
+        statusChangedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+      slotService.releaseReservationLock.mockResolvedValue(undefined);
+
+      const rebookedReservation = await service.create(
+        createCustomerPayload(),
+        {
+          salonId: 'salon-1',
+          staffId: 'staff-1',
+          slotStart: '2026-04-10T10:00:00.000Z',
+        },
+      );
+
+      expect(rebookedReservation.id).toBe('reservation-2');
+      expect(rebookedReservation.status).toBe(ReservationStatus.PENDING);
+    });
+
+    it('always releases the reservation lock even when an unexpected error is thrown', async () => {
+      setupCommonMocks();
+
+      slotService.acquireReservationLock.mockResolvedValue({
+        key: 'lock-key',
+        token: 'token-1',
+      } as any);
+
+      const unexpectedError = new Error('Unexpected database connection lost');
+      databaseService.transaction.mockRejectedValue(unexpectedError);
+      slotService.releaseReservationLock.mockResolvedValue(undefined);
+
+      let capturedError: unknown;
+
+      try {
+        await service.create(createCustomerPayload(), {
+          salonId: 'salon-1',
+          staffId: 'staff-1',
+          slotStart: '2026-04-10T10:00:00.000Z',
+        });
+      } catch (error) {
+        capturedError = error;
+      }
+
+      // The unexpected error should propagate
+      expect(capturedError).toBe(unexpectedError);
+
+      // But the lock must still be released
+      expect(slotService.releaseReservationLock).toHaveBeenCalledWith(
+        'lock-key',
+        'token-1',
+      );
     });
   });
 });

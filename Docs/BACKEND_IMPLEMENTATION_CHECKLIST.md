@@ -117,40 +117,40 @@ Durum tarihi: 2026-04-09
 
 ## 11. Staff Modülünü Tamamla
 
-- [ ] Employee provisioning akışını user modülü contract'ları üzerinden yürüt.
-- [ ] Aynı kullanıcının aynı salonda tek üyelik kuralını testlerle doğrula.
-- [ ] Barber ve receptionist rol farklarını policy seviyesinde netleştir.
-- [ ] `GET /staff/me` ihtiyacını değerlendir ve gerekiyorsa ekle.
-- [ ] Staff aktif/pasif durum geçişlerini reservation görünürlüğü ile birlikte test et.
+- [x] Employee provisioning akışını user modülü contract'ları üzerinden yürüt.
+- [x] Aynı kullanıcının aynı salonda tek üyelik kuralını testlerle doğrula.
+- [x] Barber ve receptionist rol farklarını policy seviyesinde netleştir.
+- [x] `GET /staff/me` ihtiyacını değerlendir ve gerekiyorsa ekle.
+- [x] Staff aktif/pasif durum geçişlerini reservation görünürlüğü ile birlikte test et.
 
 ## 12. Reservation Concurrency ve Slot Güvenliğini Bitir
 
-- [ ] Booking öncesi Redis lock akışını yarış koşulu testleriyle doğrula.
-- [ ] PostgreSQL transaction içinde booking işlemini concurrency senaryolarında test et.
-- [ ] Cancel edilmiş reservation sonrası aynı slotun tekrar alınabildiğini doğrula.
-- [ ] Slot selection TTL ve reservation lock TTL davranışlarını test et.
-- [ ] WebSocket/slot gateway varsa canlı seçim akışını entegrasyon testleriyle doğrula.
+- [x] Booking öncesi Redis lock akışını yarış koşulu testleriyle doğrula.
+- [x] PostgreSQL transaction içinde booking işlemini concurrency senaryolarında test et.
+- [x] Cancel edilmiş reservation sonrası aynı slotun tekrar alınabildiğini doğrula.
+- [x] Slot selection TTL ve reservation lock TTL davranışlarını test et.
+- [x] WebSocket/slot gateway varsa canlı seçim akışını entegrasyon testleriyle doğrula.
 
 ## 13. API Standardını Tamamla
 
-- [ ] `TransformInterceptor` içinde standart response envelope uygula.
-- [ ] Başarılı response formatını tüm modüllerde aynı hale getir.
-- [ ] Hata response formatını tüm modüllerde tek tipe indir.
-- [ ] Swagger şemalarını güncel DTO ve auth korumaları ile hizala.
-- [ ] API versioning ihtiyacını değerlendir ve gerekiyorsa aktif et.
-- [ ] DTO isimlendirmelerinde camelCase standardını koru.
-- [ ] Repository seviyesinde snake_case mapping dışında DB alan adını dışarı sızdırma.
+- [x] `TransformInterceptor` içinde standart response envelope uygula.
+- [x] Başarılı response formatını tüm modüllerde aynı hale getir.
+- [x] Hata response formatını tüm modüllerde tek tipe indir.
+- [x] Swagger şemalarını güncel DTO ve auth korumaları ile hizala.
+- [x] API versioning ihtiyacını değerlendir ve gerekiyorsa aktif et.
+- [x] DTO isimlendirmelerinde camelCase standardını koru.
+- [x] Repository seviyesinde snake_case mapping dışında DB alan adını dışarı sızdırma.
 
 ## 14. Test Katmanını Güçlendir
 
-- [ ] Stale veya zayıf test senaryolarını gerçek business flow senaryolarıyla değiştir.
-- [ ] Auth için register/login/refresh/logout/logout-all e2e senaryoları ekle.
-- [ ] Salon için public discovery + owner CRUD e2e senaryoları ekle.
-- [ ] Staff için owner CRUD ve role invariant testleri ekle.
-- [ ] Reservation için create/cancel/status-change/concurrency e2e senaryoları ekle.
-- [ ] Health readiness için database, redis ve migration eksikliği senaryolarını test et.
-- [ ] Repository integration testleri ekle.
-- [ ] Coverage raporunu kritik modüller için takip edilir hale getir.
+- [x] Stale veya zayıf test senaryolarını gerçek business flow senaryolarıyla değiştir.
+- [x] Auth için register/login/refresh/logout/logout-all e2e senaryoları ekle.
+- [x] Salon için public discovery + owner CRUD e2e senaryoları ekle.
+- [x] Staff için owner CRUD ve role invariant testleri ekle.
+- [x] Reservation için create/cancel/status-change/concurrency e2e senaryoları ekle.
+- [x] Health readiness için database, redis ve migration eksikliği senaryolarını test et.
+- [x] Repository integration testleri ekle.
+- [x] Coverage raporunu kritik modüller için takip edilir hale getir.
 
 ## 15. Operasyonel Sertleştirme
 

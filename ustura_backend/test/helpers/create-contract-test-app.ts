@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { ModuleMetadata } from '@nestjs/common/interfaces/modules/module-metadata.interface';
 import { Test } from '@nestjs/testing';
 import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
+import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
 
 export async function createContractTestApp(
   metadata: ModuleMetadata,
@@ -11,6 +12,7 @@ export async function createContractTestApp(
 
   app.setGlobalPrefix('api');
   app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
