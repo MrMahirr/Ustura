@@ -65,6 +65,7 @@ describe('HealthService', () => {
           { filename: '004_create_owner_applications.sql' },
           { filename: '005_create_audit_logs.sql' },
           { filename: '006_harden_refresh_tokens.sql' },
+          { filename: '007_enforce_user_phone_uniqueness.sql' },
         ],
       })
       .mockResolvedValueOnce({
@@ -72,6 +73,9 @@ describe('HealthService', () => {
           { column_name: 'password_hash', is_nullable: 'YES' },
           { column_name: 'firebase_uid', is_nullable: 'YES' },
         ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_users_phone_non_empty' }],
       })
       .mockResolvedValueOnce({
         rows: [
@@ -126,6 +130,9 @@ describe('HealthService', () => {
         ],
       })
       .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_users_phone_non_empty' }],
+      })
+      .mockResolvedValueOnce({
         rows: [
           { column_name: 'cancelled_at', is_nullable: 'YES' },
           { column_name: 'cancelled_by_user_id', is_nullable: 'YES' },
@@ -174,6 +181,7 @@ describe('HealthService', () => {
           { filename: '004_create_owner_applications.sql' },
           { filename: '005_create_audit_logs.sql' },
           { filename: '006_harden_refresh_tokens.sql' },
+          { filename: '007_enforce_user_phone_uniqueness.sql' },
         ],
       })
       .mockResolvedValueOnce({
@@ -181,6 +189,9 @@ describe('HealthService', () => {
           { column_name: 'password_hash', is_nullable: 'YES' },
           { column_name: 'firebase_uid', is_nullable: 'YES' },
         ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_users_phone_non_empty' }],
       })
       .mockResolvedValueOnce({
         rows: [
@@ -221,6 +232,7 @@ describe('HealthService', () => {
           { filename: '004_create_owner_applications.sql' },
           { filename: '005_create_audit_logs.sql' },
           { filename: '006_harden_refresh_tokens.sql' },
+          { filename: '007_enforce_user_phone_uniqueness.sql' },
         ],
       })
       .mockResolvedValueOnce({
@@ -228,6 +240,9 @@ describe('HealthService', () => {
           { column_name: 'password_hash', is_nullable: 'YES' },
           { column_name: 'firebase_uid', is_nullable: 'YES' },
         ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_users_phone_non_empty' }],
       })
       .mockResolvedValueOnce({
         rows: [
@@ -295,6 +310,67 @@ describe('HealthService', () => {
 
     await expect(service.assertReadyForStartup()).rejects.toThrow(
       'Startup validation failed: database:',
+    );
+  });
+
+  it('marks readiness as not_ready when the users table is missing the phone uniqueness index', async () => {
+    databaseServiceMock.query
+      .mockResolvedValueOnce({ rows: [{ ok: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ exists: true }] })
+      .mockResolvedValueOnce({
+        rows: [
+          { filename: '001_init_tables.sql' },
+          { filename: '002_add_customer_google_auth.sql' },
+          { filename: '003_rework_reservation_schema.sql' },
+          { filename: '004_create_owner_applications.sql' },
+          { filename: '005_create_audit_logs.sql' },
+          { filename: '006_harden_refresh_tokens.sql' },
+          { filename: '007_enforce_user_phone_uniqueness.sql' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'password_hash', is_nullable: 'YES' },
+          { column_name: 'firebase_uid', is_nullable: 'YES' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'cancelled_at', is_nullable: 'YES' },
+          { column_name: 'cancelled_by_user_id', is_nullable: 'YES' },
+          { column_name: 'status_changed_at', is_nullable: 'YES' },
+          { column_name: 'status_changed_by_user_id', is_nullable: 'YES' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { constraint_name: 'chk_reservations_status_lifecycle' },
+          { constraint_name: 'chk_reservations_slot_duration' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ indexname: 'uq_reservations_active_staff_slot' }],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { column_name: 'revoked_at', is_nullable: 'YES' },
+          { column_name: 'user_agent', is_nullable: 'YES' },
+          { column_name: 'ip_address', is_nullable: 'YES' },
+          { column_name: 'rotated_from', is_nullable: 'YES' },
+        ],
+      });
+    redisServiceMock.connect.mockResolvedValue(undefined);
+    redisClientMock.ping.mockResolvedValue('PONG');
+
+    const result = await service.getReadiness();
+
+    expect(result.status).toBe('not_ready');
+    expect(result.checks.usersTableSchema.status).toBe('down');
+    expect(result.checks.usersTableSchema.message).toContain(
+      'uq_users_phone_non_empty',
     );
   });
 });

@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../../database/database.service';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { SalonService } from '../salon/salon.service';
-import { UserService } from '../user/user.service';
+import {
+  USER_PROVISIONING_SERVICE,
+  type UserProvisioningServiceContract,
+} from '../user/interfaces/user.contracts';
 import { CreateOwnerApplicationDto } from './dto/create-owner-application.dto';
 import { RejectOwnerApplicationDto } from './dto/reject-owner-application.dto';
 import {
@@ -26,7 +29,8 @@ export class PlatformAdminService {
     private readonly platformAdminRepository: PlatformAdminRepository,
     private readonly platformAdminPolicy: PlatformAdminPolicy,
     private readonly databaseService: DatabaseService,
-    private readonly userService: UserService,
+    @Inject(USER_PROVISIONING_SERVICE)
+    private readonly userProvisioningService: UserProvisioningServiceContract,
     private readonly salonService: SalonService,
     private readonly domainEventBus: DomainEventBus,
   ) {}
@@ -102,7 +106,7 @@ export class PlatformAdminService {
 
       this.platformAdminPolicy.assertPendingApplication(application);
 
-      const owner = await this.userService.createOwner(
+      const owner = await this.userProvisioningService.createOwner(
         {
           name: application.applicantName,
           email: application.applicantEmail,

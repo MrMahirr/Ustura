@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
@@ -11,8 +11,13 @@ import { Role } from '../../shared/auth/role.enum';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
-import { UserService } from '../user/user.service';
 import type { User, UserProfile } from '../user/interfaces/user.types';
+import {
+  USER_PROVISIONING_SERVICE,
+  USER_QUERY_SERVICE,
+  type UserProvisioningServiceContract,
+  type UserQueryServiceContract,
+} from '../user/interfaces/user.contracts';
 import { GoogleCustomerAuthDto } from './dto/google-customer-auth.dto';
 import { GoogleWebCustomerAuthDto } from './dto/google-web-customer-auth.dto';
 import { LoginDto } from './dto/login.dto';
@@ -43,7 +48,10 @@ export class AuthService {
 
   constructor(
     private readonly authRepository: AuthRepository,
-    private readonly userService: UserService,
+    @Inject(USER_QUERY_SERVICE)
+    private readonly userQueryService: UserQueryServiceContract,
+    @Inject(USER_PROVISIONING_SERVICE)
+    private readonly userProvisioningService: UserProvisioningServiceContract,
     private readonly jwtService: JwtService,
     private readonly configService: AppConfigService,
     private readonly databaseService: DatabaseService,
@@ -67,7 +75,7 @@ export class AuthService {
   ): Promise<AuthSessionResponse> {
     const passwordHash = await this.hashPassword(registerDto.password);
 
-    const user = await this.userService.createCustomer({
+    const user = await this.userProvisioningService.createCustomer({
       name: registerDto.name,
       email: registerDto.email,
       phone: registerDto.phone,
@@ -89,7 +97,7 @@ export class AuthService {
     loginDto: LoginDto,
     clientContext?: SessionClientContext,
   ): Promise<AuthSessionResponse> {
-    const user = await this.userService.findByEmail(loginDto.email);
+    const user = await this.userQueryService.findByEmail(loginDto.email);
 
     if (!user?.isActive || !user.passwordHash) {
       throw invalidCredentialsError();
@@ -124,7 +132,7 @@ export class AuthService {
         googleCustomerAuthDto.idToken,
       );
 
-    const userByFirebaseUid = await this.userService.findByFirebaseUid(
+    const userByFirebaseUid = await this.userQueryService.findByFirebaseUid(
       googleIdentity.firebaseUid,
     );
 
@@ -146,7 +154,7 @@ export class AuthService {
       return session;
     }
 
-    const userByEmail = await this.userService.findByEmail(
+    const userByEmail = await this.userQueryService.findByEmail(
       googleIdentity.email,
     );
 
@@ -162,7 +170,7 @@ export class AuthService {
 
       const linkedUser = userByEmail.firebaseUid
         ? userByEmail
-        : await this.userService.linkFirebaseCustomerIdentity(
+        : await this.userProvisioningService.linkFirebaseCustomerIdentity(
             userByEmail.id,
             googleIdentity.firebaseUid,
           );
@@ -185,7 +193,7 @@ export class AuthService {
 
     const phone = googleCustomerAuthDto.phone?.trim() ?? '';
 
-    const customer = await this.userService.createCustomer({
+    const customer = await this.userProvisioningService.createCustomer({
       name: googleIdentity.name,
       email: googleIdentity.email,
       phone,
@@ -217,7 +225,7 @@ export class AuthService {
       await this.googleWebTokenVerifierService.verifyCustomerAccessToken(
         googleWebCustomerAuthDto.accessToken,
       );
-    const existingUser = await this.userService.findByEmail(googleIdentity.email);
+    const existingUser = await this.userQueryService.findByEmail(googleIdentity.email);
 
     if (existingUser) {
       this.assertCustomerGoogleEligibility(existingUser);
@@ -237,7 +245,7 @@ export class AuthService {
       return session;
     }
 
-    const customer = await this.userService.createCustomer({
+    const customer = await this.userProvisioningService.createCustomer({
       name: googleIdentity.name,
       email: googleIdentity.email,
       phone: '',
@@ -287,7 +295,7 @@ export class AuthService {
       throw refreshTokenInvalidError();
     }
 
-    const user = await this.userService.findById(verifiedToken.sub);
+    const user = await this.userQueryService.findById(verifiedToken.sub);
 
     if (!user?.isActive) {
       throw refreshTokenInvalidError();
@@ -331,7 +339,7 @@ export class AuthService {
       );
     }
 
-    const user = await this.userService.findById(userId);
+    const user = await this.userQueryService.findById(userId);
     this.publishLogoutEvent({
       userId,
       userEmail: user?.email ?? null,
@@ -350,7 +358,7 @@ export class AuthService {
     const revokedSessionCount = await this.authRepository.revokeAllUserTokens(
       currentUser.sub,
     );
-    const user = await this.userService.findById(currentUser.sub);
+    const user = await this.userQueryService.findById(currentUser.sub);
 
     this.publishLogoutEvent({
       userId: currentUser.sub,
@@ -534,7 +542,7 @@ export class AuthService {
     const revokedSessionCount = await this.authRepository.revokeAllUserTokens(
       userId,
     );
-    const user = await this.userService.findById(userId);
+    const user = await this.userQueryService.findById(userId);
 
     this.publishLogoutEvent({
       userId,

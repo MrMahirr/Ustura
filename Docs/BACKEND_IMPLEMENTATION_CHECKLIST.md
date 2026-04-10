@@ -100,11 +100,11 @@ Durum tarihi: 2026-04-09
 
 ## 9. User Modülünü Contract Odaklı Temizle
 
-- [ ] `UserModule` içinde query contract'ları netleştir: `findById`, `findByEmail`, `createCustomer`, `createEmployee`, `deactivateUser`.
-- [ ] Kullanıcı profil güncelleme akışını auth concern'lerinden tamamen ayır.
-- [ ] Email/phone uniqueness hata senaryolarını netleştir.
-- [ ] `users.role` ve `staff.role` uyumluluk kurallarını policy seviyesinde zorunlu kıl.
-- [ ] User service testlerini role ve uniqueness senaryolarıyla genişlet.
+- [x] `UserModule` içinde query contract'ları netleştir: `findById`, `findByEmail`, `createCustomer`, `createEmployee`, `deactivateUser`.
+- [x] Kullanıcı profil güncelleme akışını auth concern'lerinden tamamen ayır.
+- [x] Email/phone uniqueness hata senaryolarını netleştir.
+- [x] `users.role` ve `staff.role` uyumluluk kurallarını policy seviyesinde zorunlu kıl.
+- [x] User service testlerini role ve uniqueness senaryolarıyla genişlet.
 
 ## 10. Salon Modülünü Ayrıştır
 

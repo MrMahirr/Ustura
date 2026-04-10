@@ -11,6 +11,7 @@ import {
   phoneRequiredError,
 } from '../errors/user.errors';
 import type { User } from '../interfaces/user.types';
+import type { UpdateUserProfileInput } from '../interfaces/user.types';
 
 interface CreateUserRequirementContext {
   role: Role;
@@ -76,6 +77,12 @@ export class UserAccountPolicy {
 
     if (user.firebaseUid && user.firebaseUid !== normalizedFirebaseUid) {
       throw googleIdentityAlreadyLinkedError();
+    }
+  }
+
+  assertProfileUpdateRequirements(input: UpdateUserProfileInput): void {
+    if (input.phone !== undefined && input.phone.length === 0) {
+      throw phoneRequiredError();
     }
   }
 }

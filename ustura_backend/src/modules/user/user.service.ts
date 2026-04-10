@@ -1,10 +1,9 @@
-import {
-  Injectable,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { Role } from '../../shared/auth/role.enum';
-import { UpdateUserDto } from './dto/update-user.dto';
 import {
   emailAlreadyExistsError,
+  phoneAlreadyExistsError,
   userNotFoundError,
 } from './errors/user.errors';
 import {
@@ -18,9 +17,15 @@ import {
 import { UserAccountPolicy } from './policies/user-account.policy';
 import { UserRepository } from './repositories/user.repository';
 import type { SqlQueryExecutor } from '../../database/database.types';
+import type {
+  UserProvisioningServiceContract,
+  UserQueryServiceContract,
+} from './interfaces/user.contracts';
 
 @Injectable()
-export class UserService {
+export class UserService
+  implements UserQueryServiceContract, UserProvisioningServiceContract
+{
   constructor(
     private readonly userRepository: UserRepository,
     private readonly userAccountPolicy: UserAccountPolicy,
@@ -36,16 +41,6 @@ export class UserService {
 
   async findByFirebaseUid(firebaseUid: string): Promise<User | null> {
     return this.userRepository.findByFirebaseUid(firebaseUid.trim());
-  }
-
-  async getProfileById(id: string): Promise<UserProfile> {
-    const user = await this.userRepository.findById(id);
-
-    if (!user) {
-      throw userNotFoundError();
-    }
-
-    return this.toProfile(user);
   }
 
   async createCustomer(input: CreateCustomerInput): Promise<User> {
@@ -93,22 +88,6 @@ export class UserService {
       },
       executor,
     );
-  }
-
-  async updateProfile(id: string, input: UpdateUserDto): Promise<UserProfile> {
-    const normalizedInput = this.normalizeProfileUpdate(input);
-
-    if (Object.keys(normalizedInput).length === 0) {
-      return this.getProfileById(id);
-    }
-
-    const user = await this.userRepository.updateProfile(id, normalizedInput);
-
-    if (!user) {
-      throw userNotFoundError();
-    }
-
-    return this.toProfile(user);
   }
 
   async deactivateUser(id: string): Promise<UserProfile> {
@@ -180,35 +159,50 @@ export class UserService {
       throw emailAlreadyExistsError();
     }
 
-    return this.userRepository.create(
-      {
-        ...input,
-        email: normalizedEmail,
-        name: input.name.trim(),
-        phone: normalizedPhone,
-        firebaseUid: normalizedFirebaseUid,
-        passwordHash: hasPassword ? input.passwordHash!.trim() : null,
-      },
-      executor,
-    );
+    if (normalizedPhone.length > 0) {
+      const existingPhoneUser = await this.userRepository.findByPhoneWithExecutor(
+        normalizedPhone,
+        executor,
+      );
+
+      if (existingPhoneUser) {
+        throw phoneAlreadyExistsError();
+      }
+    }
+
+    try {
+      return await this.userRepository.create(
+        {
+          ...input,
+          email: normalizedEmail,
+          name: input.name.trim(),
+          phone: normalizedPhone,
+          firebaseUid: normalizedFirebaseUid,
+          passwordHash: hasPassword ? input.passwordHash!.trim() : null,
+        },
+        executor,
+      );
+    } catch (error) {
+      if (
+        error instanceof DatabaseConstraintViolationError &&
+        error.constraint === 'uq_users_phone_non_empty'
+      ) {
+        throw phoneAlreadyExistsError();
+      }
+
+      if (
+        error instanceof DatabaseConstraintViolationError &&
+        error.constraint === 'users_email_key'
+      ) {
+        throw emailAlreadyExistsError();
+      }
+
+      throw error;
+    }
   }
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
-  }
-
-  private normalizeProfileUpdate(input: UpdateUserDto): UpdateUserDto {
-    const normalizedInput: UpdateUserDto = {};
-
-    if (input.name !== undefined) {
-      normalizedInput.name = input.name.trim();
-    }
-
-    if (input.phone !== undefined) {
-      normalizedInput.phone = input.phone.trim();
-    }
-
-    return normalizedInput;
   }
 
   private normalizePhone(phone?: string): string {

@@ -1,4 +1,5 @@
 import { ConflictException, HttpException, NotFoundException } from '@nestjs/common';
+import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
 import { CreateEmployeeInput, User } from './interfaces/user.types';
@@ -50,6 +51,8 @@ describe('UserService', () => {
       findByEmail: findByEmailMock,
       findByEmailWithExecutor: findByEmailMock,
       findByFirebaseUid: jest.fn(),
+      findByPhone: jest.fn(),
+      findByPhoneWithExecutor: jest.fn(),
       create: createUserMock,
       updateProfile: jest.fn(),
       deactivate: jest.fn(),
@@ -117,6 +120,35 @@ describe('UserService', () => {
     expect(createUserMock).not.toHaveBeenCalled();
   });
 
+  it('rejects duplicate phones before writing to the database', async () => {
+    findByEmailMock.mockResolvedValue(null);
+    userRepository.findByPhoneWithExecutor.mockResolvedValue(
+      createUser({
+        id: 'user-2',
+        phone: '+905559998877',
+      }),
+    );
+
+    let capturedError: unknown;
+
+    try {
+      await userService.createCustomer({
+        name: 'Customer',
+        email: 'new@example.com',
+        phone: '+905559998877',
+        passwordHash: 'hashed-password',
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ConflictException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.PHONE_ALREADY_EXISTS,
+    );
+    expect(createUserMock).not.toHaveBeenCalled();
+  });
+
   it('rejects employee roles outside barber and receptionist', async () => {
     const invalidEmployeeInput = {
       name: 'Owner Candidate',
@@ -173,40 +205,6 @@ describe('UserService', () => {
     expect(result.firebaseUid).toBe('firebase-user-1');
   });
 
-  it('returns a sanitized profile without the password hash', async () => {
-    userRepository.findById.mockResolvedValue(createUser());
-
-    const profile = await userService.getProfileById('user-1');
-
-    expect(profile).toEqual({
-      id: 'user-1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+905551112233',
-      role: Role.CUSTOMER,
-      isActive: true,
-      createdAt: new Date('2026-04-07T00:00:00.000Z'),
-      updatedAt: new Date('2026-04-07T00:00:00.000Z'),
-    });
-  });
-
-  it('throws when updating a missing user profile', async () => {
-    userRepository.updateProfile.mockResolvedValue(null);
-
-    let capturedError: unknown;
-
-    try {
-      await userService.updateProfile('missing-user', {
-        name: 'Updated Name',
-      });
-    } catch (error) {
-      capturedError = error;
-    }
-
-    expect(capturedError).toBeInstanceOf(NotFoundException);
-    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.NOT_FOUND);
-  });
-
   it('creates an owner account with the reserved owner role', async () => {
     const createdOwner = createUser({
       email: 'owner@example.com',
@@ -236,5 +234,33 @@ describe('UserService', () => {
       undefined,
     );
     expect(result.role).toBe(Role.OWNER);
+  });
+
+  it('maps the phone uniqueness index to a stable user error code', async () => {
+    findByEmailMock.mockResolvedValue(null);
+    userRepository.findByPhoneWithExecutor.mockResolvedValue(null);
+    createUserMock.mockRejectedValue(
+      new DatabaseConstraintViolationError('duplicate phone', {
+        constraint: 'uq_users_phone_non_empty',
+      }),
+    );
+
+    let capturedError: unknown;
+
+    try {
+      await userService.createCustomer({
+        name: 'Customer',
+        email: 'new@example.com',
+        phone: '+905559998877',
+        passwordHash: 'hashed-password',
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ConflictException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.PHONE_ALREADY_EXISTS,
+    );
   });
 });

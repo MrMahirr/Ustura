@@ -144,6 +144,7 @@ describe('AuthService', () => {
     authService = new AuthService(
       authRepository,
       userService,
+      userService,
       jwtService,
       configService,
       databaseService,
