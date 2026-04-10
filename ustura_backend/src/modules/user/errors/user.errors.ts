@@ -61,6 +61,13 @@ export function passwordRequiredError() {
   );
 }
 
+export function phoneAlreadyExistsError() {
+  return conflictError(
+    'A user with this phone already exists.',
+    ERROR_CODES.USER.PHONE_ALREADY_EXISTS,
+  );
+}
+
 export function phoneRequiredError() {
   return badRequestError('Phone is required.', ERROR_CODES.USER.PHONE_REQUIRED);
 }

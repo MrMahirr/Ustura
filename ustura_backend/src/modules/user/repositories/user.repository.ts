@@ -94,6 +94,38 @@ export class UserRepository {
     return this.mapRow(result.rows[0]);
   }
 
+  async findByPhone(phone: string): Promise<User | null> {
+    return this.findByPhoneWithExecutor(phone);
+  }
+
+  async findByPhoneWithExecutor(
+    phone: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<User | null> {
+    const result = await executor.query<UserRow>({
+      name: 'user.find-by-phone',
+      text: `
+        SELECT
+          id,
+          name,
+          email,
+          phone,
+          password_hash,
+          firebase_uid,
+          role,
+          is_active,
+          created_at,
+          updated_at
+        FROM users
+        WHERE phone = $1
+        LIMIT 1
+      `,
+      values: [phone],
+    });
+
+    return this.mapRow(result.rows[0]);
+  }
+
   async create(
     input: CreateUserRecordInput,
     executor: SqlQueryExecutor = this.databaseService,

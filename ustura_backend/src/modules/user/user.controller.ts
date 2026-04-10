@@ -10,16 +10,16 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserService } from './user.service';
+import { UserProfileService } from './user-profile.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userProfileService: UserProfileService) {}
 
   @Get('me')
   async getMyProfile(@CurrentUser() currentUser?: JwtPayload) {
-    return this.userService.getProfileById(
+    return this.userProfileService.getProfileById(
       this.requireAuthenticatedUserId(currentUser),
     );
   }
@@ -29,7 +29,7 @@ export class UserController {
     @CurrentUser() currentUser: JwtPayload | undefined,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.userService.updateProfile(
+    return this.userProfileService.updateProfile(
       this.requireAuthenticatedUserId(currentUser),
       updateUserDto,
     );

@@ -1,16 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
 import { AppConfigService } from '../../../config/config.service';
-import { UserService } from '../../user/user.service';
+import {
+  USER_QUERY_SERVICE,
+  type UserQueryServiceContract,
+} from '../../user/interfaces/user.contracts';
 import { accessTokenInvalidError } from '../errors/auth.errors';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: AppConfigService,
-    private readonly userService: UserService,
+    @Inject(USER_QUERY_SERVICE)
+    private readonly userQueryService: UserQueryServiceContract,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -24,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw accessTokenInvalidError();
     }
 
-    const user = await this.userService.findById(payload.sub);
+    const user = await this.userQueryService.findById(payload.sub);
 
     if (!user?.isActive) {
       throw accessTokenInvalidError();

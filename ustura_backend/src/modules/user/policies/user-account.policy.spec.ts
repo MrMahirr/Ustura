@@ -118,4 +118,19 @@ describe('UserAccountPolicy', () => {
       ERROR_CODES.USER.CUSTOMER_GOOGLE_ONLY,
     );
   });
+
+  it('rejects blank phone values during profile updates', () => {
+    let capturedError: unknown;
+
+    try {
+      policy.assertProfileUpdateRequirements({
+        phone: '',
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(BadRequestException);
+    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.PHONE_REQUIRED);
+  });
 });

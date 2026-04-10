@@ -87,6 +87,7 @@ describe('ReservationService', () => {
     service = new ReservationService(
       reservationRepository,
       userService,
+      userService,
       slotService,
       salonService as unknown as SalonService,
       staffService as unknown as StaffService,

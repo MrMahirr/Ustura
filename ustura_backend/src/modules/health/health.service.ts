@@ -14,6 +14,7 @@ const REQUIRED_MIGRATIONS = [
   '004_create_owner_applications.sql',
   '005_create_audit_logs.sql',
   '006_harden_refresh_tokens.sql',
+  '007_enforce_user_phone_uniqueness.sql',
 ] as const;
 
 const REQUIRED_USER_COLUMNS = [
@@ -26,6 +27,8 @@ const REQUIRED_USER_COLUMNS = [
     isNullable: 'YES',
   },
 ] as const;
+
+const REQUIRED_USER_INDEXES = ['uq_users_phone_non_empty'] as const;
 
 const REQUIRED_RESERVATION_COLUMNS = [
   {
@@ -297,6 +300,27 @@ export class HealthService {
         return {
           status: 'down',
           message: `Users table schema is outdated: ${invalidNullability.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      const indexesResult = await this.databaseService.query<PgIndexRow>({
+        name: 'health.users-table-indexes',
+        text: `
+          SELECT indexname
+          FROM pg_indexes
+          WHERE schemaname = 'public'
+            AND tablename = 'users'
+        `,
+      });
+      const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
+      const missingIndexes = REQUIRED_USER_INDEXES.filter((indexName) => {
+        return !indexNames.has(indexName);
+      });
+
+      if (missingIndexes.length > 0) {
+        return {
+          status: 'down',
+          message: `Users table is missing required index(es): ${missingIndexes.join(', ')}. Run \`npm run migrate\`.`,
         };
       }
 

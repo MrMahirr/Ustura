@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
@@ -6,7 +6,10 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
 import { SalonService } from '../salon/salon.service';
-import { UserService } from '../user/user.service';
+import {
+  USER_QUERY_SERVICE,
+  type UserQueryServiceContract,
+} from '../user/interfaces/user.contracts';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import {
@@ -24,7 +27,8 @@ export class StaffService {
   constructor(
     private readonly staffRepository: StaffRepository,
     private readonly salonService: SalonService,
-    private readonly userService: UserService,
+    @Inject(USER_QUERY_SERVICE)
+    private readonly userQueryService: UserQueryServiceContract,
     private readonly staffPolicy: StaffPolicy,
     private readonly auditLogService: AuditLogService,
     private readonly domainEventBus: DomainEventBus,
@@ -229,7 +233,7 @@ export class StaffService {
   }
 
   private async requireUser(userId: string) {
-    const user = await this.userService.findById(userId);
+    const user = await this.userQueryService.findById(userId);
 
     if (!user) {
       throw staffUserNotFoundError();

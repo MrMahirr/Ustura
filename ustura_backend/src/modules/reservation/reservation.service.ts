@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
@@ -6,7 +6,12 @@ import { DatabaseService } from '../../database/database.service';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { SalonService } from '../salon/salon.service';
 import { StaffService } from '../staff/staff.service';
-import { UserService } from '../user/user.service';
+import {
+  USER_PROVISIONING_SERVICE,
+  USER_QUERY_SERVICE,
+  type UserProvisioningServiceContract,
+  type UserQueryServiceContract,
+} from '../user/interfaces/user.contracts';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
 import { ReservationStatus } from './enums/reservation-status.enum';
@@ -28,7 +33,10 @@ import {
 export class ReservationService {
   constructor(
     private readonly reservationRepository: ReservationRepository,
-    private readonly userService: UserService,
+    @Inject(USER_QUERY_SERVICE)
+    private readonly userQueryService: UserQueryServiceContract,
+    @Inject(USER_PROVISIONING_SERVICE)
+    private readonly userProvisioningService: UserProvisioningServiceContract,
     private readonly slotService: SlotService,
     private readonly salonService: SalonService,
     private readonly staffService: StaffService,
@@ -303,7 +311,7 @@ export class ReservationService {
     createReservationDto: CreateReservationDto,
   ) {
     if (currentUser.role === Role.CUSTOMER) {
-      const customer = await this.userService.findById(currentUser.sub);
+      const customer = await this.userQueryService.findById(currentUser.sub);
 
       if (!customer || customer.role !== Role.CUSTOMER || !customer.isActive) {
         throw customerNotFoundError();
@@ -313,7 +321,7 @@ export class ReservationService {
     }
 
     if (createReservationDto.customer_id) {
-      const customer = await this.userService.findById(
+      const customer = await this.userQueryService.findById(
         createReservationDto.customer_id,
       );
 
@@ -332,7 +340,7 @@ export class ReservationService {
       throw customerDetailsRequiredError();
     }
 
-    const customer = await this.userService.findOrCreateManagedCustomer({
+    const customer = await this.userProvisioningService.findOrCreateManagedCustomer({
       name: createReservationDto.customer_name,
       email: createReservationDto.customer_email,
       phone: createReservationDto.customer_phone,
@@ -385,7 +393,7 @@ export class ReservationService {
 
   private async findCustomerForEvent(customerId: string) {
     try {
-      const customer = await this.userService.findById(customerId);
+      const customer = await this.userQueryService.findById(customerId);
 
       if (!customer || customer.role !== Role.CUSTOMER) {
         return null;

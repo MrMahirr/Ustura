@@ -27,6 +27,7 @@ export const ERROR_CODES = {
     GOOGLE_IDENTITY_ALREADY_LINKED: 'user.google_identity_already_linked',
     INVALID_EMPLOYEE_ROLE: 'user.invalid_employee_role',
     NOT_FOUND: 'user.not_found',
+    PHONE_ALREADY_EXISTS: 'user.phone_already_exists',
     PASSWORD_REQUIRED: 'user.password_required',
     PHONE_REQUIRED: 'user.phone_required',
   },
