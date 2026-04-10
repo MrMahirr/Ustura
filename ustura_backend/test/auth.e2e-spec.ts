@@ -1,13 +1,18 @@
 import { INestApplication } from '@nestjs/common';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import request from 'supertest';
+import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard';
 import { Role } from '../src/shared/auth/role.enum';
 import { AuthController } from '../src/modules/auth/auth.controller';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { googleWebNotConfiguredError } from '../src/modules/auth/errors/auth.errors';
 import { createContractTestApp } from './helpers/create-contract-test-app';
+import { TEST_JWT_SECRET, TestJwtStrategy } from './helpers/test-jwt.strategy';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
+  let accessToken: string;
   let authService: {
     register: jest.Mock;
     login: jest.Mock;
@@ -16,6 +21,7 @@ describe('AuthController (e2e)', () => {
     authenticateCustomerWithGoogleWeb: jest.Mock;
     refreshToken: jest.Mock;
     logout: jest.Mock;
+    logoutAll: jest.Mock;
   };
 
   const sessionResponse = {
@@ -52,16 +58,34 @@ describe('AuthController (e2e)', () => {
         .mockResolvedValue(sessionResponse),
       refreshToken: jest.fn().mockResolvedValue(sessionResponse),
       logout: jest.fn().mockResolvedValue({ success: true }),
+      logoutAll: jest
+        .fn()
+        .mockResolvedValue({ success: true, revokedSessionCount: 2 }),
     };
 
     app = await createContractTestApp({
+      imports: [
+        PassportModule.register({ defaultStrategy: 'jwt' }),
+        JwtModule.register({
+          secret: TEST_JWT_SECRET,
+        }),
+      ],
       controllers: [AuthController],
       providers: [
+        JwtAuthGuard,
+        TestJwtStrategy,
         {
           provide: AuthService,
           useValue: authService,
         },
       ],
+    });
+
+    accessToken = app.get(JwtService).sign({
+      sub: 'mock-user-id',
+      email: 'mock@example.com',
+      role: Role.CUSTOMER,
+      tokenType: 'access',
     });
   });
 
@@ -124,7 +148,27 @@ describe('AuthController (e2e)', () => {
     expect(authService.login).toHaveBeenCalledWith({
       email: 'customer@example.com',
       password: 'password123',
-    });
+    }, expect.objectContaining({
+      userAgent: null,
+      ipAddress: expect.any(String),
+    }));
+  });
+
+  it('POST /api/auth/refresh returns the rotated session payload from the auth service', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .send({
+        refreshToken: 'refresh-token-value',
+      })
+      .expect(201)
+      .expect(sessionResponse);
+
+    expect(authService.refreshToken).toHaveBeenCalledWith({
+      refreshToken: 'refresh-token-value',
+    }, expect.objectContaining({
+      userAgent: null,
+      ipAddress: expect.any(String),
+    }));
   });
 
   it('POST /api/auth/google/customer/web preserves the domain error code contract', async () => {
@@ -147,5 +191,23 @@ describe('AuthController (e2e)', () => {
         });
         expect(typeof body.timestamp).toBe('string');
       });
+  });
+
+  it('POST /api/auth/logout-all returns the service response for authenticated users', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/logout-all')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(201)
+      .expect({
+        success: true,
+        revokedSessionCount: 2,
+      });
+
+    expect(authService.logoutAll).toHaveBeenCalledWith(expect.objectContaining({
+      sub: 'mock-user-id',
+      email: 'mock@example.com',
+      role: 'customer',
+      tokenType: 'access',
+    }));
   });
 });

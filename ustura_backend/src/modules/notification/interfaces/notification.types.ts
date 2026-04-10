@@ -41,3 +41,10 @@ export interface OwnerApprovedNotificationPayload {
   salonName: string;
   approvedAt: Date;
 }
+
+export interface AuthSecurityNotificationPayload {
+  recipientEmail: string;
+  recipientName?: string | null;
+  reason: 'logout_all' | 'suspicious_reuse';
+  revokedSessionCount: number;
+}

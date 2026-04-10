@@ -13,6 +13,9 @@ export class AuthRepository {
       userId: string;
       tokenHash: string;
       expiresAt: Date;
+      userAgent?: string | null;
+      ipAddress?: string | null;
+      rotatedFrom?: string | null;
     },
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<RefreshTokenRecord> {
@@ -22,18 +25,32 @@ export class AuthRepository {
         INSERT INTO refresh_tokens (
           user_id,
           token_hash,
-          expires_at
+          expires_at,
+          user_agent,
+          ip_address,
+          rotated_from
         )
-        VALUES ($1, $2, $3)
+        VALUES ($1, $2, $3, $4, $5::inet, $6)
         RETURNING
           id,
           user_id,
           token_hash,
           expires_at,
           revoked,
+          revoked_at,
+          user_agent,
+          ip_address,
+          rotated_from,
           created_at
       `,
-      values: [input.userId, input.tokenHash, input.expiresAt],
+      values: [
+        input.userId,
+        input.tokenHash,
+        input.expiresAt,
+        input.userAgent ?? null,
+        input.ipAddress ?? null,
+        input.rotatedFrom ?? null,
+      ],
     });
 
     return this.mapRow(result.rows[0]) as RefreshTokenRecord;
@@ -49,6 +66,10 @@ export class AuthRepository {
           token_hash,
           expires_at,
           revoked,
+          revoked_at,
+          user_agent,
+          ip_address,
+          rotated_from,
           created_at
         FROM refresh_tokens
         WHERE token_hash = $1
@@ -72,9 +93,11 @@ export class AuthRepository {
       name: 'auth.revoke-refresh-token',
       text: `
         UPDATE refresh_tokens
-        SET revoked = TRUE
+        SET revoked = TRUE,
+            revoked_at = NOW()
         WHERE token_hash = $1
           AND revoked = FALSE
+          AND revoked_at IS NULL
           ${userFilter}
       `,
       values,
@@ -91,9 +114,11 @@ export class AuthRepository {
       name: 'auth.revoke-all-user-refresh-tokens',
       text: `
         UPDATE refresh_tokens
-        SET revoked = TRUE
+        SET revoked = TRUE,
+            revoked_at = NOW()
         WHERE user_id = $1
           AND revoked = FALSE
+          AND revoked_at IS NULL
       `,
       values: [userId],
     });
@@ -112,6 +137,10 @@ export class AuthRepository {
       tokenHash: row.token_hash,
       expiresAt: row.expires_at,
       revoked: row.revoked,
+      revokedAt: row.revoked_at,
+      userAgent: row.user_agent,
+      ipAddress: row.ip_address,
+      rotatedFrom: row.rotated_from,
       createdAt: row.created_at,
     };
   }
@@ -123,5 +152,9 @@ interface RefreshTokenRow extends QueryResultRow {
   token_hash: string;
   expires_at: Date;
   revoked: boolean;
+  revoked_at: Date | null;
+  user_agent: string | null;
+  ip_address: string | null;
+  rotated_from: string | null;
   created_at: Date;
 }

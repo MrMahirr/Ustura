@@ -109,7 +109,12 @@ export interface AuthLoggedOutEvent
     'auth.logged_out',
     {
       userId: string;
+      userEmail?: string | null;
+      userName?: string | null;
       provider: 'refresh_token';
+      reason: 'manual_logout' | 'logout_all' | 'suspicious_reuse';
+      revokedSessionCount: number;
+      sourceRefreshTokenId?: string | null;
     }
   > {}
 

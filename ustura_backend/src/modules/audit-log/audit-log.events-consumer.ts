@@ -94,6 +94,9 @@ export class AuditLogEventsConsumer implements OnModuleInit, OnModuleDestroy {
           entityId: event.payload.userId,
           metadata: {
             provider: event.payload.provider,
+            reason: event.payload.reason,
+            revokedSessionCount: event.payload.revokedSessionCount,
+            sourceRefreshTokenId: event.payload.sourceRefreshTokenId ?? null,
           },
         });
       }),

@@ -11,6 +11,7 @@ export const ERROR_CODES = {
     GOOGLE_WEB_NOT_CONFIGURED: 'auth.google_web_not_configured',
     INVALID_CREDENTIALS: 'auth.invalid_credentials',
     REFRESH_TOKEN_INVALID: 'auth.refresh_token_invalid',
+    REFRESH_TOKEN_REUSE_DETECTED: 'auth.refresh_token_reuse_detected',
     FIREBASE_GOOGLE_NOT_CONFIGURED: 'auth.firebase_google_not_configured',
     FIREBASE_CERTIFICATES_UNAVAILABLE:
       'auth.firebase_certificates_unavailable',

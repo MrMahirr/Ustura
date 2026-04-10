@@ -56,6 +56,21 @@ export class NotificationEventsConsumer
           approvedAt: new Date(event.payload.approvedAt),
         });
       }),
+      this.domainEventBus.subscribe('auth.logged_out', (event) => {
+        if (
+          event.payload.reason === 'manual_logout' ||
+          !event.payload.userEmail
+        ) {
+          return;
+        }
+
+        this.notificationService.sendAuthSecurityBestEffort({
+          recipientEmail: event.payload.userEmail,
+          recipientName: event.payload.userName ?? null,
+          reason: event.payload.reason,
+          revokedSessionCount: event.payload.revokedSessionCount,
+        });
+      }),
     );
   }
 

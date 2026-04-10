@@ -19,7 +19,16 @@ export interface RefreshTokenRecord {
   tokenHash: string;
   expiresAt: Date;
   revoked: boolean;
+  revokedAt: Date | null;
+  userAgent: string | null;
+  ipAddress: string | null;
+  rotatedFrom: string | null;
   createdAt: Date;
+}
+
+export interface SessionClientContext {
+  userAgent?: string | null;
+  ipAddress?: string | null;
 }
 
 export interface VerifiedRefreshToken extends JwtPayload {

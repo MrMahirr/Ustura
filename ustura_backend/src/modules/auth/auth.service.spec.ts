@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { HttpException, UnauthorizedException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
@@ -167,6 +167,10 @@ describe('AuthService', () => {
       tokenHash: 'stored-token-hash',
       expiresAt: new Date('2027-01-15T08:00:00.000Z'),
       revoked: false,
+      revokedAt: null,
+      userAgent: null,
+      ipAddress: null,
+      rotatedFrom: null,
       createdAt: new Date('2026-04-07T00:00:00.000Z'),
     });
   });
@@ -202,6 +206,9 @@ describe('AuthService', () => {
         userId: 'user-1',
         tokenHash: expectedRefreshHash,
         expiresAt: new Date(1_800_000_000 * 1000),
+        userAgent: null,
+        ipAddress: null,
+        rotatedFrom: null,
       },
       databaseService,
     );
@@ -265,6 +272,10 @@ describe('AuthService', () => {
       tokenHash: currentTokenHash,
       expiresAt: new Date('2099-01-01T00:00:00.000Z'),
       revoked: false,
+      revokedAt: null,
+      userAgent: null,
+      ipAddress: null,
+      rotatedFrom: null,
       createdAt: new Date('2026-04-07T00:00:00.000Z'),
     });
     userService.findById.mockResolvedValue(existingUser);
@@ -289,6 +300,9 @@ describe('AuthService', () => {
         userId: 'user-1',
         tokenHash: nextRefreshHash,
         expiresAt: new Date(1_800_000_000 * 1000),
+        userAgent: null,
+        ipAddress: null,
+        rotatedFrom: 'refresh-1',
       },
       transactionExecutor,
     );
@@ -464,6 +478,7 @@ describe('AuthService', () => {
       .digest('hex');
 
     revokeTokenMock.mockResolvedValue(true);
+    userService.findById.mockResolvedValue(createUser());
 
     await expect(authService.logout('user-1', refreshToken)).resolves.toEqual({
       success: true,
@@ -475,7 +490,100 @@ describe('AuthService', () => {
       occurredAt: expect.any(Date),
       payload: {
         userId: 'user-1',
+        userEmail: 'john@example.com',
+        userName: 'John Doe',
         provider: 'refresh_token',
+        reason: 'manual_logout',
+        revokedSessionCount: 1,
+        sourceRefreshTokenId: null,
+      },
+    });
+  });
+
+  it('revokes all sessions when logout-all is requested', async () => {
+    authRepository.revokeAllUserTokens.mockResolvedValue(3);
+    userService.findById.mockResolvedValue(createUser());
+
+    await expect(
+      authService.logoutAll({
+        sub: 'user-1',
+        email: 'john@example.com',
+        role: Role.CUSTOMER,
+        tokenType: 'access',
+      }),
+    ).resolves.toEqual({
+      success: true,
+      revokedSessionCount: 3,
+    });
+
+    expect(authRepository.revokeAllUserTokens).toHaveBeenCalledWith('user-1');
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'auth.logged_out',
+      occurredAt: expect.any(Date),
+      payload: {
+        userId: 'user-1',
+        userEmail: 'john@example.com',
+        userName: 'John Doe',
+        provider: 'refresh_token',
+        reason: 'logout_all',
+        revokedSessionCount: 3,
+        sourceRefreshTokenId: null,
+      },
+    });
+  });
+
+  it('revokes all sessions and returns a stable code on suspicious refresh token reuse', async () => {
+    const reusedRefreshToken = 'reused-refresh-token';
+    const reusedTokenHash = createHmac('sha256', 'test-secret')
+      .update(reusedRefreshToken)
+      .digest('hex');
+
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: 'user-1',
+      email: 'john@example.com',
+      role: Role.CUSTOMER,
+      tokenType: 'refresh',
+    });
+    authRepository.findByTokenHash.mockResolvedValue({
+      id: 'refresh-1',
+      userId: 'user-1',
+      tokenHash: reusedTokenHash,
+      expiresAt: new Date('2099-01-01T00:00:00.000Z'),
+      revoked: true,
+      revokedAt: new Date('2026-04-07T01:00:00.000Z'),
+      userAgent: 'Mozilla/5.0',
+      ipAddress: '127.0.0.1',
+      rotatedFrom: null,
+      createdAt: new Date('2026-04-07T00:00:00.000Z'),
+    });
+    authRepository.revokeAllUserTokens.mockResolvedValue(2);
+    userService.findById.mockResolvedValue(createUser());
+
+    let capturedError: unknown;
+
+    try {
+      await authService.refreshToken({
+        refreshToken: reusedRefreshToken,
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.AUTH.REFRESH_TOKEN_REUSE_DETECTED,
+    );
+    expect(authRepository.revokeAllUserTokens).toHaveBeenCalledWith('user-1');
+    expect(domainEventBus.publish).toHaveBeenCalledWith({
+      name: 'auth.logged_out',
+      occurredAt: expect.any(Date),
+      payload: {
+        userId: 'user-1',
+        userEmail: 'john@example.com',
+        userName: 'John Doe',
+        provider: 'refresh_token',
+        reason: 'suspicious_reuse',
+        revokedSessionCount: 2,
+        sourceRefreshTokenId: 'refresh-1',
       },
     });
   });

@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
+  AuthSecurityNotificationPayload,
   NotificationChannel,
   OwnerApprovedNotificationPayload,
   ReservationCancelledNotificationPayload,
@@ -42,6 +43,14 @@ export class NotificationService {
     this.runBestEffort('owner.approved', () =>
       this.sendMessage(
         this.notificationTemplateService.buildOwnerApprovedMessage(payload),
+      ),
+    );
+  }
+
+  sendAuthSecurityBestEffort(payload: AuthSecurityNotificationPayload): void {
+    this.runBestEffort('auth.security', () =>
+      this.sendMessage(
+        this.notificationTemplateService.buildAuthSecurityMessage(payload),
       ),
     );
   }
