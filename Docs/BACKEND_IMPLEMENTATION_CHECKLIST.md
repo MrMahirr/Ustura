@@ -108,12 +108,12 @@ Durum tarihi: 2026-04-09
 
 ## 10. Salon Modülünü Ayrıştır
 
-- [ ] Public salon okuma akışını owner yönetim akışından mantıksal olarak ayır.
-- [ ] Working hours JSON şemasını daha katı validate et.
-- [ ] Salon aktif/pasif yaşam döngüsünü netleştir.
-- [ ] Salon ownership validation kurallarını servis/policy seviyesinde merkezileştir.
-- [ ] Salon listeleme ve detay response projection'larını sadeleştir.
-- [ ] Salon modülü için unit ve e2e testlerini owner/public senaryolarıyla genişlet.
+- [x] Public salon okuma akışını owner yönetim akışından mantıksal olarak ayır.
+- [x] Working hours JSON şemasını daha katı validate et.
+- [x] Salon aktif/pasif yaşam döngüsünü netleştir.
+- [x] Salon ownership validation kurallarını servis/policy seviyesinde merkezileştir.
+- [x] Salon listeleme ve detay response projection'larını sadeleştir.
+- [x] Salon modülü için unit ve e2e testlerini owner/public senaryolarıyla genişlet.
 
 ## 11. Staff Modülünü Tamamla
 

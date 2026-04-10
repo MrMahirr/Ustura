@@ -50,6 +50,7 @@ export const ERROR_CODES = {
   },
   SALON: {
     INVALID_FIELD: 'salon.invalid_field',
+    INACTIVE_UPDATE_FORBIDDEN: 'salon.inactive_update_forbidden',
     INVALID_WORKING_HOURS: 'salon.invalid_working_hours',
     MANAGEMENT_FORBIDDEN: 'salon.management_forbidden',
     NOT_FOUND: 'salon.not_found',

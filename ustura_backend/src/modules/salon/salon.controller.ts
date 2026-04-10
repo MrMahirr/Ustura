@@ -27,22 +27,29 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
-import { SalonResponseDto } from './dto/salon-response.dto';
+import { OwnedSalonResponseDto } from './dto/owned-salon-response.dto';
+import { OwnedSalonSummaryDto } from './dto/owned-salon-summary.dto';
+import { PublicSalonDetailDto } from './dto/public-salon-detail.dto';
+import { PublicSalonSummaryDto } from './dto/public-salon-summary.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
-import { SalonService } from './salon.service';
+import { SalonManagementService } from './salon-management.service';
+import { SalonQueryService } from './salon-query.service';
 
 @ApiTags('salons')
 @Controller('salons')
 export class SalonController {
-  constructor(private readonly salonService: SalonService) {}
+  constructor(
+    private readonly salonQueryService: SalonQueryService,
+    private readonly salonManagementService: SalonManagementService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List active salons for public discovery' })
   @ApiQuery({ name: 'city', required: false, type: String })
   @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiOkResponse({ type: SalonResponseDto, isArray: true })
+  @ApiOkResponse({ type: PublicSalonSummaryDto, isArray: true })
   async findAll(@Query() query: FindSalonsQueryDto) {
-    return this.salonService.findAll(query);
+    return this.salonQueryService.findPublicList(query);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -50,17 +57,17 @@ export class SalonController {
   @Get('owned')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List salons owned by the authenticated owner' })
-  @ApiOkResponse({ type: SalonResponseDto, isArray: true })
+  @ApiOkResponse({ type: OwnedSalonSummaryDto, isArray: true })
   async findOwned(@CurrentUser() currentUser: JwtPayload) {
-    return this.salonService.findOwned(currentUser);
+    return this.salonQueryService.findOwned(currentUser);
   }
 
   @Get(':salonId')
   @ApiOperation({ summary: 'Get a public active salon detail' })
   @ApiParam({ name: 'salonId', format: 'uuid' })
-  @ApiOkResponse({ type: SalonResponseDto })
+  @ApiOkResponse({ type: PublicSalonDetailDto })
   async findById(@Param('salonId', new ParseUUIDPipe()) salonId: string) {
-    return this.salonService.findById(salonId);
+    return this.salonQueryService.findPublicById(salonId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -68,12 +75,12 @@ export class SalonController {
   @Post()
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a new salon for the authenticated owner' })
-  @ApiCreatedResponse({ type: SalonResponseDto })
+  @ApiCreatedResponse({ type: OwnedSalonResponseDto })
   async create(
     @CurrentUser() currentUser: JwtPayload,
     @Body() createSalonDto: CreateSalonDto,
   ) {
-    return this.salonService.create(currentUser, createSalonDto);
+    return this.salonManagementService.create(currentUser, createSalonDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -82,13 +89,13 @@ export class SalonController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update a salon owned by the authenticated owner' })
   @ApiParam({ name: 'salonId', format: 'uuid' })
-  @ApiOkResponse({ type: SalonResponseDto })
+  @ApiOkResponse({ type: OwnedSalonResponseDto })
   async update(
     @CurrentUser() currentUser: JwtPayload,
     @Param('salonId', new ParseUUIDPipe()) salonId: string,
     @Body() updateSalonDto: UpdateSalonDto,
   ) {
-    return this.salonService.update(currentUser, salonId, updateSalonDto);
+    return this.salonManagementService.update(currentUser, salonId, updateSalonDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -97,11 +104,11 @@ export class SalonController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Soft delete a salon owned by the authenticated owner' })
   @ApiParam({ name: 'salonId', format: 'uuid' })
-  @ApiOkResponse({ type: SalonResponseDto })
+  @ApiOkResponse({ type: OwnedSalonResponseDto })
   async remove(
     @CurrentUser() currentUser: JwtPayload,
     @Param('salonId', new ParseUUIDPipe()) salonId: string,
   ) {
-    return this.salonService.remove(currentUser, salonId);
+    return this.salonManagementService.remove(currentUser, salonId);
   }
 }

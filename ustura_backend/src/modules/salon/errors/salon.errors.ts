@@ -12,6 +12,13 @@ export function salonInvalidFieldError(fieldName: string) {
   );
 }
 
+export function salonInactiveUpdateForbiddenError() {
+  return badRequestError(
+    'Inactive salons can only be reactivated before other fields are updated.',
+    ERROR_CODES.SALON.INACTIVE_UPDATE_FORBIDDEN,
+  );
+}
+
 export function salonInvalidWorkingHoursError(message: string) {
   return badRequestError(message, ERROR_CODES.SALON.INVALID_WORKING_HOURS);
 }

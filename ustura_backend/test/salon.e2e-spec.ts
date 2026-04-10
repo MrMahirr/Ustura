@@ -11,7 +11,8 @@ import {
   salonManagementForbiddenError,
   salonNotFoundError,
 } from '../src/modules/salon/errors/salon.errors';
-import { SalonService } from '../src/modules/salon/salon.service';
+import { SalonManagementService } from '../src/modules/salon/salon-management.service';
+import { SalonQueryService } from '../src/modules/salon/salon-query.service';
 import { createContractTestApp } from './helpers/create-contract-test-app';
 import {
   TEST_JWT_SECRET,
@@ -20,42 +21,56 @@ import {
 
 describe('SalonController (e2e)', () => {
   let app: INestApplication;
-  let salonService: {
-    findAll: jest.Mock;
+  let salonQueryService: {
+    findPublicList: jest.Mock;
     findOwned: jest.Mock;
-    findById: jest.Mock;
+    findPublicById: jest.Mock;
+  };
+  let salonManagementService: {
     create: jest.Mock;
     update: jest.Mock;
     remove: jest.Mock;
   };
 
   const jwtService = new JwtService({ secret: TEST_JWT_SECRET });
-  const salonResponse = {
+  const publicSalonSummary = {
     id: '11111111-1111-4111-8111-111111111111',
-    ownerId: 'owner-1',
     name: 'Ustura Barber',
-    address: 'Istanbul Street 10',
     city: 'Istanbul',
     district: 'Besiktas',
     photoUrl: 'https://example.com/photo.jpg',
+  };
+  const publicSalonDetail = {
+    ...publicSalonSummary,
+    address: 'Istanbul Street 10',
     workingHours: {
       monday: { open: '09:00', close: '19:00' },
       sunday: null,
     },
+  };
+  const ownedSalonSummary = {
+    ...publicSalonSummary,
     isActive: true,
-    createdAt: '2026-04-09T09:00:00.000Z',
     updatedAt: '2026-04-09T09:00:00.000Z',
+  };
+  const ownedSalonDetail = {
+    ...ownedSalonSummary,
+    address: 'Istanbul Street 10',
+    workingHours: publicSalonDetail.workingHours,
+    createdAt: '2026-04-09T09:00:00.000Z',
   };
 
   beforeEach(async () => {
-    salonService = {
-      findAll: jest.fn().mockResolvedValue([salonResponse]),
-      findOwned: jest.fn().mockResolvedValue([salonResponse]),
-      findById: jest.fn().mockResolvedValue(salonResponse),
-      create: jest.fn().mockResolvedValue(salonResponse),
-      update: jest.fn().mockResolvedValue(salonResponse),
+    salonQueryService = {
+      findPublicList: jest.fn().mockResolvedValue([publicSalonSummary]),
+      findOwned: jest.fn().mockResolvedValue([ownedSalonSummary]),
+      findPublicById: jest.fn().mockResolvedValue(publicSalonDetail),
+    };
+    salonManagementService = {
+      create: jest.fn().mockResolvedValue(ownedSalonDetail),
+      update: jest.fn().mockResolvedValue(ownedSalonDetail),
       remove: jest.fn().mockResolvedValue({
-        ...salonResponse,
+        ...ownedSalonDetail,
         isActive: false,
       }),
     };
@@ -69,8 +84,12 @@ describe('SalonController (e2e)', () => {
       controllers: [SalonController],
       providers: [
         {
-          provide: SalonService,
-          useValue: salonService,
+          provide: SalonQueryService,
+          useValue: salonQueryService,
+        },
+        {
+          provide: SalonManagementService,
+          useValue: salonManagementService,
         },
         RolesGuard,
         Reflector,
@@ -83,8 +102,43 @@ describe('SalonController (e2e)', () => {
     await app.close();
   });
 
+  it('GET /api/salons returns the simplified public catalog projection', async () => {
+    await request(app.getHttpServer())
+      .get('/api/salons')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual([publicSalonSummary]);
+      });
+
+    expect(salonQueryService.findPublicList).toHaveBeenCalledWith(
+      expect.objectContaining({}),
+    );
+  });
+
+  it('GET /api/salons/owned returns the owner-facing salon summary projection', async () => {
+    await request(app.getHttpServer())
+      .get('/api/salons/owned')
+      .set(
+        'Authorization',
+        `Bearer ${createAccessToken({
+          role: Role.OWNER,
+        })}`,
+      )
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual([ownedSalonSummary]);
+      });
+
+    expect(salonQueryService.findOwned).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: 'owner-1',
+        role: Role.OWNER,
+      }),
+    );
+  });
+
   it('GET /api/salons/:salonId preserves the salon not found error contract', async () => {
-    salonService.findById.mockRejectedValueOnce(salonNotFoundError());
+    salonQueryService.findPublicById.mockRejectedValueOnce(salonNotFoundError());
 
     await request(app.getHttpServer())
       .get('/api/salons/11111111-1111-4111-8111-111111111111')
@@ -132,11 +186,11 @@ describe('SalonController (e2e)', () => {
         expect(body.message).toContain('property extra should not exist');
       });
 
-    expect(salonService.create).not.toHaveBeenCalled();
+    expect(salonManagementService.create).not.toHaveBeenCalled();
   });
 
   it('PATCH /api/salons/:salonId preserves the salon management error contract', async () => {
-    salonService.update.mockRejectedValueOnce(
+    salonManagementService.update.mockRejectedValueOnce(
       salonManagementForbiddenError(
         'You do not have permission to manage this salon.',
       ),

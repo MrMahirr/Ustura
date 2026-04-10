@@ -4,7 +4,10 @@ import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DatabaseService } from '../../database/database.service';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
-import { SalonService } from '../salon/salon.service';
+import {
+  SALON_CATALOG_SERVICE,
+  type SalonCatalogServiceContract,
+} from '../salon/interfaces/salon.contracts';
 import { StaffService } from '../staff/staff.service';
 import {
   USER_PROVISIONING_SERVICE,
@@ -38,7 +41,8 @@ export class ReservationService {
     @Inject(USER_PROVISIONING_SERVICE)
     private readonly userProvisioningService: UserProvisioningServiceContract,
     private readonly slotService: SlotService,
-    private readonly salonService: SalonService,
+    @Inject(SALON_CATALOG_SERVICE)
+    private readonly salonCatalogService: SalonCatalogServiceContract,
     private readonly staffService: StaffService,
     private readonly databaseService: DatabaseService,
     private readonly reservationPolicy: ReservationPolicy,
@@ -350,7 +354,7 @@ export class ReservationService {
   }
 
   private async requireSalon(salonId: string) {
-    const salon = await this.salonService.findActiveById(salonId);
+    const salon = await this.salonCatalogService.findActiveById(salonId);
 
     if (!salon) {
       throw reservationSalonNotFoundError();
