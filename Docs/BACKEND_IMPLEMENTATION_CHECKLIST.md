@@ -90,13 +90,13 @@ Durum tarihi: 2026-04-09
 
 ## 8. Auth ve Session Tarafını Sertleştir
 
-- [ ] Refresh token tablosuna `revoked_at`, `user_agent`, `ip_address`, `rotated_from` alanlarını ekle.
-- [ ] `logout-all` endpoint'ini ekle.
-- [ ] Şüpheli token reuse senaryosunda tüm session revoke akışını ekle.
-- [ ] Login ve refresh için throttling/rate-limit davranışını ayrı ayrı gözden geçir.
-- [ ] Üretim ortamı için secret fallback kullanımını tamamen engelle.
-- [ ] Auth event'lerini audit ve notification tarafına bağla.
-- [ ] Auth e2e testlerini refresh rotation ve logout-all senaryolarıyla genişlet.
+- [x] Refresh token tablosuna `revoked_at`, `user_agent`, `ip_address`, `rotated_from` alanlarını ekle.
+- [x] `logout-all` endpoint'ini ekle.
+- [x] Şüpheli token reuse senaryosunda tüm session revoke akışını ekle.
+- [x] Login ve refresh için throttling/rate-limit davranışını ayrı ayrı gözden geçir.
+- [x] Üretim ortamı için secret fallback kullanımını tamamen engelle.
+- [x] Auth event'lerini audit ve notification tarafına bağla.
+- [x] Auth e2e testlerini refresh rotation ve logout-all senaryolarıyla genişlet.
 
 ## 9. User Modülünü Contract Odaklı Temizle
 

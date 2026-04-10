@@ -82,6 +82,13 @@ export function refreshTokenInvalidError(message?: string) {
   );
 }
 
+export function refreshTokenReuseDetectedError() {
+  return unauthorizedError(
+    'Refresh token reuse was detected and all active sessions were revoked.',
+    ERROR_CODES.AUTH.REFRESH_TOKEN_REUSE_DETECTED,
+  );
+}
+
 export function firebaseGoogleNotConfiguredError() {
   return serviceUnavailableError(
     'Firebase Google sign-in is not configured on the backend.',

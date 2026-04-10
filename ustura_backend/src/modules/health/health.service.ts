@@ -13,6 +13,7 @@ const REQUIRED_MIGRATIONS = [
   '003_rework_reservation_schema.sql',
   '004_create_owner_applications.sql',
   '005_create_audit_logs.sql',
+  '006_harden_refresh_tokens.sql',
 ] as const;
 
 const REQUIRED_USER_COLUMNS = [
@@ -67,10 +68,36 @@ const DATABASE_UNAVAILABLE_CHECKS = {
     status: 'down',
     message: 'Skipped because PostgreSQL is unavailable.',
   },
+  refreshTokensTableSchema: {
+    status: 'down',
+    message: 'Skipped because PostgreSQL is unavailable.',
+  },
 } as const satisfies Pick<
   ReadinessReport['checks'],
-  'schemaMigrations' | 'usersTableSchema' | 'reservationsTableSchema'
+  | 'schemaMigrations'
+  | 'usersTableSchema'
+  | 'reservationsTableSchema'
+  | 'refreshTokensTableSchema'
 >;
+
+const REQUIRED_REFRESH_TOKEN_COLUMNS = [
+  {
+    name: 'revoked_at',
+    isNullable: 'YES',
+  },
+  {
+    name: 'user_agent',
+    isNullable: 'YES',
+  },
+  {
+    name: 'ip_address',
+    isNullable: 'YES',
+  },
+  {
+    name: 'rotated_from',
+    isNullable: 'YES',
+  },
+] as const;
 
 @Injectable()
 export class HealthService {
@@ -100,6 +127,10 @@ export class HealthService {
       database.status === 'up'
         ? await this.checkReservationsTableSchema()
         : DATABASE_UNAVAILABLE_CHECKS.reservationsTableSchema;
+    const refreshTokensTableSchema =
+      database.status === 'up'
+        ? await this.checkRefreshTokensTableSchema()
+        : DATABASE_UNAVAILABLE_CHECKS.refreshTokensTableSchema;
     const redis = await this.checkRedisConnectivity();
 
     return {
@@ -109,6 +140,7 @@ export class HealthService {
           schemaMigrations,
           usersTableSchema,
           reservationsTableSchema,
+          refreshTokensTableSchema,
           redis,
         ].every(
           (check) => check.status === 'up',
@@ -121,6 +153,7 @@ export class HealthService {
         schemaMigrations,
         usersTableSchema,
         reservationsTableSchema,
+        refreshTokensTableSchema,
         redis,
       },
     };
@@ -414,6 +447,61 @@ export class HealthService {
         status: 'down',
         message: this.appendCause(
           'Redis connection failed. Check REDIS_HOST, REDIS_PORT and REDIS_PASSWORD.',
+          error,
+        ),
+      };
+    }
+  }
+
+  private async checkRefreshTokensTableSchema(): Promise<HealthCheckResult> {
+    try {
+      const result = await this.databaseService.query<InformationSchemaColumnRow>({
+        name: 'health.refresh-tokens-table-columns',
+        text: `
+          SELECT
+            column_name,
+            is_nullable
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'refresh_tokens'
+            AND column_name = ANY($1::text[])
+        `,
+        values: [REQUIRED_REFRESH_TOKEN_COLUMNS.map((column) => column.name)],
+      });
+      const columnsByName = new Map(
+        result.rows.map((row) => [row.column_name, row.is_nullable]),
+      );
+      const missingColumns = REQUIRED_REFRESH_TOKEN_COLUMNS.filter((column) => {
+        return !columnsByName.has(column.name);
+      }).map((column) => column.name);
+
+      if (missingColumns.length > 0) {
+        return {
+          status: 'down',
+          message: `Refresh tokens table is missing required column(s): ${missingColumns.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      const invalidNullability = REQUIRED_REFRESH_TOKEN_COLUMNS.filter((column) => {
+        return columnsByName.get(column.name) !== column.isNullable;
+      }).map((column) => `${column.name} should be nullable`);
+
+      if (invalidNullability.length > 0) {
+        return {
+          status: 'down',
+          message: `Refresh tokens table schema is outdated: ${invalidNullability.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      return {
+        status: 'up',
+        message: 'Refresh tokens table schema is up to date.',
+      };
+    } catch (error) {
+      return {
+        status: 'down',
+        message: this.appendCause(
+          'Unable to inspect the refresh_tokens table schema. Check the configured PostgreSQL database.',
           error,
         ),
       };

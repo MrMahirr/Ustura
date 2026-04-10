@@ -61,4 +61,24 @@ describe('NotificationService', () => {
 
     expect(channel.send).toHaveBeenCalledTimes(1);
   });
+
+  it('routes auth security notifications through the configured channel', async () => {
+    service.sendAuthSecurityBestEffort({
+      recipientEmail: 'customer@example.com',
+      recipientName: 'Customer',
+      reason: 'suspicious_reuse',
+      revokedSessionCount: 4,
+    });
+
+    await new Promise(process.nextTick);
+
+    expect(channel.send).toHaveBeenCalledWith(
+      expect.objectContaining<Partial<NotificationMessage>>({
+        key: 'auth.security',
+        recipient: expect.objectContaining({
+          email: 'customer@example.com',
+        }),
+      }),
+    );
+  });
 });

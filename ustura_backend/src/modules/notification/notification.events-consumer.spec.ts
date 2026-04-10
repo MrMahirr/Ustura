@@ -13,6 +13,7 @@ describe('NotificationEventsConsumer', () => {
       | 'sendReservationCreatedBestEffort'
       | 'sendReservationCancelledBestEffort'
       | 'sendOwnerApprovedBestEffort'
+      | 'sendAuthSecurityBestEffort'
     >
   >;
 
@@ -22,6 +23,7 @@ describe('NotificationEventsConsumer', () => {
       sendReservationCreatedBestEffort: jest.fn(),
       sendReservationCancelledBestEffort: jest.fn(),
       sendOwnerApprovedBestEffort: jest.fn(),
+      sendAuthSecurityBestEffort: jest.fn(),
     };
     consumer = new NotificationEventsConsumer(
       domainEventBus,
@@ -92,6 +94,31 @@ describe('NotificationEventsConsumer', () => {
       recipientName: 'Owner',
       salonName: 'Ustura Premium',
       approvedAt: new Date('2026-04-10T12:00:00.000Z'),
+    });
+  });
+
+  it('forwards non-manual auth logout events to the notification service', async () => {
+    domainEventBus.publish({
+      name: 'auth.logged_out',
+      occurredAt: new Date('2026-04-10T09:00:00.000Z'),
+      payload: {
+        userId: 'user-1',
+        userEmail: 'user@example.com',
+        userName: 'User',
+        provider: 'refresh_token' as const,
+        reason: 'logout_all' as const,
+        revokedSessionCount: 2,
+        sourceRefreshTokenId: null,
+      },
+    });
+
+    await new Promise(process.nextTick);
+
+    expect(notificationService.sendAuthSecurityBestEffort).toHaveBeenCalledWith({
+      recipientEmail: 'user@example.com',
+      recipientName: 'User',
+      reason: 'logout_all',
+      revokedSessionCount: 2,
     });
   });
 });

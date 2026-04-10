@@ -73,7 +73,12 @@ describe('AuditLogEventsConsumer', () => {
       occurredAt: new Date('2026-04-10T09:00:00.000Z'),
       payload: {
         userId: 'user-1',
+        userEmail: 'user@example.com',
+        userName: 'User',
         provider: 'refresh_token' as const,
+        reason: 'suspicious_reuse' as const,
+        revokedSessionCount: 3,
+        sourceRefreshTokenId: 'refresh-1',
       },
     });
 
@@ -86,6 +91,9 @@ describe('AuditLogEventsConsumer', () => {
       entityId: 'user-1',
       metadata: {
         provider: 'refresh_token',
+        reason: 'suspicious_reuse',
+        revokedSessionCount: 3,
+        sourceRefreshTokenId: 'refresh-1',
       },
     });
   });

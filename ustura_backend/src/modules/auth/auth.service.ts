@@ -21,6 +21,7 @@ import { RegisterDto } from './dto/register.dto';
 import {
   AuthSessionResponse,
   AuthTokens,
+  SessionClientContext,
   VerifiedRefreshToken,
 } from './interfaces/auth.types';
 import { FirebaseTokenVerifierService } from './firebase-token-verifier.service';
@@ -32,6 +33,7 @@ import {
   googleEmailAlreadyLinkedError,
   invalidCredentialsError,
   refreshTokenInvalidError,
+  refreshTokenReuseDetectedError,
 } from './errors/auth.errors';
 import { AuthRepository } from './repositories/auth.repository';
 
@@ -59,7 +61,10 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto): Promise<AuthSessionResponse> {
+  async register(
+    registerDto: RegisterDto,
+    clientContext?: SessionClientContext,
+  ): Promise<AuthSessionResponse> {
     const passwordHash = await this.hashPassword(registerDto.password);
 
     const user = await this.userService.createCustomer({
@@ -69,7 +74,9 @@ export class AuthService {
       passwordHash,
     });
 
-    const session = await this.createSession(user);
+    const session = await this.createSession(user, {
+      clientContext,
+    });
 
     this.recordUserAudit(AuditLogAction.AUTH_REGISTERED, user, {
       provider: 'password',
@@ -78,7 +85,10 @@ export class AuthService {
     return session;
   }
 
-  async login(loginDto: LoginDto): Promise<AuthSessionResponse> {
+  async login(
+    loginDto: LoginDto,
+    clientContext?: SessionClientContext,
+  ): Promise<AuthSessionResponse> {
     const user = await this.userService.findByEmail(loginDto.email);
 
     if (!user?.isActive || !user.passwordHash) {
@@ -94,7 +104,9 @@ export class AuthService {
       throw invalidCredentialsError();
     }
 
-    const session = await this.createSession(user);
+    const session = await this.createSession(user, {
+      clientContext,
+    });
 
     this.recordUserAudit(AuditLogAction.AUTH_LOGGED_IN, user, {
       provider: 'password',
@@ -105,6 +117,7 @@ export class AuthService {
 
   async authenticateCustomerWithGoogle(
     googleCustomerAuthDto: GoogleCustomerAuthDto,
+    clientContext?: SessionClientContext,
   ): Promise<AuthSessionResponse> {
     const googleIdentity =
       await this.firebaseTokenVerifierService.verifyGoogleCustomerToken(
@@ -117,7 +130,9 @@ export class AuthService {
 
     if (userByFirebaseUid) {
       this.assertCustomerGoogleEligibility(userByFirebaseUid);
-      const session = await this.createSession(userByFirebaseUid);
+      const session = await this.createSession(userByFirebaseUid, {
+        clientContext,
+      });
 
       this.recordUserAudit(
         AuditLogAction.AUTH_GOOGLE_CUSTOMER_AUTHENTICATED,
@@ -152,7 +167,9 @@ export class AuthService {
             googleIdentity.firebaseUid,
           );
 
-      const session = await this.createSession(linkedUser);
+      const session = await this.createSession(linkedUser, {
+        clientContext,
+      });
 
       this.recordUserAudit(
         AuditLogAction.AUTH_GOOGLE_CUSTOMER_AUTHENTICATED,
@@ -176,7 +193,9 @@ export class AuthService {
       allowEmptyPhone: phone.length === 0,
     });
 
-    const session = await this.createSession(customer);
+    const session = await this.createSession(customer, {
+      clientContext,
+    });
 
     this.recordUserAudit(
       AuditLogAction.AUTH_GOOGLE_CUSTOMER_AUTHENTICATED,
@@ -192,6 +211,7 @@ export class AuthService {
 
   async authenticateCustomerWithGoogleWeb(
     googleWebCustomerAuthDto: GoogleWebCustomerAuthDto,
+    clientContext?: SessionClientContext,
   ): Promise<AuthSessionResponse> {
     const googleIdentity =
       await this.googleWebTokenVerifierService.verifyCustomerAccessToken(
@@ -201,7 +221,9 @@ export class AuthService {
 
     if (existingUser) {
       this.assertCustomerGoogleEligibility(existingUser);
-      const session = await this.createSession(existingUser);
+      const session = await this.createSession(existingUser, {
+        clientContext,
+      });
 
       this.recordUserAudit(
         AuditLogAction.AUTH_GOOGLE_WEB_CUSTOMER_AUTHENTICATED,
@@ -223,7 +245,9 @@ export class AuthService {
       allowEmptyPhone: true,
     });
 
-    const session = await this.createSession(customer);
+    const session = await this.createSession(customer, {
+      clientContext,
+    });
 
     this.recordUserAudit(
       AuditLogAction.AUTH_GOOGLE_WEB_CUSTOMER_AUTHENTICATED,
@@ -239,6 +263,7 @@ export class AuthService {
 
   async refreshToken(
     refreshTokenDto: RefreshTokenDto,
+    clientContext?: SessionClientContext,
   ): Promise<AuthSessionResponse> {
     const verifiedToken = await this.verifyRefreshToken(
       refreshTokenDto.refreshToken,
@@ -246,12 +271,19 @@ export class AuthService {
     const tokenHash = this.hashRefreshToken(refreshTokenDto.refreshToken);
     const storedToken = await this.authRepository.findByTokenHash(tokenHash);
 
-    if (
-      !storedToken ||
-      storedToken.revoked ||
-      storedToken.userId !== verifiedToken.sub ||
-      storedToken.expiresAt.getTime() <= Date.now()
-    ) {
+    if (!storedToken) {
+      throw refreshTokenInvalidError();
+    }
+
+    if (storedToken.userId !== verifiedToken.sub) {
+      throw refreshTokenInvalidError();
+    }
+
+    if (storedToken.revoked) {
+      await this.handleRefreshTokenReuse(storedToken.userId, storedToken);
+    }
+
+    if (storedToken.expiresAt.getTime() <= Date.now()) {
       throw refreshTokenInvalidError();
     }
 
@@ -272,7 +304,11 @@ export class AuthService {
         throw refreshTokenInvalidError();
       }
 
-      return this.createSession(user, transaction);
+      return this.createSession(user, {
+        clientContext,
+        rotatedFromTokenId: storedToken.id,
+        executor: transaction,
+      });
     });
 
     this.recordUserAudit(AuditLogAction.AUTH_REFRESHED, user, {
@@ -295,16 +331,40 @@ export class AuthService {
       );
     }
 
-    this.domainEventBus.publish({
-      name: 'auth.logged_out',
-      occurredAt: new Date(),
-      payload: {
-        userId,
-        provider: 'refresh_token',
-      },
+    const user = await this.userService.findById(userId);
+    this.publishLogoutEvent({
+      userId,
+      userEmail: user?.email ?? null,
+      userName: user?.name ?? null,
+      provider: 'refresh_token',
+      reason: 'manual_logout',
+      revokedSessionCount: 1,
     });
 
     return { success: true };
+  }
+
+  async logoutAll(
+    currentUser: JwtPayload,
+  ): Promise<{ success: true; revokedSessionCount: number }> {
+    const revokedSessionCount = await this.authRepository.revokeAllUserTokens(
+      currentUser.sub,
+    );
+    const user = await this.userService.findById(currentUser.sub);
+
+    this.publishLogoutEvent({
+      userId: currentUser.sub,
+      userEmail: user?.email ?? currentUser.email,
+      userName: user?.name ?? null,
+      provider: 'refresh_token',
+      reason: 'logout_all',
+      revokedSessionCount,
+    });
+
+    return {
+      success: true,
+      revokedSessionCount,
+    };
   }
 
   async validatePassword(
@@ -316,8 +376,13 @@ export class AuthService {
 
   private async createSession(
     user: User,
-    executor: SqlQueryExecutor = this.databaseService,
+    options: {
+      clientContext?: SessionClientContext;
+      rotatedFromTokenId?: string | null;
+      executor?: SqlQueryExecutor;
+    } = {},
   ): Promise<AuthSessionResponse> {
+    const executor = options.executor ?? this.databaseService;
     const profile = this.toProfile(user);
     const tokens = await this.generateTokens(profile);
     const refreshTokenHash = this.hashRefreshToken(tokens.refreshToken);
@@ -327,6 +392,9 @@ export class AuthService {
         userId: user.id,
         tokenHash: refreshTokenHash,
         expiresAt: this.getTokenExpirationDate(tokens.refreshToken),
+        userAgent: options.clientContext?.userAgent ?? null,
+        ipAddress: options.clientContext?.ipAddress ?? null,
+        rotatedFrom: options.rotatedFromTokenId ?? null,
       },
       executor,
     );
@@ -456,6 +524,52 @@ export class AuthService {
       entityType: AuditLogEntityType.USER,
       entityId: user.id,
       metadata,
+    });
+  }
+
+  private async handleRefreshTokenReuse(
+    userId: string,
+    storedToken: { id: string },
+  ): Promise<never> {
+    const revokedSessionCount = await this.authRepository.revokeAllUserTokens(
+      userId,
+    );
+    const user = await this.userService.findById(userId);
+
+    this.publishLogoutEvent({
+      userId,
+      userEmail: user?.email ?? null,
+      userName: user?.name ?? null,
+      provider: 'refresh_token',
+      reason: 'suspicious_reuse',
+      revokedSessionCount,
+      sourceRefreshTokenId: storedToken.id,
+    });
+
+    throw refreshTokenReuseDetectedError();
+  }
+
+  private publishLogoutEvent(input: {
+    userId: string;
+    userEmail?: string | null;
+    userName?: string | null;
+    provider: 'refresh_token';
+    reason: 'manual_logout' | 'logout_all' | 'suspicious_reuse';
+    revokedSessionCount: number;
+    sourceRefreshTokenId?: string | null;
+  }): void {
+    this.domainEventBus.publish({
+      name: 'auth.logged_out',
+      occurredAt: new Date(),
+      payload: {
+        userId: input.userId,
+        userEmail: input.userEmail ?? null,
+        userName: input.userName ?? null,
+        provider: input.provider,
+        reason: input.reason,
+        revokedSessionCount: input.revokedSessionCount,
+        sourceRefreshTokenId: input.sourceRefreshTokenId ?? null,
+      },
     });
   }
 }

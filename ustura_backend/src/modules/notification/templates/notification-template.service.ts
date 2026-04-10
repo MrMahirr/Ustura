@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AuthSecurityNotificationPayload,
   NotificationChannelName,
   NotificationMessage,
   OwnerApprovedNotificationPayload,
@@ -77,6 +78,32 @@ export class NotificationTemplateService {
       metadata: {
         salonName: payload.salonName,
         approvedAt: payload.approvedAt.toISOString(),
+      },
+    };
+  }
+
+  buildAuthSecurityMessage(
+    payload: AuthSecurityNotificationPayload,
+  ): NotificationMessage {
+    const reasonLabel =
+      payload.reason === 'suspicious_reuse'
+        ? 'supheli oturum yenileme denemesi'
+        : 'tum cihazlardan cikis';
+
+    return {
+      key: 'auth.security',
+      recipient: {
+        email: payload.recipientEmail,
+        name: payload.recipientName ?? null,
+      },
+      subject: 'Ustura oturum guvenligi bildirimi',
+      body:
+        `${payload.recipientName ?? 'Merhaba'}, hesabiniz icin ${reasonLabel} ` +
+        `tespit edildi. Etkilenen oturum sayisi: ${payload.revokedSessionCount}.`,
+      channels: [NotificationChannelName.EMAIL],
+      metadata: {
+        reason: payload.reason,
+        revokedSessionCount: payload.revokedSessionCount,
       },
     };
   }
