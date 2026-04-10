@@ -7,6 +7,9 @@ import { Role } from '../../shared/auth/role.enum';
 import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
 import type { DatabaseTransaction } from '../../database/database.types';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
+import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
 import type { User } from '../user/interfaces/user.types';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
@@ -57,6 +60,7 @@ describe('AuthService', () => {
   let databaseService: jest.Mocked<DatabaseService>;
   let firebaseTokenVerifierService: jest.Mocked<FirebaseTokenVerifierService>;
   let googleWebTokenVerifierService: jest.Mocked<GoogleWebTokenVerifierService>;
+  let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
   let configService: AppConfigService;
   let transactionExecutor: DatabaseTransaction;
   let bcryptHashMock: jest.Mock;
@@ -112,6 +116,9 @@ describe('AuthService', () => {
     googleWebTokenVerifierService = {
       verifyCustomerAccessToken: jest.fn(),
     } as unknown as jest.Mocked<GoogleWebTokenVerifierService>;
+    auditLogService = {
+      recordBestEffort: jest.fn(),
+    };
 
     configService = {
       jwt: {
@@ -137,6 +144,7 @@ describe('AuthService', () => {
       databaseService,
       firebaseTokenVerifierService,
       googleWebTokenVerifierService,
+      auditLogService as AuditLogService,
     );
 
     bcryptHashMock = bcrypt.hash as jest.Mock;
@@ -191,6 +199,16 @@ describe('AuthService', () => {
       },
       databaseService,
     );
+    expect(auditLogService.recordBestEffort).toHaveBeenCalledWith({
+      actorUserId: 'user-1',
+      actorRole: Role.CUSTOMER,
+      action: AuditLogAction.AUTH_REGISTERED,
+      entityType: AuditLogEntityType.USER,
+      entityId: 'user-1',
+      metadata: {
+        provider: 'password',
+      },
+    });
     expect(result.tokens).toEqual({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
@@ -215,6 +233,7 @@ describe('AuthService', () => {
     });
 
     expect(saveRefreshTokenMock).not.toHaveBeenCalled();
+    expect(auditLogService.recordBestEffort).not.toHaveBeenCalled();
   });
 
   it('rotates refresh tokens inside a database transaction', async () => {
@@ -266,6 +285,16 @@ describe('AuthService', () => {
       },
       transactionExecutor,
     );
+    expect(auditLogService.recordBestEffort).toHaveBeenCalledWith({
+      actorUserId: 'user-1',
+      actorRole: Role.CUSTOMER,
+      action: AuditLogAction.AUTH_REFRESHED,
+      entityType: AuditLogEntityType.USER,
+      entityId: 'user-1',
+      metadata: {
+        provider: 'refresh_token',
+      },
+    });
     expect(result.tokens.refreshToken).toBe('next-refresh-token');
   });
 
@@ -434,5 +463,14 @@ describe('AuthService', () => {
     });
 
     expect(revokeTokenMock).toHaveBeenCalledWith(refreshHash, 'user-1');
+    expect(auditLogService.recordBestEffort).toHaveBeenCalledWith({
+      actorUserId: 'user-1',
+      action: AuditLogAction.AUTH_LOGGED_OUT,
+      entityType: AuditLogEntityType.USER,
+      entityId: 'user-1',
+      metadata: {
+        provider: 'refresh_token',
+      },
+    });
   });
 });

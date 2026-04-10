@@ -7,6 +7,9 @@ import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
 import type { SqlQueryExecutor } from '../../database/database.types';
 import { Role } from '../../shared/auth/role.enum';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
+import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
 import { UserService } from '../user/user.service';
 import type { User, UserProfile } from '../user/interfaces/user.types';
 import { GoogleCustomerAuthDto } from './dto/google-customer-auth.dto';
@@ -43,6 +46,7 @@ export class AuthService {
     private readonly databaseService: DatabaseService,
     private readonly firebaseTokenVerifierService: FirebaseTokenVerifierService,
     private readonly googleWebTokenVerifierService: GoogleWebTokenVerifierService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   getGoogleCustomerWebConfiguration(): { clientId: string | null } {
@@ -63,7 +67,13 @@ export class AuthService {
       passwordHash,
     });
 
-    return this.createSession(user);
+    const session = await this.createSession(user);
+
+    this.recordUserAudit(AuditLogAction.AUTH_REGISTERED, user, {
+      provider: 'password',
+    });
+
+    return session;
   }
 
   async login(loginDto: LoginDto): Promise<AuthSessionResponse> {
@@ -82,7 +92,13 @@ export class AuthService {
       throw invalidCredentialsError();
     }
 
-    return this.createSession(user);
+    const session = await this.createSession(user);
+
+    this.recordUserAudit(AuditLogAction.AUTH_LOGGED_IN, user, {
+      provider: 'password',
+    });
+
+    return session;
   }
 
   async authenticateCustomerWithGoogle(
@@ -99,7 +115,18 @@ export class AuthService {
 
     if (userByFirebaseUid) {
       this.assertCustomerGoogleEligibility(userByFirebaseUid);
-      return this.createSession(userByFirebaseUid);
+      const session = await this.createSession(userByFirebaseUid);
+
+      this.recordUserAudit(
+        AuditLogAction.AUTH_GOOGLE_CUSTOMER_AUTHENTICATED,
+        userByFirebaseUid,
+        {
+          provider: 'firebase_google',
+          linkedAccount: true,
+        },
+      );
+
+      return session;
     }
 
     const userByEmail = await this.userService.findByEmail(
@@ -123,7 +150,18 @@ export class AuthService {
             googleIdentity.firebaseUid,
           );
 
-      return this.createSession(linkedUser);
+      const session = await this.createSession(linkedUser);
+
+      this.recordUserAudit(
+        AuditLogAction.AUTH_GOOGLE_CUSTOMER_AUTHENTICATED,
+        linkedUser,
+        {
+          provider: 'firebase_google',
+          linkedAccount: !userByEmail.firebaseUid,
+        },
+      );
+
+      return session;
     }
 
     const phone = googleCustomerAuthDto.phone?.trim() ?? '';
@@ -136,7 +174,18 @@ export class AuthService {
       allowEmptyPhone: phone.length === 0,
     });
 
-    return this.createSession(customer);
+    const session = await this.createSession(customer);
+
+    this.recordUserAudit(
+      AuditLogAction.AUTH_GOOGLE_CUSTOMER_AUTHENTICATED,
+      customer,
+      {
+        provider: 'firebase_google',
+        linkedAccount: false,
+      },
+    );
+
+    return session;
   }
 
   async authenticateCustomerWithGoogleWeb(
@@ -150,7 +199,18 @@ export class AuthService {
 
     if (existingUser) {
       this.assertCustomerGoogleEligibility(existingUser);
-      return this.createSession(existingUser);
+      const session = await this.createSession(existingUser);
+
+      this.recordUserAudit(
+        AuditLogAction.AUTH_GOOGLE_WEB_CUSTOMER_AUTHENTICATED,
+        existingUser,
+        {
+          provider: 'google_web',
+          linkedAccount: true,
+        },
+      );
+
+      return session;
     }
 
     const customer = await this.userService.createCustomer({
@@ -161,7 +221,18 @@ export class AuthService {
       allowEmptyPhone: true,
     });
 
-    return this.createSession(customer);
+    const session = await this.createSession(customer);
+
+    this.recordUserAudit(
+      AuditLogAction.AUTH_GOOGLE_WEB_CUSTOMER_AUTHENTICATED,
+      customer,
+      {
+        provider: 'google_web',
+        linkedAccount: false,
+      },
+    );
+
+    return session;
   }
 
   async refreshToken(
@@ -188,7 +259,7 @@ export class AuthService {
       throw refreshTokenInvalidError();
     }
 
-    return this.databaseService.transaction(async (transaction) => {
+    const session = await this.databaseService.transaction(async (transaction) => {
       const revoked = await this.authRepository.revokeToken(
         tokenHash,
         user.id,
@@ -201,6 +272,12 @@ export class AuthService {
 
       return this.createSession(user, transaction);
     });
+
+    this.recordUserAudit(AuditLogAction.AUTH_REFRESHED, user, {
+      provider: 'refresh_token',
+    });
+
+    return session;
   }
 
   async logout(
@@ -215,6 +292,16 @@ export class AuthService {
         'Refresh token is invalid or already revoked.',
       );
     }
+
+    this.auditLogService.recordBestEffort({
+      actorUserId: userId,
+      action: AuditLogAction.AUTH_LOGGED_OUT,
+      entityType: AuditLogEntityType.USER,
+      entityId: userId,
+      metadata: {
+        provider: 'refresh_token',
+      },
+    });
 
     return { success: true };
   }
@@ -354,5 +441,20 @@ export class AuthService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  private recordUserAudit(
+    action: AuditLogAction,
+    user: User,
+    metadata?: Record<string, unknown>,
+  ): void {
+    this.auditLogService.recordBestEffort({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action,
+      entityType: AuditLogEntityType.USER,
+      entityId: user.id,
+      metadata,
+    });
   }
 }

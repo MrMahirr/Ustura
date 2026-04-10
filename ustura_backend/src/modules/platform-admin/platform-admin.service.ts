@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../../database/database.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { NotificationService } from '../notification/notification.service';
 import { SalonService } from '../salon/salon.service';
 import { UserService } from '../user/user.service';
 import { CreateOwnerApplicationDto } from './dto/create-owner-application.dto';
@@ -20,6 +21,7 @@ import { PlatformAdminRepository } from './repositories/platform-admin.repositor
 @Injectable()
 export class PlatformAdminService {
   private readonly passwordCost = 12;
+  private readonly logger = new Logger(PlatformAdminService.name);
 
   constructor(
     private readonly platformAdminRepository: PlatformAdminRepository,
@@ -27,6 +29,7 @@ export class PlatformAdminService {
     private readonly databaseService: DatabaseService,
     private readonly userService: UserService,
     private readonly salonService: SalonService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createOwnerApplication(
@@ -87,7 +90,7 @@ export class PlatformAdminService {
   ): Promise<OwnerApplication> {
     this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
 
-    return this.databaseService.transaction(async (transaction) => {
+    const approvedApplication = await this.databaseService.transaction(async (transaction) => {
       const application =
         await this.platformAdminRepository.findByIdForUpdate(
           applicationId,
@@ -138,6 +141,10 @@ export class PlatformAdminService {
 
       return this.toOwnerApplication(approvedApplication);
     });
+
+    this.notifyOwnerApprovedBestEffort(approvedApplication);
+
+    return approvedApplication;
   }
 
   async rejectOwnerApplication(
@@ -190,5 +197,25 @@ export class PlatformAdminService {
   ): OwnerApplication {
     const { passwordHash: _passwordHash, ...ownerApplication } = application;
     return ownerApplication;
+  }
+
+  private notifyOwnerApprovedBestEffort(
+    ownerApplication: OwnerApplication,
+  ): void {
+    try {
+      this.notificationService.sendOwnerApprovedBestEffort({
+        recipientEmail: ownerApplication.applicantEmail,
+        recipientName: ownerApplication.applicantName,
+        salonName: ownerApplication.salonName,
+        approvedAt: ownerApplication.reviewedAt ?? new Date(),
+      });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown notification setup error.';
+
+      this.logger.warn(
+        `Owner approved notification setup skipped: ${message}`,
+      );
+    }
   }
 }

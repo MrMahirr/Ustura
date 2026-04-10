@@ -11,6 +11,9 @@ export class StaffResponseDto {
   @ApiProperty({ format: 'uuid' })
   salonId: string;
 
+  @ApiProperty()
+  displayName: string;
+
   @ApiProperty({ enum: [Role.BARBER, Role.RECEPTIONIST] })
   role: Role.BARBER | Role.RECEPTIONIST;
 

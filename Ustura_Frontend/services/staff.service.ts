@@ -1,5 +1,22 @@
-// TODO: Staff API çağrıları
-// - getStaffBySalon(salonId)
-// - createStaff(salonId, data)
-// - updateStaff(salonId, staffId, data)
-// - deleteStaff(salonId, staffId)
+import { apiRequest } from '@/services/api';
+
+export type StaffRole = 'barber' | 'receptionist';
+
+export interface StaffRecord {
+  id: string;
+  userId: string;
+  salonId: string;
+  displayName: string;
+  role: StaffRole;
+  bio: string | null;
+  photoUrl: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getStaffBySalon(salonId: string) {
+  return apiRequest<StaffRecord[]>({
+    path: `/salons/${salonId}/staff`,
+  });
+}

@@ -58,23 +58,23 @@ Durum tarihi: 2026-04-09
 
 ## 5. Audit Log Modülünü Ekle
 
-- [ ] `AuditLogModule` oluştur.
-- [ ] `audit_logs` tablosu için migration yaz.
-- [ ] Auth olayları için audit kayıtları ekle.
-- [ ] Staff oluşturma/güncelleme/silme olayları için audit kayıtları ekle.
-- [ ] Reservation oluşturma/iptal/status değişim olayları için audit kayıtları ekle.
-- [ ] Gerekirse admin-only audit listeleme endpoint'i tasarla.
-- [ ] Audit kayıtlarının business transaction'ı bloklamadığını doğrula.
+- [x] `AuditLogModule` oluştur.
+- [x] `audit_logs` tablosu için migration yaz.
+- [x] Auth olayları için audit kayıtları ekle.
+- [x] Staff oluşturma/güncelleme/silme olayları için audit kayıtları ekle.
+- [x] Reservation oluşturma/iptal/status değişim olayları için audit kayıtları ekle.
+- [x] Gerekirse admin-only audit listeleme endpoint'i tasarla.
+- [x] Audit kayıtlarının business transaction'ı bloklamadığını doğrula.
 
 ## 6. Notification Modülünü Ekle
 
-- [ ] `NotificationModule` oluştur.
-- [ ] Reservation oluşturuldu olayında bildirim akışı ekle.
-- [ ] Reservation iptal edildi olayında bildirim akışı ekle.
-- [ ] Owner onaylandı olayında bildirim akışı ekle.
-- [ ] Bildirim teslim hatalarını ana transaction'dan bağımsız ele al.
-- [ ] Şablon ve kanal seçimlerini modül içinde soyutla.
-- [ ] Bildirim akışları için en azından unit test seviyesinde kapsama ekle.
+- [x] `NotificationModule` oluştur.
+- [x] Reservation oluşturuldu olayında bildirim akışı ekle.
+- [x] Reservation iptal edildi olayında bildirim akışı ekle.
+- [x] Owner onaylandı olayında bildirim akışı ekle.
+- [x] Bildirim teslim hatalarını ana transaction'dan bağımsız ele al.
+- [x] Şablon ve kanal seçimlerini modül içinde soyutla.
+- [x] Bildirim akışları için en azından unit test seviyesinde kapsama ekle.
 
 ## 7. Event-Driven Yan Etkileri Kur
 

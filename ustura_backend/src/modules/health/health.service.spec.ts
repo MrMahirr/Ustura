@@ -63,6 +63,7 @@ describe('HealthService', () => {
           { filename: '002_add_customer_google_auth.sql' },
           { filename: '003_rework_reservation_schema.sql' },
           { filename: '004_create_owner_applications.sql' },
+          { filename: '005_create_audit_logs.sql' },
         ],
       })
       .mockResolvedValueOnce({
@@ -153,6 +154,7 @@ describe('HealthService', () => {
           { filename: '002_add_customer_google_auth.sql' },
           { filename: '003_rework_reservation_schema.sql' },
           { filename: '004_create_owner_applications.sql' },
+          { filename: '005_create_audit_logs.sql' },
         ],
       })
       .mockResolvedValueOnce({
