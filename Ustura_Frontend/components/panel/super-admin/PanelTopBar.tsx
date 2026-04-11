@@ -103,7 +103,7 @@ export default function PanelTopBar({ query, onQueryChange }: PanelTopBarProps) 
         <View className="ml-2 flex-row items-center gap-3">
           <View className="items-end">
             <Text className="font-body text-xs font-bold" style={{ color: adminTheme.onSurface }}>
-              Super Admin
+              Ana Yonetici
             </Text>
             <Text className="mt-0.5 font-label text-[10px]" style={{ color: adminTheme.onSurfaceVariant, opacity: 0.85 }}>
               Sistem Yoneticisi

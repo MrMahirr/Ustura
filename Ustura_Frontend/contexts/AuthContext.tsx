@@ -3,13 +3,14 @@ import { Platform } from 'react-native';
 
 import { configureApiAuth } from '@/services/api';
 import {
+  type AuthSession,
   getGoogleCustomerWebConfiguration,
-  loginCustomer,
+  loginWithPassword,
   loginCustomerWithGoogleWeb,
-  logoutCustomerSession,
-  refreshCustomerSession,
+  logoutSession,
+  refreshSession as refreshAuthSession,
   registerCustomer,
-  type CustomerSession,
+  type SessionRole,
   type SessionTokens,
 } from '@/services/auth.service';
 import {
@@ -17,7 +18,7 @@ import {
   requestGoogleWebAccessToken,
 } from '@/services/google-auth.service';
 
-export type AuthUserRole = 'customer';
+export type AuthUserRole = SessionRole;
 
 export interface AuthUser {
   id: string;
@@ -52,6 +53,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isGoogleLoginLoading: boolean;
   login: (input: LoginInput) => Promise<AuthUser>;
+  loginSuperAdmin: (input: LoginInput) => Promise<AuthUser>;
   loginWithGoogle: () => Promise<AuthUser>;
   register: (input: RegistrationInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
@@ -67,6 +69,9 @@ const AuthContext = createContext<AuthContextValue>({
   login: async () => {
     throw new Error('AuthContext hazir degil.');
   },
+  loginSuperAdmin: async () => {
+    throw new Error('AuthContext hazir degil.');
+  },
   loginWithGoogle: async () => {
     throw new Error('AuthContext hazir degil.');
   },
@@ -77,6 +82,13 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 let nativeSessionFallback: StoredSession | null = null;
+const AUTH_USER_ROLES: readonly AuthUserRole[] = [
+  'customer',
+  'owner',
+  'barber',
+  'receptionist',
+  'super_admin',
+];
 
 function normalizeWhitespace(value: string) {
   return value.trim().replace(/\s+/g, ' ');
@@ -97,6 +109,10 @@ function createInitials(fullName: string) {
     .slice(0, 2)
     .map((segment) => segment.charAt(0).toLocaleUpperCase('tr-TR'))
     .join('');
+}
+
+function isAuthUserRole(value: unknown): value is AuthUserRole {
+  return typeof value === 'string' && AUTH_USER_ROLES.includes(value as AuthUserRole);
 }
 
 function isSessionTokens(value: unknown): value is SessionTokens {
@@ -126,7 +142,7 @@ function isAuthUser(value: unknown): value is AuthUser {
     typeof candidate.fullName === 'string' &&
     typeof candidate.initials === 'string' &&
     typeof candidate.identifier === 'string' &&
-    candidate.role === 'customer'
+    isAuthUserRole(candidate.role)
   );
 }
 
@@ -172,9 +188,25 @@ function writeStoredSession(session: StoredSession | null) {
   nativeSessionFallback = session;
 }
 
-function mapCustomerSession(session: CustomerSession): StoredSession {
-  const normalizedFullName = normalizeWhitespace(session.user.name) || 'Ustura Musterisi';
-  const normalizedEmail = normalizeEmail(session.user.email);
+function mapSessionIdentifier(session: AuthSession) {
+  const normalizedEmail = normalizeEmail(session.user.email ?? '');
+
+  if (normalizedEmail) {
+    return normalizedEmail;
+  }
+
+  const normalizedPhone = normalizeWhitespace(session.user.phone ?? '');
+
+  if (normalizedPhone) {
+    return normalizedPhone;
+  }
+
+  return session.user.id;
+}
+
+function mapAuthSession(session: AuthSession): StoredSession {
+  const normalizedFullName = normalizeWhitespace(session.user.name) || 'Ustura Kullanicisi';
+  const normalizedEmail = normalizeEmail(session.user.email ?? '');
   const normalizedPhone = normalizeWhitespace(session.user.phone ?? '');
 
   return {
@@ -182,13 +214,25 @@ function mapCustomerSession(session: CustomerSession): StoredSession {
       id: session.user.id,
       fullName: normalizedFullName,
       initials: createInitials(normalizedFullName),
-      identifier: normalizedEmail,
-      email: normalizedEmail,
+      identifier: mapSessionIdentifier(session),
+      email: normalizedEmail || undefined,
       phone: normalizedPhone || undefined,
-      role: 'customer',
+      role: session.user.role,
     },
     tokens: session.tokens,
   };
+}
+
+function ensureExpectedRole(session: AuthSession, expectedRole: AuthUserRole) {
+  if (session.user.role === expectedRole) {
+    return session;
+  }
+
+  if (expectedRole === 'super_admin') {
+    throw new Error('Bu hesap super-admin paneline erisim yetkisine sahip degil.');
+  }
+
+  throw new Error('Bu giris ekrani yalnizca musteri hesaplari icindir.');
 }
 
 function clearCurrentSession(
@@ -255,8 +299,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const nextSession = mapCustomerSession(
-        await refreshCustomerSession(currentRefreshToken),
+      const nextSession = mapAuthSession(
+        await refreshAuthSession(currentRefreshToken),
       );
       sessionRef.current = nextSession;
       setSession(nextSession);
@@ -285,11 +329,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: session != null,
       isGoogleLoginLoading,
       login: async (input) => {
-        const nextSession = mapCustomerSession(
-          await loginCustomer({
-            email: normalizeEmail(input.identifier),
-            password: input.password.trim(),
-          }),
+        const nextSession = mapAuthSession(
+          ensureExpectedRole(
+            await loginWithPassword({
+              email: normalizeEmail(input.identifier),
+              password: input.password.trim(),
+            }),
+            'customer',
+          ),
+        );
+        setSession(nextSession);
+        return nextSession.user;
+      },
+      loginSuperAdmin: async (input) => {
+        const nextSession = mapAuthSession(
+          ensureExpectedRole(
+            await loginWithPassword({
+              email: normalizeEmail(input.identifier),
+              password: input.password.trim(),
+            }),
+            'super_admin',
+          ),
         );
         setSession(nextSession);
         return nextSession.user;
@@ -317,7 +377,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const googleAccessToken = await requestGoogleWebAccessToken(clientId);
-        const nextSession = mapCustomerSession(
+        const nextSession = mapAuthSession(
           await loginCustomerWithGoogleWeb({
             accessToken: googleAccessToken,
           }),
@@ -327,7 +387,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return nextSession.user;
       },
       register: async (input) => {
-        const nextSession = mapCustomerSession(
+        const nextSession = mapAuthSession(
           await registerCustomer({
             name: normalizeWhitespace(input.fullName),
             phone: normalizeWhitespace(input.phone),
@@ -343,7 +403,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
           if (refreshToken) {
-            await logoutCustomerSession(refreshToken);
+            await logoutSession(refreshToken);
           }
         } catch {
         } finally {

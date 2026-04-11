@@ -60,7 +60,7 @@ export default function BookingTopBar({ compact, title }: BookingTopBarProps) {
           </Text>
           {!compact ? (
             <Text className="font-label text-[10px] uppercase tracking-[3px]" style={{ color: hexToRgba(onSurface, 0.42) }}>
-              Premium Booking Flow
+              Ozel Randevu Akisi
             </Text>
           ) : null}
         </View>

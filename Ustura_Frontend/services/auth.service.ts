@@ -20,10 +20,12 @@ export interface SessionUser {
   updatedAt: string;
 }
 
-export interface CustomerSession {
+export interface AuthSession {
   user: SessionUser;
   tokens: SessionTokens;
 }
+
+export type CustomerSession = AuthSession;
 
 interface GoogleCustomerWebConfiguration {
   clientId: string | null;
@@ -36,7 +38,7 @@ interface RegisterCustomerPayload {
   password: string;
 }
 
-interface LoginCustomerPayload {
+interface LoginWithPasswordPayload {
   email: string;
   password: string;
 }
@@ -54,19 +56,23 @@ interface LogoutPayload {
 }
 
 export async function registerCustomer(payload: RegisterCustomerPayload) {
-  return apiRequest<CustomerSession, RegisterCustomerPayload>({
+  return apiRequest<AuthSession, RegisterCustomerPayload>({
     path: '/auth/register',
     method: 'POST',
     body: payload,
   });
 }
 
-export async function loginCustomer(payload: LoginCustomerPayload) {
-  return apiRequest<CustomerSession, LoginCustomerPayload>({
+export async function loginWithPassword(payload: LoginWithPasswordPayload) {
+  return apiRequest<AuthSession, LoginWithPasswordPayload>({
     path: '/auth/login',
     method: 'POST',
     body: payload,
   });
+}
+
+export async function loginCustomer(payload: LoginWithPasswordPayload) {
+  return loginWithPassword(payload);
 }
 
 export async function getGoogleCustomerWebConfiguration() {
@@ -79,15 +85,15 @@ export async function getGoogleCustomerWebConfiguration() {
 export async function loginCustomerWithGoogleWeb(
   payload: LoginCustomerWithGoogleWebPayload,
 ) {
-  return apiRequest<CustomerSession, LoginCustomerWithGoogleWebPayload>({
+  return apiRequest<AuthSession, LoginCustomerWithGoogleWebPayload>({
     path: '/auth/google/customer/web',
     method: 'POST',
     body: payload,
   });
 }
 
-export async function refreshCustomerSession(refreshToken: string) {
-  return apiRequest<CustomerSession, RefreshSessionPayload>({
+export async function refreshSession(refreshToken: string) {
+  return apiRequest<AuthSession, RefreshSessionPayload>({
     path: '/auth/refresh',
     method: 'POST',
     body: { refreshToken },
@@ -95,11 +101,19 @@ export async function refreshCustomerSession(refreshToken: string) {
   });
 }
 
-export async function logoutCustomerSession(refreshToken: string) {
+export async function refreshCustomerSession(refreshToken: string) {
+  return refreshSession(refreshToken);
+}
+
+export async function logoutSession(refreshToken: string) {
   return apiRequest<{ success: boolean }, LogoutPayload>({
     path: '/auth/logout',
     method: 'POST',
     body: { refreshToken },
     auth: true,
   });
+}
+
+export async function logoutCustomerSession(refreshToken: string) {
+  return logoutSession(refreshToken);
 }

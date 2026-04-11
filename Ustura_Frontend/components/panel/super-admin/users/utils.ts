@@ -19,7 +19,7 @@ export function getRolePalette(
   role: UserRole,
   theme: Pick<SuperAdminTheme, 'primary' | 'secondary' | 'onSurfaceVariant' | 'cardBackgroundStrong'>
 ) {
-  if (role === 'Admin') {
+  if (role === 'Yonetici') {
     return {
       color: theme.primary,
       backgroundColor: hexToRgba(theme.primary, 0.14),
@@ -27,7 +27,7 @@ export function getRolePalette(
     };
   }
 
-  if (role === 'Owner') {
+  if (role === 'Sahip') {
     return {
       color: theme.secondary,
       backgroundColor: hexToRgba(theme.secondary, 0.12),
@@ -83,7 +83,7 @@ export function getOccupancyRatio(dailyCapacity?: UserRecord['dailyCapacity']) {
 
 export function formatOccupancy(dailyCapacity?: UserRecord['dailyCapacity']) {
   if (!dailyCapacity) {
-    return 'N/A';
+    return 'Yok';
   }
 
   return `${dailyCapacity.booked}/${dailyCapacity.total}`;
@@ -96,7 +96,7 @@ export function getUserActions(
 ): UserAction[] {
   const muted = hexToRgba(theme.onSurfaceVariant, 0.78);
 
-  if (role === 'Admin') {
+  if (role === 'Yonetici') {
     return [
       { icon: 'visibility', label: 'Detay', color: theme.primary },
       { icon: 'edit', label: 'Duzenle', color: theme.primary },

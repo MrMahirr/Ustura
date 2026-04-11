@@ -215,7 +215,7 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
               style={[
                 {
                   marginRight: 12,
-                  padding: 2,
+                  padding: 1,
                   borderRadius: 10,
                   borderWidth: 1,
                   borderColor: theme === 'light' ? hexToRgba(primary, 0.2) : hexToRgba(primary, 0.16),

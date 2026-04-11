@@ -3,12 +3,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import type { SalonRecord } from '@/components/panel/super-admin/salon-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
 import SalonActionIcon from './SalonActionIcon';
-import { getPlanPalette, getRowActions, getStatusPalette } from './utils';
+import type { SalonListItem } from './types';
+import { getRowActions, getStatusPalette } from './utils';
 
 const cellSalonStyle = { flex: 2.4 } as const;
 const cellOwnerStyle = { flex: 1.6, paddingRight: 20 } as const;
@@ -17,10 +17,9 @@ const cellStatusStyle = { flex: 1.05, paddingRight: 16 } as const;
 const cellPlanStyle = { flex: 0.95, paddingRight: 16 } as const;
 const cellActionsStyle = { flex: 1.1, alignItems: 'flex-end' as const } as const;
 
-export default function SalonRow({ salon, onPress }: { salon: SalonRecord; onPress?: () => void }) {
+export default function SalonRow({ salon, onPress }: { salon: SalonListItem; onPress?: () => void }) {
   const adminTheme = useSuperAdminTheme();
   const statusPalette = getStatusPalette(salon.status, adminTheme);
-  const planPalette = getPlanPalette(salon.plan, adminTheme);
   const actions = getRowActions(salon.status, adminTheme);
 
   return (
@@ -92,18 +91,9 @@ export default function SalonRow({ salon, onPress }: { salon: SalonRecord; onPre
           </View>
 
           <View className="min-w-0 justify-center py-[18px]" style={cellPlanStyle}>
-            <View className="flex-row items-center gap-2">
-              <View
-                className="h-2 w-2 rounded-full"
-                style={[
-                  { backgroundColor: planPalette.dot },
-                  Platform.OS === 'web' && planPalette.glow !== 'transparent' ? ({ boxShadow: `0 0 12px ${planPalette.glow}` } as any) : null,
-                ]}
-              />
-              <Text className="font-body text-xs" style={{ color: planPalette.text, fontFamily: 'Manrope-Bold' }}>
-                {salon.plan}
-              </Text>
-            </View>
+            <Text className="font-body text-xs" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
+              {salon.joinedAtLabel}
+            </Text>
           </View>
 
           <View className="min-w-0 justify-center py-[18px]" style={cellActionsStyle}>

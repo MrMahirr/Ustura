@@ -19,7 +19,7 @@ export const BOOKING_COPY = {
   pageDescription: 'Size en uygun uzmani secin veya rastgele bir secimle devam edin.',
   anyBarberTitle: 'Herhangi Bir Berber',
   anyBarberDescription: 'Siradaki ilk musait uzmanla eslesin',
-  footerBrand: 'THE OBSIDIAN ATELIER',
+  footerBrand: 'OBSIDYEN ATOLYESI',
   backLabel: 'Geri',
   continueLabel: 'Devam Et',
   timeStepTitle: 'Zaman secim adimi hazirlaniyor.',
@@ -79,7 +79,7 @@ const BOOKING_STAFF: BookingStaffProfile[] = [
     id: '2-murat',
     salonId: '2',
     name: 'Murat K.',
-    specialty: 'Premium Fade',
+    specialty: 'Ozel Fade',
     rating: 4.9,
     reviewCount: 162,
     imageUri:
@@ -119,7 +119,7 @@ const BOOKING_STAFF: BookingStaffProfile[] = [
     id: '3-volkan',
     salonId: '3',
     name: 'Volkan T.',
-    specialty: 'Master Fade',
+    specialty: 'Usta Fade',
     rating: 5.0,
     reviewCount: 192,
     imageUri:

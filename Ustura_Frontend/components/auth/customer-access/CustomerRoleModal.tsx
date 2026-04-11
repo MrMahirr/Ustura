@@ -31,7 +31,7 @@ export default function CustomerRoleModal({
             Hesap Tipi Sec
           </Text>
           <Text className="mt-1 font-body text-sm" style={{ color: hexToRgba(theme.onSurfaceVariant, 0.78) }}>
-            Musteri kaydi self-service olarak ilerler. Diger roller dogru auth yoluna yonlendirme icin listelenir.
+            Musteri kaydi kendi kayit olarak ilerler. Diger roller dogru giris yoluna yonlendirme icin listelenir.
           </Text>
         </View>
 
@@ -78,7 +78,7 @@ export default function CustomerRoleModal({
                                   ? theme.primary
                                   : hexToRgba(theme.onSurfaceVariant, 0.8),
                             }}>
-                            {option.availability === 'self-service' ? 'Self Service' : 'Yonlendirme'}
+                            {option.availability === 'self-service' ? 'Kendi Kaydi' : 'Yonlendirme'}
                           </Text>
                         </View>
                       </View>

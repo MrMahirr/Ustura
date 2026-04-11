@@ -1,4 +1,13 @@
-import { IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class FindSalonsQueryDto {
   @IsOptional()
@@ -10,4 +19,15 @@ export class FindSalonsQueryDto {
   @IsString()
   @MaxLength(120)
   search?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  pageSize = 6;
 }

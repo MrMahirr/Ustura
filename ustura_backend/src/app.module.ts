@@ -14,6 +14,7 @@ import { UserModule } from './modules/user/user.module';
 import { SalonModule } from './modules/salon/salon.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { ReservationModule } from './modules/reservation/reservation.module';
+import { PackageModule } from './modules/package/package.module';
 import { StartupValidationService } from './startup/startup-validation.service';
 
 @Module({
@@ -38,6 +39,7 @@ import { StartupValidationService } from './startup/startup-validation.service';
     SalonModule,
     StaffModule,
     ReservationModule,
+    PackageModule,
   ],
   controllers: [],
   providers: [

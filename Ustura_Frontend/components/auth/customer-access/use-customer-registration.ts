@@ -41,10 +41,10 @@ function validateEmail(value: string): string | undefined {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    return 'Email alani zorunludur.';
+    return 'E-posta alani zorunludur.';
   }
 
-  return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir email adresi gir.';
+  return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir e-posta adresi gir.';
 }
 
 function validatePassword(value: string): string | undefined {

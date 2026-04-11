@@ -52,7 +52,7 @@ export async function getAvailableSlots(salonId: string, query: SlotQuery) {
     path: `/salons/${salonId}/slots`,
     query: {
       date: query.date,
-      staff_id: query.staffId ?? undefined,
+      staffId: query.staffId ?? undefined,
     },
   });
 

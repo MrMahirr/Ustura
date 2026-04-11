@@ -10,6 +10,7 @@ export const panelRoutes = {
   salonlar: route('/panel/salonlar'),
   kullanicilar: route('/panel/kullanicilar'),
   randevular: route('/panel/randevular'),
+  paketler: route('/panel/paketler'),
   berber: route('/panel/berber'),
   personel: route('/panel/personel'),
   ayarlar: route('/panel/ayarlar'),

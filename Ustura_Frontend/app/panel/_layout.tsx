@@ -1,8 +1,9 @@
 import React from 'react';
-import { Slot } from 'expo-router';
+import { Redirect, Slot } from 'expo-router';
 import { Platform, View, useWindowDimensions } from 'react-native';
 
 import SuperAdminAside from '@/components/panel/super-admin/SuperAdminAside';
+import { useAuth } from '@/hooks/use-auth';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 
 const SIDEBAR_WIDTH = 256;
@@ -11,6 +12,7 @@ const SIDEBAR_COLLAPSED_WIDTH = 88;
 export default function PanelLayout() {
   const { width } = useWindowDimensions();
   const adminTheme = useSuperAdminTheme();
+  const { isAuthenticated, role } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const isDesktop = width >= 1100;
   const sidebarFixedWeb = Platform.OS === 'web' && isDesktop;
@@ -21,6 +23,10 @@ export default function PanelLayout() {
       setIsSidebarCollapsed(false);
     }
   }, [isDesktop, isSidebarCollapsed]);
+
+  if (!isAuthenticated || role !== 'super_admin') {
+    return <Redirect href="/super-admin/giris" />;
+  }
 
   return (
     <View

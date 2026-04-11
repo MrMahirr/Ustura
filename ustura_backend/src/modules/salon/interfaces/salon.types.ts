@@ -40,6 +40,66 @@ export interface FindSalonsFilters {
   includeInactive?: boolean;
 }
 
+export interface FindPaginatedSalonsFilters extends FindSalonsFilters {
+  page: number;
+  pageSize: number;
+}
+
+export type AdminSalonStatusFilter = 'active' | 'inactive';
+export type AdminSalonSort = 'newest' | 'name_asc' | 'name_desc' | 'updated_desc';
+
+export interface FindAdminSalonsFilters {
+  search?: string;
+  city?: string;
+  status?: AdminSalonStatusFilter;
+  sort: AdminSalonSort;
+  page: number;
+  pageSize: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface PaginatedResult<TItem> {
+  items: TItem[];
+  pagination: PaginationMeta;
+}
+
+export interface AdminSalonSummary {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  name: string;
+  address: string;
+  city: string;
+  district: string | null;
+  photoUrl: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AdminSalonOverview {
+  total: number;
+  active: number;
+  inactive: number;
+  cityCount: number;
+  newLast30Days: number;
+}
+
+export interface PaginatedAdminSalonResult {
+  items: AdminSalonSummary[];
+  pagination: PaginationMeta;
+  overview: AdminSalonOverview;
+}
+
 export interface CreateSalonInput {
   ownerId: string;
   name: string;

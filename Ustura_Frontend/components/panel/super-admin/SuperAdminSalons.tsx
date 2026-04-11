@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
-import { salonOverview } from '@/components/panel/super-admin/salon-management.data';
 import SalonFilters from '@/components/panel/super-admin/salons/SalonFilters';
 import SalonInsightsSection from '@/components/panel/super-admin/salons/SalonInsightsSection';
 import SalonListSection from '@/components/panel/super-admin/salons/SalonListSection';
@@ -53,12 +52,15 @@ export default function SuperAdminSalons() {
           <SalonFilters
             filterBasis={filterBasis}
             selectedStatus={salonManagement.selectedStatus}
-            selectedPlan={salonManagement.selectedPlan}
+            selectedCity={salonManagement.selectedCity}
             selectedSort={salonManagement.selectedSort}
-            totalRecords={salonOverview.totalRecords}
-            onCycleStatus={salonManagement.cycleStatus}
-            onCyclePlan={salonManagement.cyclePlan}
-            onCycleSort={salonManagement.cycleSort}
+            statusOptions={salonManagement.statusOptions}
+            cityOptions={salonManagement.cityOptions}
+            sortOptions={salonManagement.sortOptions}
+            totalRecords={salonManagement.totalRecords}
+            onStatusChange={salonManagement.setSelectedStatus}
+            onCityChange={salonManagement.setSelectedCity}
+            onSortChange={salonManagement.setSelectedSort}
           />
 
           <SalonListSection
@@ -69,11 +71,18 @@ export default function SuperAdminSalons() {
             startRow={salonManagement.startRow}
             endRow={salonManagement.endRow}
             useDesktopTable={useDesktopTable}
+            isLoading={salonManagement.isLoading}
+            errorMessage={salonManagement.errorMessage}
             onPageChange={salonManagement.setPage}
+            onRetry={salonManagement.reload}
             onOpenSalon={(salonId) => router.push(buildPanelSalonDetailRoute(salonId))}
           />
 
-          <SalonInsightsSection isTablet={isTablet} overview={salonOverview} />
+          <SalonInsightsSection
+            isTablet={isTablet}
+            overview={salonManagement.overview}
+            onRefresh={salonManagement.reload}
+          />
         </View>
       </ScrollView>
     </View>

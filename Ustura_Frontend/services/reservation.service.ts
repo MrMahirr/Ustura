@@ -28,15 +28,15 @@ export interface CreateReservationInput {
 }
 
 interface CreateReservationPayload {
-  salon_id: string;
-  staff_id: string;
-  slot_start: string;
+  salonId: string;
+  staffId: string;
+  slotStart: string;
   notes?: string;
-  customer_id?: string;
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  selection_owner_id?: string;
+  customerId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  selectionOwnerId?: string;
 }
 
 export async function createReservation(input: CreateReservationInput) {
@@ -45,15 +45,15 @@ export async function createReservation(input: CreateReservationInput) {
     method: 'POST',
     auth: true,
     body: {
-      salon_id: input.salonId,
-      staff_id: input.staffId,
-      slot_start: input.slotStart,
+      salonId: input.salonId,
+      staffId: input.staffId,
+      slotStart: input.slotStart,
       notes: input.notes,
-      customer_id: input.customerId,
-      customer_name: input.customerName,
-      customer_email: input.customerEmail,
-      customer_phone: input.customerPhone,
-      selection_owner_id: input.selectionOwnerId,
+      customerId: input.customerId,
+      customerName: input.customerName,
+      customerEmail: input.customerEmail,
+      customerPhone: input.customerPhone,
+      selectionOwnerId: input.selectionOwnerId,
     },
   });
 }

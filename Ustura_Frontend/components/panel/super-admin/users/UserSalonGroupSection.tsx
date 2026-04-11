@@ -15,7 +15,7 @@ function getPlanBadgeColors(
   plan: GroupedSalonRecord['plan'],
   theme: ReturnType<typeof useSuperAdminTheme>
 ) {
-  if (plan === 'Premium') {
+  if (plan === 'Ozel') {
     return {
       backgroundColor: hexToRgba(theme.primary, 0.14),
       borderColor: hexToRgba(theme.primary, 0.22),
@@ -23,7 +23,7 @@ function getPlanBadgeColors(
     };
   }
 
-  if (plan === 'Pro') {
+  if (plan === 'Gelismis') {
     return {
       backgroundColor: hexToRgba(theme.secondary, 0.14),
       borderColor: hexToRgba(theme.secondary, 0.22),
@@ -95,12 +95,12 @@ export default function UserSalonGroupSection({
               className={userClassNames.sectionIconFrame}
               style={{
                 backgroundColor: adminTheme.cardBackgroundStrong,
-                borderColor: group.plan === 'Premium' ? hexToRgba(adminTheme.primary, 0.22) : adminTheme.borderSubtle,
+                borderColor: group.plan === 'Ozel' ? hexToRgba(adminTheme.primary, 0.22) : adminTheme.borderSubtle,
               }}>
               <MaterialIcons
                 name="storefront"
                 size={24}
-                color={group.plan === 'Premium' ? adminTheme.primary : hexToRgba(adminTheme.onSurfaceVariant, 0.82)}
+                color={group.plan === 'Ozel' ? adminTheme.primary : hexToRgba(adminTheme.onSurfaceVariant, 0.82)}
               />
             </View>
 

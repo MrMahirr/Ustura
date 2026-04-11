@@ -8,7 +8,10 @@ import { AppConfigService } from '../../config/config.service';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
-import type { Salon } from './interfaces/salon.types';
+import type {
+  PaginatedResult,
+  Salon,
+} from './interfaces/salon.types';
 import { SalonPolicy } from './policies/salon.policy';
 import { SalonProjectionService } from './salon-projection.service';
 import { SalonOwnershipService } from './salon-ownership.service';
@@ -74,6 +77,8 @@ describe('SalonService', () => {
   beforeEach(() => {
     salonRepository = {
       findAll: jest.fn(),
+      findPublicPage: jest.fn(),
+      findDistinctCities: jest.fn(),
       findById: jest.fn(),
       findByOwnerId: jest.fn(),
       create: jest.fn(),
@@ -114,26 +119,60 @@ describe('SalonService', () => {
   });
 
   it('returns simplified public salon summaries for discovery', async () => {
-    salonRepository.findAll.mockResolvedValue([createSalon()]);
+    const paginatedResult: PaginatedResult<Salon> = {
+      items: [createSalon()],
+      pagination: {
+        page: 2,
+        pageSize: 3,
+        total: 7,
+        totalPages: 3,
+        hasNextPage: true,
+        hasPreviousPage: true,
+      },
+    };
+    salonRepository.findPublicPage.mockResolvedValue(paginatedResult);
 
     const result = await salonService.findAll({
       city: ' Istanbul ',
       search: ' Barber ',
+      page: 2,
+      pageSize: 3,
     });
 
-    expect(salonRepository.findAll).toHaveBeenCalledWith({
+    expect(salonRepository.findPublicPage).toHaveBeenCalledWith({
       city: 'Istanbul',
       search: 'Barber',
+      page: 2,
+      pageSize: 3,
     });
-    expect(result).toEqual([
-      {
-        id: 'salon-1',
-        name: 'Ustura Barber',
-        city: 'Istanbul',
-        district: 'Besiktas',
-        photoUrl: 'https://example.com/photo.jpg',
+    expect(result).toEqual({
+      items: [
+        {
+          id: 'salon-1',
+          name: 'Ustura Barber',
+          city: 'Istanbul',
+          district: 'Besiktas',
+          photoUrl: 'https://example.com/photo.jpg',
+        },
+      ],
+      pagination: {
+        page: 2,
+        pageSize: 3,
+        total: 7,
+        totalPages: 3,
+        hasNextPage: true,
+        hasPreviousPage: true,
       },
-    ]);
+    });
+  });
+
+  it('lists distinct active salon cities for public filters', async () => {
+    salonRepository.findDistinctCities.mockResolvedValue(['Ankara', 'Istanbul']);
+
+    const result = await salonService.findPublicCities();
+
+    expect(salonRepository.findDistinctCities).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(['Ankara', 'Istanbul']);
   });
 
   it('creates a salon with normalized string fields and owner detail projection', async () => {
