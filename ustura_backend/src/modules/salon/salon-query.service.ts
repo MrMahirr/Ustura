@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { FindAdminSalonsQueryDto } from './dto/find-admin-salons-query.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { salonNotFoundError } from './errors/salon.errors';
 import type {
+  AdminSalonSummary,
+  PaginatedAdminSalonResult,
   OwnedSalonSummary,
   PaginatedResult,
   Salon,
@@ -44,6 +47,30 @@ export class SalonQueryService implements SalonCatalogServiceContract {
     return this.salonRepository.findDistinctCities();
   }
 
+  async findAdminList(
+    query: FindAdminSalonsQueryDto,
+  ): Promise<PaginatedAdminSalonResult> {
+    const result = await this.salonRepository.findAdminPage({
+      search: this.normalizeOptionalString(query.search),
+      city: this.normalizeOptionalString(query.city),
+      status: query.status,
+      sort: query.sort,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+    const overview = await this.salonRepository.getAdminOverview();
+
+    return {
+      items: result.items.map((salon) => this.toAdminSummary(salon)),
+      pagination: result.pagination,
+      overview,
+    };
+  }
+
+  async findAdminCities(): Promise<string[]> {
+    return this.salonRepository.findAdminDistinctCities();
+  }
+
   async findOwned(currentUser: JwtPayload): Promise<OwnedSalonSummary[]> {
     this.salonPolicy.assertCanManage(currentUser);
 
@@ -74,5 +101,9 @@ export class SalonQueryService implements SalonCatalogServiceContract {
   private normalizeOptionalString(value?: string | null): string | undefined {
     const normalizedValue = value?.trim();
     return normalizedValue ? normalizedValue : undefined;
+  }
+
+  private toAdminSummary(salon: AdminSalonSummary): AdminSalonSummary {
+    return salon;
   }
 }

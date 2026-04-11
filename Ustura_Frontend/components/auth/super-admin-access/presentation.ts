@@ -1,6 +1,13 @@
 import type { Href } from 'expo-router';
 
-export type SuperAdminAccessState = 'idle' | 'validationError' | 'testReady' | 'forgotPassword' | 'systemStatus';
+export type SuperAdminAccessState =
+  | 'idle'
+  | 'validationError'
+  | 'authorizing'
+  | 'accessGranted'
+  | 'requestError'
+  | 'forgotPassword'
+  | 'systemStatus';
 export type SuperAdminMessageTone = 'neutral' | 'success' | 'warning' | 'error';
 
 export interface SuperAdminConsoleEntry {
@@ -30,7 +37,7 @@ export const SUPER_ADMIN_ACCESS_COPY = {
   subtitle: 'Sistem yonetimi icin giris yap',
   shellVersion: 'GUVENLI_KABUK_V2.0',
   emailLabel: 'Yonetici E-postasi',
-  emailPlaceholder: 'admin@ustura.saas',
+  emailPlaceholder: 'admin@ustura.com',
   passwordLabel: 'Sifre',
   passwordPlaceholder: '********',
   forgotPasswordLabel: 'Sifremi Unuttum',
@@ -51,8 +58,8 @@ export const SUPER_ADMIN_SUPPORT_LINKS: SuperAdminSupportLink[] = [
 function createIdleMessage(): SuperAdminAccessMessage {
   return {
     badge: 'Beklemede',
-    title: 'Dogrulama bekleniyor',
-    description: 'Bu ekran su an yalnizca arayuz ve yerel form dogrulama testi icin aktiftir.',
+    title: 'Super-admin dogrulamasi bekleniyor',
+    description: 'Yetkili yonetici hesabinin e-posta ve sifresini girerek panel oturumu baslat.',
     tone: 'neutral',
     consoleEntries: [
       {
@@ -71,11 +78,40 @@ function createIdleMessage(): SuperAdminAccessMessage {
   };
 }
 
+function createAuthorizingMessage(trustedDevice: boolean): SuperAdminAccessMessage {
+  return {
+    badge: 'Dogrulaniyor',
+    title: 'Kimlik bilgileri denetleniyor',
+    description: trustedDevice
+      ? 'Guvenilir cihaz tercihi kaydedildi. Oturum istegi backend uzerinden dogrulaniyor.'
+      : 'Oturum istegi backend uzerinden dogrulaniyor.',
+    tone: 'warning',
+    consoleEntries: [
+      {
+        id: 'authorizing-status',
+        text: 'Kimlik_dogrulama: DEVAM_EDIYOR',
+        tone: 'warning',
+        pulse: true,
+      },
+      {
+        id: 'authorizing-device',
+        text: trustedDevice ? 'Guvenilir_cihaz: ACIK' : 'Guvenilir_cihaz: KAPALI',
+        tone: 'neutral',
+      },
+      {
+        id: 'authorizing-gateway',
+        text: 'Yetki_kaprisi: BACKEND_ILE_ESLESTIRILIYOR',
+        tone: 'neutral',
+      },
+    ],
+  };
+}
+
 function createValidationErrorMessage(): SuperAdminAccessMessage {
   return {
     badge: 'Dogrulama Hatasi',
     title: 'Form alanlarini kontrol et',
-    description: 'E-posta bicimi ve sifre alani doldurulmadan test akisi ilerletilmez.',
+    description: 'E-posta bicimi ve sifre alani gecersiz oldugunda giris istegi gonderilmez.',
     tone: 'error',
     consoleEntries: [
       {
@@ -94,33 +130,55 @@ function createValidationErrorMessage(): SuperAdminAccessMessage {
   };
 }
 
-function createTestReadyMessage(trustedDevice: boolean): SuperAdminAccessMessage {
+function createAccessGrantedMessage(trustedDevice: boolean): SuperAdminAccessMessage {
   return {
-    badge: 'Test Onayi',
-    title: 'Yerel dogrulama tamamlandi',
+    badge: 'Erisim Onaylandi',
+    title: 'Panel oturumu acildi',
     description: trustedDevice
-      ? 'Cihaz guvenilir olarak isaretlendi. Gercek oturum acma ve panel erisimi arka uc entegrasyonu sonrasi eklenecek.'
-      : 'Giris verileri yerelde dogrulandi. Gercek oturum acma ve panel erisimi arka uc entegrasyonu sonrasi eklenecek.',
+      ? 'Cihaz guvenilir olarak isaretlendi. Super-admin paneline yonlendiriliyorsun.'
+      : 'Yetkili super-admin hesabi dogrulandi. Panel ekranina yonlendiriliyorsun.',
     tone: 'success',
     consoleEntries: [
       {
-        id: 'test-status',
-        text: 'Yerel_dogrulama: BASARILI',
+        id: 'access-status',
+        text: 'Kimlik_dogrulama: BASARILI',
         tone: 'success',
         pulse: true,
       },
       {
-        id: 'test-access',
+        id: 'access-device',
         text: trustedDevice ? 'Guvenilir_cihaz: ACIK' : 'Guvenilir_cihaz: KAPALI',
         tone: 'warning',
       },
       {
-        id: 'test-pending',
-        text: 'Panel_erisimi: ARKA_UC_DOGRULAMASI_BEKLENIYOR',
-        tone: 'neutral',
+        id: 'access-panel',
+        text: 'Panel_erisimi: ONAYLANDI',
+        tone: 'success',
       },
       {
-        id: 'test-token',
+        id: 'access-token',
+        text: 'Oturum_belirteci: OLUSTURULDU',
+        tone: 'success',
+      },
+    ],
+  };
+}
+
+function createRequestErrorMessage(): SuperAdminAccessMessage {
+  return {
+    badge: 'Erisim Reddedildi',
+    title: 'Giris tamamlanamadi',
+    description: 'Kimlik bilgileri veya yetki seviyesi panel erisimi icin dogrulanamadi.',
+    tone: 'error',
+    consoleEntries: [
+      {
+        id: 'request-error',
+        text: 'Yetki_kaprisi: REDDEDILDI',
+        tone: 'error',
+        pulse: true,
+      },
+      {
+        id: 'request-error-token',
         text: 'Oturum_belirteci: BOS',
         tone: 'neutral',
         dimmed: true,
@@ -131,9 +189,9 @@ function createTestReadyMessage(trustedDevice: boolean): SuperAdminAccessMessage
 
 function createForgotPasswordMessage(): SuperAdminAccessMessage {
   return {
-    badge: 'Test Notu',
-    title: 'Sifre sifirlama henuz bagli degil',
-    description: 'Sifre yenileme akisi arka uc ve e-posta servisi hazir oldugunda bu ekrana entegre edilecek.',
+    badge: 'Destek Gerekli',
+    title: 'Sifre sifirlama henuz aktif degil',
+    description: 'Super-admin sifre yenileme akisi backend ve e-posta servisi tamamlandiginda bu ekrana eklenecek.',
     tone: 'warning',
     consoleEntries: [],
   };
@@ -142,8 +200,8 @@ function createForgotPasswordMessage(): SuperAdminAccessMessage {
 function createSystemStatusMessage(): SuperAdminAccessMessage {
   return {
     badge: 'Sistem Durumu',
-    title: 'Durum ucu henuz bagli degil',
-    description: 'Gercek servis saglik kontrolleri arka uc ve izleme altyapisi tamamlandiginda burada yayinlanacak.',
+    title: 'Durum servisi henuz bagli degil',
+    description: 'Gercek servis saglik kontrolleri backend ve izleme altyapisi tamamlandiginda burada yayinlanacak.',
     tone: 'warning',
     consoleEntries: [
       {
@@ -167,10 +225,14 @@ export function getSuperAdminAccessMessage(
   trustedDevice: boolean
 ): SuperAdminAccessMessage {
   switch (state) {
+    case 'authorizing':
+      return createAuthorizingMessage(trustedDevice);
+    case 'accessGranted':
+      return createAccessGrantedMessage(trustedDevice);
+    case 'requestError':
+      return createRequestErrorMessage();
     case 'validationError':
       return createValidationErrorMessage();
-    case 'testReady':
-      return createTestReadyMessage(trustedDevice);
     case 'forgotPassword':
       return createForgotPasswordMessage();
     case 'systemStatus':

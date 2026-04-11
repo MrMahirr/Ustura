@@ -25,10 +25,13 @@ import { Role } from '../../shared/auth/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { AdminSalonSummaryDto } from './dto/admin-salon-summary.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
+import { FindAdminSalonsQueryDto } from './dto/find-admin-salons-query.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { OwnedSalonResponseDto } from './dto/owned-salon-response.dto';
 import { OwnedSalonSummaryDto } from './dto/owned-salon-summary.dto';
+import { PaginatedAdminSalonResponseDto } from './dto/paginated-admin-salon-response.dto';
 import { PaginatedPublicSalonResponseDto } from './dto/paginated-public-salon-response.dto';
 import { PublicSalonDetailDto } from './dto/public-salon-detail.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
@@ -59,6 +62,40 @@ export class SalonController {
   @ApiOkResponse({ type: String, isArray: true })
   async findCities() {
     return this.salonQueryService.findPublicCities();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Get('admin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'List salons for super admin management' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'city', required: false, type: String })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['active', 'inactive'],
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['newest', 'name_asc', 'name_desc', 'updated_desc'],
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 4 })
+  @ApiOkResponse({ type: PaginatedAdminSalonResponseDto })
+  async findAdminSalons(@Query() query: FindAdminSalonsQueryDto) {
+    return this.salonQueryService.findAdminList(query);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Get('admin/cities')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'List salon cities for super admin filters' })
+  @ApiOkResponse({ type: String, isArray: true })
+  async findAdminCities() {
+    return this.salonQueryService.findAdminCities();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

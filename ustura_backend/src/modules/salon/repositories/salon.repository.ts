@@ -3,11 +3,16 @@ import { QueryResultRow } from 'pg';
 import { DatabaseService } from '../../../database/database.service';
 import { SqlQueryExecutor } from '../../../database/database.types';
 import {
+  AdminSalonOverview,
+  AdminSalonSummary,
   CreateSalonInput,
+  FindAdminSalonsFilters,
   FindPaginatedSalonsFilters,
   FindSalonsFilters,
   PaginatedResult,
+  PaginatedAdminSalonResult,
   Salon,
+  AdminSalonSort,
   UpdateSalonInput,
   WorkingHours,
 } from '../interfaces/salon.types';
@@ -112,6 +117,121 @@ export class SalonRepository {
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
       },
+    };
+  }
+
+  async findAdminPage(
+    filters: FindAdminSalonsFilters,
+  ): Promise<PaginatedResult<AdminSalonSummary>> {
+    const { page, pageSize, sort, ...baseFilters } = filters;
+    const { values, whereClause } = this.buildAdminFilters(baseFilters);
+    const offset = (page - 1) * pageSize;
+
+    const countResult = await this.databaseService.query<TotalCountRow>({
+      name: 'salon.find-admin-page-count',
+      text: `
+        SELECT COUNT(*)::int AS total_count
+        FROM salons s
+        INNER JOIN users u ON u.id = s.owner_id
+        ${whereClause}
+      `,
+      values,
+    });
+
+    const total = countResult.rows[0]?.total_count ?? 0;
+    const totalPages = total > 0 ? Math.ceil(total / pageSize) : 0;
+
+    if (total === 0) {
+      return {
+        items: [],
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+
+    const paginatedValues = [...values, pageSize, offset];
+    const result = await this.databaseService.query<AdminSalonRow>({
+      name: 'salon.find-admin-page',
+      text: `
+        SELECT
+          s.id,
+          s.owner_id,
+          u.name AS owner_name,
+          u.email AS owner_email,
+          s.name,
+          s.address,
+          s.city,
+          s.district,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM salons s
+        INNER JOIN users u ON u.id = s.owner_id
+        ${whereClause}
+        ORDER BY ${this.getAdminSortClause(sort)}
+        LIMIT $${paginatedValues.length - 1}
+        OFFSET $${paginatedValues.length}
+      `,
+      values: paginatedValues,
+    });
+
+    return {
+      items: result.rows.map((row) => this.mapAdminRow(row) as AdminSalonSummary),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  async findAdminDistinctCities(): Promise<string[]> {
+    const result = await this.databaseService.query<CityRow>({
+      name: 'salon.find-admin-distinct-cities',
+      text: `
+        SELECT DISTINCT city
+        FROM salons
+        ORDER BY city ASC
+      `,
+      values: [],
+    });
+
+    return result.rows.map((row) => row.city);
+  }
+
+  async getAdminOverview(): Promise<AdminSalonOverview> {
+    const result = await this.databaseService.query<AdminSalonOverviewRow>({
+      name: 'salon.get-admin-overview',
+      text: `
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE is_active = TRUE)::int AS active,
+          COUNT(*) FILTER (WHERE is_active = FALSE)::int AS inactive,
+          COUNT(DISTINCT city)::int AS city_count,
+          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS new_last_30_days
+        FROM salons
+      `,
+      values: [],
+    });
+
+    const overview = result.rows[0];
+
+    return {
+      total: overview?.total ?? 0,
+      active: overview?.active ?? 0,
+      inactive: overview?.inactive ?? 0,
+      cityCount: overview?.city_count ?? 0,
+      newLast30Days: overview?.new_last_30_days ?? 0,
     };
   }
 
@@ -313,6 +433,27 @@ export class SalonRepository {
     };
   }
 
+  private mapAdminRow(row?: AdminSalonRow): AdminSalonSummary | null {
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      ownerId: row.owner_id,
+      ownerName: row.owner_name,
+      ownerEmail: row.owner_email,
+      name: row.name,
+      address: row.address,
+      city: row.city,
+      district: row.district,
+      photoUrl: row.photo_url,
+      isActive: row.is_active,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
   private buildFilters(filters: FindSalonsFilters) {
     const clauses: string[] = [];
     const values: unknown[] = [];
@@ -343,6 +484,57 @@ export class SalonRepository {
       whereClause: clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '',
     };
   }
+
+  private buildAdminFilters(
+    filters: Omit<FindAdminSalonsFilters, 'page' | 'pageSize' | 'sort'>,
+  ) {
+    const clauses: string[] = [];
+    const values: unknown[] = [];
+
+    if (filters.city) {
+      values.push(filters.city);
+      clauses.push(`LOWER(s.city) = LOWER($${values.length})`);
+    }
+
+    if (filters.status === 'active') {
+      clauses.push(`s.is_active = TRUE`);
+    } else if (filters.status === 'inactive') {
+      clauses.push(`s.is_active = FALSE`);
+    }
+
+    if (filters.search) {
+      values.push(`%${filters.search}%`);
+      clauses.push(
+        `(
+          s.name ILIKE $${values.length}
+          OR s.address ILIKE $${values.length}
+          OR s.city ILIKE $${values.length}
+          OR COALESCE(s.district, '') ILIKE $${values.length}
+          OR u.name ILIKE $${values.length}
+          OR u.email ILIKE $${values.length}
+        )`,
+      );
+    }
+
+    return {
+      values,
+      whereClause: clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '',
+    };
+  }
+
+  private getAdminSortClause(sort: AdminSalonSort) {
+    switch (sort) {
+      case 'name_asc':
+        return 's.name ASC, s.created_at DESC';
+      case 'name_desc':
+        return 's.name DESC, s.created_at DESC';
+      case 'updated_desc':
+        return 's.updated_at DESC, s.created_at DESC';
+      case 'newest':
+      default:
+        return 's.created_at DESC';
+    }
+  }
 }
 
 interface SalonRow extends QueryResultRow {
@@ -365,4 +557,27 @@ interface TotalCountRow extends QueryResultRow {
 
 interface CityRow extends QueryResultRow {
   city: string;
+}
+
+interface AdminSalonRow extends QueryResultRow {
+  id: string;
+  owner_id: string;
+  owner_name: string;
+  owner_email: string;
+  name: string;
+  address: string;
+  city: string;
+  district: string | null;
+  photo_url: string | null;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface AdminSalonOverviewRow extends QueryResultRow {
+  total: number;
+  active: number;
+  inactive: number;
+  city_count: number;
+  new_last_30_days: number;
 }

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, useWindowDimensions, Pressable, Platform } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, useWindowDimensions, Pressable, Platform, ScrollView, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import Input from '@/components/ui/Input';
@@ -81,59 +81,113 @@ function SelectDropdown<TOption extends string>({
       </Pressable>
 
       {isOpen ? (
-        <View
-          className="absolute left-0 right-0 overflow-hidden rounded-[20px] border"
-          style={[
-            {
-              top: 78,
-              zIndex: 140,
-              borderColor: outlineVariant,
-              backgroundColor: surfaceContainerLow,
-            },
-            Platform.OS === 'web'
-              ? ({
-                  boxShadow: '0 18px 40px rgba(27, 27, 32, 0.14)',
-                } as any)
-              : {
-                  shadowColor: '#000000',
-                  shadowOpacity: 0.12,
-                  shadowRadius: 18,
-                  shadowOffset: { width: 0, height: 8 },
-                  elevation: 8,
-                },
-          ]}>
-          {options.map((option, index) => {
-            const isSelected = option.value === selectedValue;
-
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => onSelect(option.value)}
-                style={({ hovered, pressed }) => ({
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  borderTopWidth: index === 0 ? 0 : 1,
-                  borderTopColor: outlineVariant,
-                  backgroundColor: isSelected
-                    ? hexToRgba(primary, 0.1)
-                    : hovered || pressed
-                      ? surfaceContainerLowest
-                      : surfaceContainerLow,
-                })}>
-                <View className="flex-row items-center justify-between gap-3">
-                  <Text className="font-body text-sm font-medium" style={{ color: onSurface }}>
-                    {option.label}
-                  </Text>
-                  {isSelected ? (
-                    <MaterialIcons name="check" size={18} color={primary} />
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+        <AnimatedSelectDropdownContent
+          options={options}
+          selectedValue={selectedValue}
+          onSelect={onSelect}
+          outlineVariant={outlineVariant}
+          surfaceContainerLow={surfaceContainerLow}
+          surfaceContainerLowest={surfaceContainerLowest}
+          primary={primary}
+          onSurface={onSurface}
+        />
       ) : null}
     </View>
+  );
+}
+
+function AnimatedSelectDropdownContent<TOption extends string>({
+  options,
+  selectedValue,
+  onSelect,
+  outlineVariant,
+  surfaceContainerLow,
+  surfaceContainerLowest,
+  primary,
+  onSurface,
+}: {
+  options: { label: string; value: TOption }[];
+  selectedValue: TOption | string;
+  onSelect: (value: TOption) => void;
+  outlineVariant: string;
+  surfaceContainerLow: string;
+  surfaceContainerLowest: string;
+  primary: string;
+  onSurface: string;
+}) {
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animValue, {
+      toValue: 1,
+      duration: 240,
+      useNativeDriver: true,
+    }).start();
+  }, [animValue]);
+
+  const translateY = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-12, 0],
+  });
+
+  return (
+    <Animated.View
+      className="absolute left-0 right-0 overflow-hidden rounded-[20px] border"
+      style={[
+        {
+          top: 78,
+          zIndex: 140,
+          borderColor: outlineVariant,
+          backgroundColor: surfaceContainerLow,
+          maxHeight: 280,
+          opacity: animValue,
+          transform: [{ translateY }],
+        },
+        Platform.OS === 'web'
+          ? ({
+              boxShadow: '0 18px 40px rgba(27, 27, 32, 0.14)',
+            } as any)
+          : {
+              shadowColor: '#000000',
+              shadowOpacity: 0.12,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 8,
+            },
+      ]}>
+      <ScrollView
+        showsVerticalScrollIndicator={Platform.OS === 'web'}
+        contentContainerStyle={{ flexGrow: 0 }}
+        style={{ width: '100%' }}>
+        {options.map((option, index) => {
+          const isSelected = option.value === selectedValue;
+
+          return (
+            <Pressable
+              key={option.value}
+              onPress={() => onSelect(option.value)}
+              style={({ hovered, pressed }) => ({
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                borderTopWidth: index === 0 ? 0 : 1,
+                borderTopColor: outlineVariant,
+                backgroundColor: isSelected
+                  ? hexToRgba(primary, 0.1)
+                  : hovered || pressed
+                    ? surfaceContainerLowest
+                    : surfaceContainerLow,
+              })}>
+              <View className="flex-row items-center justify-between gap-3">
+                <Text className="font-body text-sm font-medium" style={{ color: onSurface }}>
+                  {option.label}
+                </Text>
+                {isSelected ? <MaterialIcons name="check" size={18} color={primary} /> : null}
+              </View>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </Animated.View>
   );
 }
 

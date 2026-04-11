@@ -33,9 +33,47 @@ export interface PaginatedSalonResponse {
   pagination: PaginationMeta;
 }
 
+export interface AdminSalonRecord {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  name: string;
+  address: string;
+  city: string;
+  district: string | null;
+  photoUrl: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSalonOverview {
+  total: number;
+  active: number;
+  inactive: number;
+  cityCount: number;
+  newLast30Days: number;
+}
+
+export interface PaginatedAdminSalonResponse {
+  items: AdminSalonRecord[];
+  pagination: PaginationMeta;
+  overview: AdminSalonOverview;
+}
+
 export interface SalonFilters {
   city?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminSalonFilters {
+  city?: string;
+  search?: string;
+  status?: 'active' | 'inactive';
+  sort?: 'newest' | 'name_asc' | 'name_desc' | 'updated_desc';
   page?: number;
   pageSize?: number;
 }
@@ -55,6 +93,28 @@ export async function getSalons(filters: SalonFilters = {}) {
 export async function getSalonCities() {
   return apiRequest<string[]>({
     path: '/salons/cities',
+  });
+}
+
+export async function getAdminSalons(filters: AdminSalonFilters = {}) {
+  return apiRequest<PaginatedAdminSalonResponse>({
+    path: '/salons/admin',
+    auth: true,
+    query: {
+      city: filters.city,
+      search: filters.search,
+      status: filters.status,
+      sort: filters.sort,
+      page: filters.page,
+      pageSize: filters.pageSize,
+    },
+  });
+}
+
+export async function getAdminSalonCities() {
+  return apiRequest<string[]>({
+    path: '/salons/admin/cities',
+    auth: true,
   });
 }
 

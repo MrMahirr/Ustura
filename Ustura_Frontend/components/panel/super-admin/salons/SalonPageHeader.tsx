@@ -53,7 +53,7 @@ export default function SalonPageHeader({ isWide }: { isWide: boolean }) {
           Salon Yonetimi
         </Text>
         <Text className={salonClassNames.description} style={{ color: adminTheme.onSurfaceVariant, fontWeight: '300' }}>
-          Aktif salonlar, onay bekleyen basvurular ve paket segmentleri tek content yapisinda toplandi.
+          Platformdaki salonlari, sahip bilgilerini ve durumlarini gercek zamanli liste uzerinden yonet.
         </Text>
       </View>
       <HeaderCtaButton />

@@ -18,6 +18,8 @@ interface SuperAdminAccessCardProps {
   password: string;
   trustedDevice: boolean;
   message: SuperAdminAccessMessage;
+  submitLabel: string;
+  submitDisabled?: boolean;
   emailError?: string;
   passwordError?: string;
   compact: boolean;
@@ -47,6 +49,8 @@ export default function SuperAdminAccessCard({
   password,
   trustedDevice,
   message,
+  submitLabel,
+  submitDisabled = false,
   emailError,
   passwordError,
   compact,
@@ -172,7 +176,13 @@ export default function SuperAdminAccessCard({
           </View>
         </View>
 
-        <Button title={SUPER_ADMIN_ACCESS_COPY.submitLabel} onPress={onSubmit} interactionPreset="cta" style={{ width: '100%' }} />
+        <Button
+          title={submitLabel}
+          onPress={onSubmit}
+          disabled={submitDisabled}
+          interactionPreset="cta"
+          style={{ width: '100%' }}
+        />
       </View>
 
       <SuperAdminAccessConsole entries={message.consoleEntries} />

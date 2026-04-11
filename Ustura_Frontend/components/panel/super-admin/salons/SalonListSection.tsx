@@ -2,23 +2,26 @@ import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import type { SalonRecord } from '@/components/panel/super-admin/salon-management.data';
 import { getSalonPanelShadow, salonClassNames } from '@/components/panel/super-admin/salons/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
 import SalonMobileCard from './SalonMobileCard';
 import SalonRow from './SalonRow';
+import type { SalonListItem } from './types';
 
 interface SalonListSectionProps {
-  salons: SalonRecord[];
+  salons: SalonListItem[];
   filteredSalonsCount: number;
   page: number;
   totalPages: number;
   startRow: number;
   endRow: number;
   useDesktopTable: boolean;
+  isLoading: boolean;
+  errorMessage: string | null;
   onPageChange: (page: number) => void;
+  onRetry: () => void;
   onOpenSalon: (salonId: string) => void;
 }
 
@@ -38,7 +41,97 @@ function EmptyState() {
   );
 }
 
-function DesktopTable({ salons, onOpenSalon }: { salons: SalonRecord[]; onOpenSalon: (salonId: string) => void }) {
+function LoadingState() {
+  const adminTheme = useSuperAdminTheme();
+
+  return (
+    <View
+      className="m-5 min-h-[260px] items-center justify-center gap-3 rounded-[10px] border px-6"
+      style={{
+        backgroundColor: adminTheme.cardBackgroundMuted,
+        borderColor: adminTheme.borderSubtle,
+      }}>
+      <MaterialIcons
+        name="hourglass-empty"
+        size={30}
+        color={hexToRgba(adminTheme.onSurfaceVariant, 0.8)}
+      />
+      <Text
+        className={salonClassNames.emptyTitle}
+        style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
+        Salonlar yukleniyor
+      </Text>
+      <Text
+        className={salonClassNames.emptyDescription}
+        style={{ color: adminTheme.onSurfaceVariant }}>
+        Guncel salon listesi backend uzerinden aliniyor.
+      </Text>
+    </View>
+  );
+}
+
+function ErrorState({
+  errorMessage,
+  onRetry,
+}: {
+  errorMessage: string;
+  onRetry: () => void;
+}) {
+  const adminTheme = useSuperAdminTheme();
+
+  return (
+    <View
+      className="m-5 min-h-[260px] items-center justify-center gap-4 rounded-[10px] border px-6"
+      style={{
+        backgroundColor: adminTheme.cardBackgroundMuted,
+        borderColor: adminTheme.borderSubtle,
+      }}>
+      <MaterialIcons
+        name="error-outline"
+        size={32}
+        color={hexToRgba(adminTheme.error, 0.9)}
+      />
+      <View className="items-center gap-2">
+        <Text
+          className={salonClassNames.emptyTitle}
+          style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
+          Salon listesi yuklenemedi
+        </Text>
+        <Text
+          className={salonClassNames.emptyDescription}
+          style={{ color: adminTheme.onSurfaceVariant }}>
+          {errorMessage}
+        </Text>
+      </View>
+      <Pressable
+        onPress={onRetry}
+        className="rounded-md border px-4 py-2.5"
+        style={({ hovered }) => [
+          {
+            borderColor: hexToRgba(adminTheme.primary, hovered ? 0.32 : 0.2),
+            backgroundColor: hovered
+              ? hexToRgba(adminTheme.primary, 0.08)
+              : 'transparent',
+          },
+          Platform.OS === 'web'
+            ? ({
+                transition:
+                  'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease',
+                cursor: 'pointer',
+              } as any)
+            : null,
+        ]}>
+        <Text
+          className="font-label text-[10px] uppercase tracking-[2px]"
+          style={{ color: adminTheme.primary, fontFamily: 'Manrope-Bold' }}>
+          Tekrar Dene
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function DesktopTable({ salons, onOpenSalon }: { salons: SalonListItem[]; onOpenSalon: (salonId: string) => void }) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -57,7 +150,7 @@ function DesktopTable({ salons, onOpenSalon }: { salons: SalonRecord[]; onOpenSa
           Durum
         </Text>
         <Text className={salonClassNames.headerText} style={{ flex: 0.95, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), fontFamily: 'Manrope-Bold' }}>
-          Paket
+          Kayit
         </Text>
         <Text className={salonClassNames.headerText} style={{ flex: 1.1, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), textAlign: 'right', fontFamily: 'Manrope-Bold' }}>
           Islemler
@@ -81,8 +174,15 @@ function Pagination({
   startRow,
   endRow,
   onPageChange,
-}: Omit<SalonListSectionProps, 'salons' | 'useDesktopTable' | 'onOpenSalon'>) {
+}: Pick<
+  SalonListSectionProps,
+  'filteredSalonsCount' | 'page' | 'totalPages' | 'startRow' | 'endRow' | 'onPageChange'
+>) {
   const adminTheme = useSuperAdminTheme();
+  const pageNumbers = Array.from({ length: totalPages })
+    .map((_, index) => index + 1)
+    .filter((targetPage) => Math.abs(targetPage - page) <= 1 || targetPage === 1 || targetPage === totalPages)
+    .filter((targetPage, index, values) => values.indexOf(targetPage) === index);
 
   return (
     <View
@@ -111,8 +211,7 @@ function Pagination({
           <MaterialIcons name="chevron-left" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
         </Pressable>
 
-        {Array.from({ length: totalPages }).map((_, index) => {
-          const targetPage = index + 1;
+        {pageNumbers.map((targetPage) => {
           const isActive = targetPage === page;
 
           return (
@@ -164,7 +263,10 @@ export default function SalonListSection({
   startRow,
   endRow,
   useDesktopTable,
+  isLoading,
+  errorMessage,
   onPageChange,
+  onRetry,
   onOpenSalon,
 }: SalonListSectionProps) {
   const adminTheme = useSuperAdminTheme();
@@ -179,7 +281,11 @@ export default function SalonListSection({
         },
         getSalonPanelShadow(adminTheme.theme),
       ]}>
-      {salons.length === 0 ? (
+      {isLoading ? (
+        <LoadingState />
+      ) : errorMessage ? (
+        <ErrorState errorMessage={errorMessage} onRetry={onRetry} />
+      ) : salons.length === 0 ? (
         <EmptyState />
       ) : useDesktopTable ? (
         <DesktopTable salons={salons} onOpenSalon={onOpenSalon} />
