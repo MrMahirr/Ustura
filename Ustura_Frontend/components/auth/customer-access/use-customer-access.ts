@@ -16,10 +16,10 @@ function validateIdentifier(value: string): string | undefined {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    return 'Email alani zorunludur.';
+    return 'E-posta alani zorunludur.';
   }
 
-  return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir email adresi gir.';
+  return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir e-posta adresi gir.';
 }
 
 function validatePassword(value: string): string | undefined {
@@ -153,7 +153,7 @@ export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
       if (didLogin === false) {
         setFieldErrors({
           identifier: undefined,
-          password: 'Email veya sifre hatali.',
+          password: 'E-posta veya sifre hatali.',
         });
         setState('invalidCredentials');
         return;

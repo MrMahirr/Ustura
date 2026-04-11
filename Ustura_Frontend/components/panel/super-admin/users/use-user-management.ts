@@ -109,9 +109,9 @@ export function useUserManagement() {
         salonStatus: salonRecord?.status,
         totalUsers: 1,
         activeUsers: user.status === 'Aktif' ? 1 : 0,
-        ownerCount: user.role === 'Owner' ? 1 : 0,
-        adminCount: user.role === 'Admin' ? 1 : 0,
-        employeeCount: user.role === 'Employee' ? 1 : 0,
+        ownerCount: user.role === 'Sahip' ? 1 : 0,
+        adminCount: user.role === 'Yonetici' ? 1 : 0,
+        employeeCount: user.role === 'Calisan' ? 1 : 0,
         occupancyRate: user.dailyCapacity ? user.dailyCapacity.booked / user.dailyCapacity.total : undefined,
         capacityCount: user.dailyCapacity ? 1 : 0,
         users: [user],
@@ -123,9 +123,9 @@ export function useUserManagement() {
     existing.users.push(user);
     existing.totalUsers += 1;
     existing.activeUsers += user.status === 'Aktif' ? 1 : 0;
-    existing.ownerCount += user.role === 'Owner' ? 1 : 0;
-    existing.adminCount += user.role === 'Admin' ? 1 : 0;
-    existing.employeeCount += user.role === 'Employee' ? 1 : 0;
+    existing.ownerCount += user.role === 'Sahip' ? 1 : 0;
+    existing.adminCount += user.role === 'Yonetici' ? 1 : 0;
+    existing.employeeCount += user.role === 'Calisan' ? 1 : 0;
 
     if (user.dailyCapacity) {
       const currentRate = user.dailyCapacity.booked / user.dailyCapacity.total;

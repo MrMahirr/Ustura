@@ -3,33 +3,16 @@ import { ScrollView, Text, View, useWindowDimensions, Platform } from 'react-nat
 
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
-import FilterBar from '@/components/kuaforler/FilterBar';
+import FilterBar, { type SalonSortOption } from '@/components/kuaforler/FilterBar';
+import PaginationBar from '@/components/kuaforler/PaginationBar';
 import PromoBanner from '@/components/kuaforler/PromoBanner';
 import SalonCard from '@/components/kuaforler/SalonCard';
-import type { SalonListItem } from '@/components/kuaforler/presentation';
+import { mapSalonToListItem } from '@/components/kuaforler/salon-listing';
 import { getLandingLayout } from '@/components/landing/layout';
 import Button from '@/components/ui/Button';
-import { useSalons } from '@/hooks/use-salons';
+import { useSalonCities, useSalons } from '@/hooks/use-salons';
 import { useBookingEntry } from '@/hooks/use-booking-entry';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import type { SalonRecord } from '@/services/salon.service';
-
-const DEFAULT_SALON_IMAGE_URI =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuD9Du-0fH-CtOES4K9J2gCbufPekyrfYgqnoSqpyBFSICffXD1Hq0yV4ZAXttFWnFbNWs54sw8l1OxVvOIyOHIMgTuUNPUAEM9zsJ2ObgDLjRT34nDBJa4X4GvqawVJAo9-3Exs_vX4AUVghCuqqpV_CyjY2YJcjL6SaFOW9AGkRJhFcBI4ewkS02nE3_K-HnqyxfKjnWQPyoPqcBMEcUWiBjrpKGJ-G01xbC1wbtfE2kTBaxSYk9wtsXnAsmfhae-5iCyPUFjNmYY';
-
-function mapSalonToListItem(salon: SalonRecord): SalonListItem {
-  const location = salon.district ? `${salon.district}, ${salon.city}` : salon.city;
-
-  return {
-    id: salon.id,
-    name: salon.name,
-    location,
-    rating: 4.9,
-    reviewCount: 0,
-    imageUrl: salon.photoUrl ?? DEFAULT_SALON_IMAGE_URI,
-    barbers: [],
-  };
-}
 
 export default function KuaforlerPage() {
   const surface = useThemeColor({}, 'surface');
@@ -41,25 +24,38 @@ export default function KuaforlerPage() {
   const { openBooking } = useBookingEntry();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [activeCity, setActiveCity] = React.useState('Tumu');
+  const [activeSort, setActiveSort] = React.useState<SalonSortOption>('default');
+  const [page, setPage] = React.useState(1);
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
-  const { salons, isLoading, error, reload } = useSalons({
+  const selectedCity = activeCity === 'Tumu' ? undefined : activeCity;
+  const { cities: availableCities } = useSalonCities();
+  const { salons, pagination, isLoading, error, reload } = useSalons({
+    city: selectedCity,
     search: deferredSearchQuery,
+    page,
+    pageSize: 9,
   });
 
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-  const cities = React.useMemo(
-    () => ['Tumu', ...new Set(salons.map((salon) => salon.city).filter(Boolean))],
-    [salons]
-  );
-  const visibleSalons = React.useMemo(
-    () => (activeCity === 'Tumu' ? salons : salons.filter((salon) => salon.city === activeCity)),
-    [activeCity, salons]
-  );
-  const salonCards = React.useMemo(
-    () => visibleSalons.map(mapSalonToListItem),
-    [visibleSalons]
-  );
+  const cities = React.useMemo(() => ['Tumu', ...availableCities], [availableCities]);
+  const salonCards = React.useMemo(() => {
+    const items = salons.map(mapSalonToListItem);
+
+    if (activeSort === 'name-asc') {
+      return [...items].sort((left, right) => left.name.localeCompare(right.name, 'tr'));
+    }
+
+    if (activeSort === 'name-desc') {
+      return [...items].sort((left, right) => right.name.localeCompare(left.name, 'tr'));
+    }
+
+    return items;
+  }, [activeSort, salons]);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [deferredSearchQuery, selectedCity, activeSort]);
 
   return (
     <>
@@ -82,13 +78,17 @@ export default function KuaforlerPage() {
             Platform.OS === 'web' ? ({ transition: 'background-color 360ms ease' } as any) : null,
           ]}>
           <View className="w-full self-center" style={{ maxWidth: layout.contentMaxWidth }}>
-            <FilterBar
-              searchQuery={searchQuery}
-              activeCity={activeCity}
-              cities={cities}
-              onSearchChange={setSearchQuery}
-              onCityChange={setActiveCity}
-            />
+            <View style={{ position: 'relative', zIndex: 50 }}>
+              <FilterBar
+                searchQuery={searchQuery}
+                activeCity={activeCity}
+                cities={cities}
+                activeSort={activeSort}
+                onSearchChange={setSearchQuery}
+                onCityChange={setActiveCity}
+                onSortChange={setActiveSort}
+              />
+            </View>
 
             {isLoading ? (
               <View style={{ paddingBottom: 48 }}>
@@ -96,7 +96,7 @@ export default function KuaforlerPage() {
                   Salonlar yukleniyor
                 </Text>
                 <Text className="font-body text-base" style={{ marginTop: 8, color: onSurfaceVariant }}>
-                  Arama sonucuna gore aktif salonlar backend uzerinden getiriliyor.
+                  Arama ve filtrelere gore aktif salonlar backend uzerinden sayfali getiriliyor.
                 </Text>
               </View>
             ) : error ? (
@@ -142,6 +142,16 @@ export default function KuaforlerPage() {
                 </Text>
               </View>
             )}
+
+            {!isLoading && !error && salonCards.length > 0 ? (
+              <PaginationBar
+                page={pagination.page}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                totalPages={pagination.totalPages}
+                onPageChange={setPage}
+              />
+            ) : null}
           </View>
         </View>
 

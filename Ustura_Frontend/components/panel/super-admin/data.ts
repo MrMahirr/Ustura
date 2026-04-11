@@ -86,7 +86,7 @@ export const dashboardMetrics: DashboardMetric[] = [
   {
     id: 'total-users',
     label: 'Toplam Kullanici',
-    value: '42.5K',
+    value: '42,5 B',
     icon: 'group',
     trendLabel: '+8% haftalik artis',
     trendTone: 'positive',
@@ -110,7 +110,7 @@ export const dashboardMetrics: DashboardMetric[] = [
   {
     id: 'daily-revenue',
     label: 'Gunluk Gelir',
-    value: '₺42,150',
+    value: '42.150 TL',
     icon: 'payments',
     trendLabel: '+5.2% tahsilat',
     trendTone: 'positive',
@@ -131,7 +131,7 @@ export const activitySnapshots: ActivitySnapshot[] = [
     key: 'weekly',
     label: 'Haftalik',
     headline: 'Canli operasyon temposu',
-    total: '27.4K islem',
+    total: '27,4 B islem',
     delta: '+14% onceki haftaya gore',
     points: [
       { label: 'Pzt', value: 42 },
@@ -147,7 +147,7 @@ export const activitySnapshots: ActivitySnapshot[] = [
     key: 'monthly',
     label: 'Aylik',
     headline: 'Abonelik ve randevu yogunlugu',
-    total: '118K islem',
+    total: '118 B islem',
     delta: '+9% onceki aya gore',
     points: [
       { label: '1H', value: 55 },
@@ -161,7 +161,7 @@ export const activitySnapshots: ActivitySnapshot[] = [
 export const activeSalons: ActiveSalon[] = [
   {
     id: 'sharp-blade',
-    name: 'The Sharp Blade',
+    name: 'Keskin Bicak',
     appointments: '1,240 Randevu / Ay',
     rating: '4.9',
     imageUrl:
@@ -169,7 +169,7 @@ export const activeSalons: ActiveSalon[] = [
   },
   {
     id: 'gentleman-choice',
-    name: "Gentleman's Choice",
+    name: 'Beyefendi Secimi',
     appointments: '980 Randevu / Ay',
     rating: '4.8',
     imageUrl:
@@ -177,19 +177,19 @@ export const activeSalons: ActiveSalon[] = [
   },
   {
     id: 'urban-fade',
-    name: 'Urban Fade Studio',
+    name: 'Sehir Fade Studyosu',
     appointments: '845 Randevu / Ay',
     rating: '4.7',
     imageUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuDioI11vPh9ltF22CVbxS2M2-gb6HU3dzPvkJBW54W3hnaX0_jGI8er6jjZp_1rTEVYwYyH_STGpfPFS4R-Hftq2EYTSiM64gl8bF7D0MvfsACnhtaqHpWpR6yCK0IHRBdPMNHRpWBIKOQmqU0JE_fSOdNQuadCv9_zOPTNZ3GXCl9GXbCGe42JBVVig-vDR0RUBwkyMcNnDZl-5dwHsH3NINPcgnVWRJz5_b3fSU_skagn-kzXzXL4HJGfmu-LwU1e-v06ZK7H30E',
   },
-  { id: 'gold-scissors', name: 'Gold Scissors', appointments: '790 Randevu / Ay', rating: '4.8' },
+  { id: 'gold-scissors', name: 'Altin Makas', appointments: '790 Randevu / Ay', rating: '4.8' },
 ];
 
 export const recentAppointments: RecentAppointment[] = [
   {
     id: 'appt-1',
-    salon: 'The Sharp Blade',
+    salon: 'Keskin Bicak',
     user: 'Can Yilmaz',
     barber: 'Ahmet Usta',
     time: '14:30, Bugun',
@@ -198,7 +198,7 @@ export const recentAppointments: RecentAppointment[] = [
   },
   {
     id: 'appt-2',
-    salon: "Gentleman's Choice",
+    salon: 'Beyefendi Secimi',
     user: 'Mert Demir',
     barber: 'Mehmet Berberoglu',
     time: '15:00, Bugun',
@@ -207,16 +207,16 @@ export const recentAppointments: RecentAppointment[] = [
   },
   {
     id: 'appt-3',
-    salon: 'Urban Fade Studio',
+    salon: 'Sehir Fade Studyosu',
     user: 'Arda Kaya',
-    barber: 'Barber Selim',
+    barber: 'Berber Selim',
     time: '16:15, Bugun',
     status: 'Tamamlandi',
     statusTone: 'info',
   },
   {
     id: 'appt-4',
-    salon: 'Gold Scissors',
+    salon: 'Altin Makas',
     user: 'Ege Koc',
     barber: 'Yunus Kaya',
     time: '17:10, Bugun',
@@ -226,47 +226,47 @@ export const recentAppointments: RecentAppointment[] = [
 ];
 
 export const recentSalons: RecentSalon[] = [
-  { id: 'new-1', name: 'Gold Scissors', addedAt: 'Kayit: 2 saat once' },
-  { id: 'new-2', name: 'Modern Cuts', addedAt: 'Kayit: 5 saat once' },
-  { id: 'new-3', name: 'North Blend Club', addedAt: 'Kayit: 1 gun once' },
+  { id: 'new-1', name: 'Altin Makas', addedAt: 'Kayit: 2 saat once' },
+  { id: 'new-2', name: 'Modern Kesimler', addedAt: 'Kayit: 5 saat once' },
+  { id: 'new-3', name: 'Kuzey Harman Kulubu', addedAt: 'Kayit: 1 gun once' },
 ];
 
 export const approvalRequests: ApprovalRequest[] = [
   {
     id: 'approval-1',
-    name: 'Elite Grooming Co.',
+    name: 'Elite Bakim Evi',
     summary: 'Uyelik basvurusu ve evrak onayi bekleniyor.',
     status: 'Yeni Talep',
   },
   {
     id: 'approval-2',
-    name: 'Noir Barber House',
+    name: 'Noir Berber Evi',
     summary: 'Paket yukselme istegi inceleme sirasinda.',
     status: 'Paket Revize',
   },
 ];
 
 export const logEntries: LogEntry[] = [
-  { id: 'log-1', time: '14:32:01', message: 'DB connection re-established', tone: 'success' },
-  { id: 'log-2', time: '14:31:45', message: 'User ID: 2948 updated profile', tone: 'neutral' },
-  { id: 'log-3', time: '14:28:12', message: 'API Error: Timeout on Endpoint /auth/v2', tone: 'error' },
-  { id: 'log-4', time: '14:25:00', message: 'Weekly backup scheduled started', tone: 'primary' },
-  { id: 'log-5', time: '14:23:18', message: 'Queue worker resumed after deployment', tone: 'neutral' },
+  { id: 'log-1', time: '14:32:01', message: 'VT baglantisi yeniden kuruldu', tone: 'success' },
+  { id: 'log-2', time: '14:31:45', message: 'Kullanici no: 2948 profili guncelledi', tone: 'neutral' },
+  { id: 'log-3', time: '14:28:12', message: 'API hatasi: /auth/v2 ucunda zaman asimi', tone: 'error' },
+  { id: 'log-4', time: '14:25:00', message: 'Haftalik yedekleme gorevi baslatildi', tone: 'primary' },
+  { id: 'log-5', time: '14:23:18', message: 'Kuyruk isleyicisi dagitim sonrasi yeniden basladi', tone: 'neutral' },
 ];
 
 export const adminNotifications: AdminNotification[] = [
   {
     id: 'notif-1',
     title: 'Yeni salon onayi bekliyor',
-    description: 'Elite Grooming Co. evrak kontrolu icin siraya alindi.',
+    description: 'Elite Bakim Evi evrak kontrolu icin siraya alindi.',
     time: '2 dk once',
     tone: 'warning',
     unread: true,
   },
   {
     id: 'notif-2',
-    title: 'API timeout algilandi',
-    description: '/auth/v2 endpointi icin esik deger uyarisi olustu.',
+    title: 'API zaman asimi algilandi',
+    description: '/auth/v2 ucu icin esik deger uyarisi olustu.',
     time: '8 dk once',
     tone: 'error',
     unread: true,
@@ -274,14 +274,14 @@ export const adminNotifications: AdminNotification[] = [
   {
     id: 'notif-3',
     title: 'Haftalik yedekleme tamamlandi',
-    description: 'Tum tenant verileri basariyla arsivlendi.',
+    description: 'Tum kiraci verileri basariyla arsivlendi.',
     time: '24 dk once',
     tone: 'success',
   },
   {
     id: 'notif-4',
     title: 'Paket yukselme talebi',
-    description: 'Noir Barber House paketi yonetici onayina gonderdi.',
+    description: 'Noir Berber Evi paketi yonetici onayina gonderdi.',
     time: '1 saat once',
     tone: 'primary',
     unread: true,

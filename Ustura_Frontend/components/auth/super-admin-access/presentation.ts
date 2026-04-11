@@ -26,44 +26,44 @@ export interface SuperAdminSupportLink {
 
 export const SUPER_ADMIN_ACCESS_COPY = {
   brand: 'USTURA',
-  eyebrow: 'Super Admin Panel',
-  subtitle: 'Sistem yönetimi için giriş yap',
-  shellVersion: 'SECURE_SHELL_V2.0',
-  emailLabel: 'Admin Email',
+  eyebrow: 'Ana Yonetici Paneli',
+  subtitle: 'Sistem yonetimi icin giris yap',
+  shellVersion: 'GUVENLI_KABUK_V2.0',
+  emailLabel: 'Yonetici E-postasi',
   emailPlaceholder: 'admin@ustura.saas',
-  passwordLabel: 'Şifre',
-  passwordPlaceholder: '••••••••',
-  forgotPasswordLabel: 'Şifremi Unuttum',
-  trustedDeviceLabel: 'Bu cihazı güvenilir olarak işaretle',
-  submitLabel: 'Giriş Yap',
-  restrictedAreaLabel: 'Bu alan yalnızca yetkili yöneticiler içindir',
-  systemSecureLabel: 'SYSTEM SECURE',
-  lastLoginLabel: 'Son giriş: İstanbul, Türkiye',
-  legalFooterSuffix: 'ALL RIGHTS RESERVED. SECURE ADMIN ACCESS ONLY.',
+  passwordLabel: 'Sifre',
+  passwordPlaceholder: '********',
+  forgotPasswordLabel: 'Sifremi Unuttum',
+  trustedDeviceLabel: 'Bu cihazi guvenilir olarak isaretle',
+  submitLabel: 'Giris Yap',
+  restrictedAreaLabel: 'Bu alan yalnizca yetkili yoneticiler icindir',
+  systemSecureLabel: 'SISTEM GUVENDE',
+  lastLoginLabel: 'Son giris: Istanbul, Turkiye',
+  legalFooterSuffix: 'Tum haklari saklidir. Yalnizca yetkili yonetici erisimi.',
 } as const;
 
 export const SUPER_ADMIN_SUPPORT_LINKS: SuperAdminSupportLink[] = [
-  { label: 'Security Protocol', href: '/kullanim-kosullari' },
-  { label: 'Privacy Policy', href: '/gizlilik-politikasi' },
-  { label: 'System Status' },
+  { label: 'Guvenlik Protokolu', href: '/kullanim-kosullari' },
+  { label: 'Gizlilik Politikasi', href: '/gizlilik-politikasi' },
+  { label: 'Sistem Durumu' },
 ];
 
 function createIdleMessage(): SuperAdminAccessMessage {
   return {
     badge: 'Beklemede',
-    title: 'Doğrulama bekleniyor',
-    description: 'Bu ekran şu an yalnızca UI ve yerel form doğrulama testi için aktiftir.',
+    title: 'Dogrulama bekleniyor',
+    description: 'Bu ekran su an yalnizca arayuz ve yerel form dogrulama testi icin aktiftir.',
     tone: 'neutral',
     consoleEntries: [
       {
         id: 'idle-status',
-        text: 'System idle... awaiting credentials',
+        text: 'Sistem beklemede... kimlik bilgileri bekleniyor',
         tone: 'neutral',
         pulse: true,
       },
       {
         id: 'idle-token',
-        text: 'Session_token: NULL',
+        text: 'Oturum_belirteci: BOS',
         tone: 'neutral',
         dimmed: true,
       },
@@ -73,20 +73,20 @@ function createIdleMessage(): SuperAdminAccessMessage {
 
 function createValidationErrorMessage(): SuperAdminAccessMessage {
   return {
-    badge: 'Doğrulama Hatası',
-    title: 'Form alanlarını kontrol et',
-    description: 'Email formatı ve şifre alanı doldurulmadan test akışı ilerletilmez.',
+    badge: 'Dogrulama Hatasi',
+    title: 'Form alanlarini kontrol et',
+    description: 'E-posta bicimi ve sifre alani doldurulmadan test akisi ilerletilmez.',
     tone: 'error',
     consoleEntries: [
       {
         id: 'validation-status',
-        text: 'Validation_error: invalid credential payload',
+        text: 'Dogrulama_hatasi: gecersiz kimlik bilgisi paketi',
         tone: 'error',
         pulse: true,
       },
       {
         id: 'validation-token',
-        text: 'Session_token: NULL',
+        text: 'Oturum_belirteci: BOS',
         tone: 'neutral',
         dimmed: true,
       },
@@ -96,32 +96,32 @@ function createValidationErrorMessage(): SuperAdminAccessMessage {
 
 function createTestReadyMessage(trustedDevice: boolean): SuperAdminAccessMessage {
   return {
-    badge: 'Test Onayı',
-    title: 'Yerel doğrulama tamamlandı',
+    badge: 'Test Onayi',
+    title: 'Yerel dogrulama tamamlandi',
     description: trustedDevice
-      ? 'Cihaz güvenilir olarak işaretlendi. Gerçek oturum açma ve panel erişimi backend entegrasyonu sonrası eklenecek.'
-      : 'Giriş verileri yerelde doğrulandı. Gerçek oturum açma ve panel erişimi backend entegrasyonu sonrası eklenecek.',
+      ? 'Cihaz guvenilir olarak isaretlendi. Gercek oturum acma ve panel erisimi arka uc entegrasyonu sonrasi eklenecek.'
+      : 'Giris verileri yerelde dogrulandi. Gercek oturum acma ve panel erisimi arka uc entegrasyonu sonrasi eklenecek.',
     tone: 'success',
     consoleEntries: [
       {
         id: 'test-status',
-        text: 'Mock_validation: PASSED',
+        text: 'Yerel_dogrulama: BASARILI',
         tone: 'success',
         pulse: true,
       },
       {
         id: 'test-access',
-        text: trustedDevice ? 'Trusted_device: ENABLED' : 'Trusted_device: DISABLED',
+        text: trustedDevice ? 'Guvenilir_cihaz: ACIK' : 'Guvenilir_cihaz: KAPALI',
         tone: 'warning',
       },
       {
         id: 'test-pending',
-        text: 'Panel_access: WAITING_FOR_BACKEND_AUTH',
+        text: 'Panel_erisimi: ARKA_UC_DOGRULAMASI_BEKLENIYOR',
         tone: 'neutral',
       },
       {
         id: 'test-token',
-        text: 'Session_token: NULL',
+        text: 'Oturum_belirteci: BOS',
         tone: 'neutral',
         dimmed: true,
       },
@@ -132,8 +132,8 @@ function createTestReadyMessage(trustedDevice: boolean): SuperAdminAccessMessage
 function createForgotPasswordMessage(): SuperAdminAccessMessage {
   return {
     badge: 'Test Notu',
-    title: 'Şifre sıfırlama henüz bağlı değil',
-    description: 'Şifre yenileme akışı backend ve mail servisi hazır olduğunda bu ekrana entegre edilecek.',
+    title: 'Sifre sifirlama henuz bagli degil',
+    description: 'Sifre yenileme akisi arka uc ve e-posta servisi hazir oldugunda bu ekrana entegre edilecek.',
     tone: 'warning',
     consoleEntries: [],
   };
@@ -142,19 +142,19 @@ function createForgotPasswordMessage(): SuperAdminAccessMessage {
 function createSystemStatusMessage(): SuperAdminAccessMessage {
   return {
     badge: 'Sistem Durumu',
-    title: 'Status endpointi henüz bağlı değil',
-    description: 'Gerçek servis sağlık kontrolleri backend ve izleme altyapısı tamamlandığında burada yayınlanacak.',
+    title: 'Durum ucu henuz bagli degil',
+    description: 'Gercek servis saglik kontrolleri arka uc ve izleme altyapisi tamamlandiginda burada yayinlanacak.',
     tone: 'warning',
     consoleEntries: [
       {
         id: 'system-status',
-        text: 'Status_api: NOT_CONNECTED',
+        text: 'Durum_api: BAGLI_DEGIL',
         tone: 'warning',
         pulse: true,
       },
       {
         id: 'system-status-token',
-        text: 'Session_token: NULL',
+        text: 'Oturum_belirteci: BOS',
         tone: 'neutral',
         dimmed: true,
       },

@@ -23,9 +23,9 @@ export const BOOKING_TIME_SELECTION_COPY = {
   locationLabel: 'Konum',
   durationNote: 'Her randevu 30 dakikadir',
   confirmLabel: 'Randevuyu Onayla',
-  confirmPreviewTitle: 'Rezervasyon Preview',
+  confirmPreviewTitle: 'Rezervasyon Onizlemesi',
   confirmPreviewDescription:
-    'Secimin kaydedildi. Step 4 ve backend rezervasyon kontrati baglandiginda bu aksiyon dogrudan olusturma istegine donecek.',
+    'Secimin kaydedildi. 4. adim ve rezervasyon altyapisi baglandiginda bu aksiyon dogrudan olusturma istegine donecek.',
 } as const;
 
 export const BOOKING_LOCATION_IMAGE_URI =

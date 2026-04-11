@@ -34,7 +34,7 @@ export default function SalonInsightsSection({
             Aylik Buyume Analizi
           </Text>
           <Text className="font-body text-sm leading-6" style={{ color: adminTheme.onSurfaceVariant }}>
-            Yeni salon kayitlari gecen aya gore %18 artis gosterdi. Premium paket donusum orani en yuksek seviyesine cikti.
+            Yeni salon kayitlari gecen aya gore %18 artis gosterdi. Ozel paket donusum orani en yuksek seviyesine cikti.
           </Text>
           <View className="mt-2 flex-row flex-wrap gap-8">
             <View>

@@ -126,6 +126,16 @@ async function parseResponse<TResponse>(response: Response): Promise<TResponse> 
     );
   }
 
+  // Handle standard backend response envelope { success, data, timestamp }
+  if (
+    parsedPayload &&
+    typeof parsedPayload === 'object' &&
+    'success' in parsedPayload &&
+    'data' in parsedPayload
+  ) {
+    return (parsedPayload as { data: TResponse }).data;
+  }
+
   return parsedPayload as TResponse;
 }
 

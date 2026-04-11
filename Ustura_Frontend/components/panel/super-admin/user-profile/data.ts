@@ -66,16 +66,16 @@ export interface UserProfile {
   quickActions: UserProfileQuickAction[];
 }
 
-const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+const monthLabels = ['Oca', 'Sub', 'Mar', 'Nis', 'May', 'Haz'];
 const customerNames = ['Caner Yildiz', 'Arda Turan', 'Murat Ozdemir', 'Baris Koc', 'Eren Kaya'];
-const expertisePool = ['Cilt Bakimi', 'Modern Fade', 'Hot Towel Shave', 'Styling', 'Klasik Kesim', 'Bakim'];
+const expertisePool = ['Cilt Bakimi', 'Modern Gecis', 'Sicak Havlu Tirasi', 'Stil Verme', 'Klasik Kesim', 'Bakim'];
 
 function hashValue(input: string) {
   return input.split('').reduce((total, char, index) => total + char.charCodeAt(0) * (index + 5), 0);
 }
 
 function formatCompactCurrency(value: number) {
-  return `TRY ${(value / 1000).toFixed(1)}K`;
+  return `${(value / 1000).toFixed(1)} Bin TL`;
 }
 
 function buildPhoneNumber(hash: number) {
@@ -152,7 +152,7 @@ function createSchedule(hash: number): UserProfileScheduleItem[] {
     {
       id: 'sunday',
       label: 'Pazar',
-      hoursLabel: 'OFF',
+      hoursLabel: 'Kapali',
       tone: 'error',
     },
   ];
@@ -160,7 +160,7 @@ function createSchedule(hash: number): UserProfileScheduleItem[] {
 
 function createAppointments(user: UserRecord, hash: number): UserProfileAppointment[] {
   const services = [
-    `${user.specialties[0] ?? 'Sac Kesimi'} & ${user.specialties[1] ?? 'Bakim'}`,
+    `${user.specialties[0] ?? 'Sac Kesimi'} ve ${user.specialties[1] ?? 'Bakim'}`,
     user.specialties[1] ?? 'Cilt Bakimi',
     user.specialties[0] ?? 'Klasik Kesim',
   ];

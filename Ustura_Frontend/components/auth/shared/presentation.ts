@@ -11,7 +11,7 @@ export const AUTH_FRAME_COPY = {
 } as const;
 
 export const AUTH_LEGAL_LINKS: AuthFrameLink[] = [
-  { label: 'Privacy Policy', href: '/gizlilik-politikasi' },
-  { label: 'Terms of Service', href: '/kullanim-kosullari' },
-  { label: 'System Status' },
+  { label: 'Gizlilik Politikasi', href: '/gizlilik-politikasi' },
+  { label: 'Kullanim Kosullari', href: '/kullanim-kosullari' },
+  { label: 'Sistem Durumu' },
 ];

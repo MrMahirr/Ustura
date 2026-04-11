@@ -5,7 +5,7 @@ import { salonProfileClassNames } from '@/components/panel/super-admin/salon-pro
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
-const footerLinks = ['Dokumantasyon', 'Sunucu Durumu', 'API Erisimi'];
+const footerLinks = ['Belgeler', 'Sunucu Durumu', 'API Erisimi'];
 
 export default function SalonProfileFooter() {
   const adminTheme = useSuperAdminTheme();
@@ -13,7 +13,7 @@ export default function SalonProfileFooter() {
   return (
     <View className="flex-row flex-wrap items-center justify-between gap-4 border-t pt-2" style={{ borderTopColor: adminTheme.borderSubtle }}>
       <Text className={salonProfileClassNames.footerText} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.56), fontFamily: 'Manrope-Bold' }}>
-        (c) 2026 USTURA Super Admin Console
+        (c) 2026 USTURA Ana Yonetici Konsolu
       </Text>
 
       <View className="flex-row flex-wrap gap-5">

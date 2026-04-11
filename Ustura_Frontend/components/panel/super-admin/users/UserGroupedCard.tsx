@@ -55,7 +55,7 @@ export default function UserGroupedCard({ group, basis }: { group: GroupedSalonR
         </View>
         <View className={userClassNames.groupedStat}>
           <Text className={userClassNames.groupedStatLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }}>
-            Owner
+            Sahip
           </Text>
           <Text className={userClassNames.groupedStatValue} style={{ color: adminTheme.onSurface }}>
             {group.ownerCount}
@@ -63,7 +63,7 @@ export default function UserGroupedCard({ group, basis }: { group: GroupedSalonR
         </View>
         <View className={userClassNames.groupedStat}>
           <Text className={userClassNames.groupedStatLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }}>
-            Employee
+            Calisan
           </Text>
           <Text className={userClassNames.groupedStatValue} style={{ color: adminTheme.onSurface }}>
             {group.employeeCount}

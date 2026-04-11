@@ -57,18 +57,18 @@ export interface SalonProfile {
 }
 
 const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+  'Ocak',
+  'Subat',
+  'Mart',
+  'Nisan',
+  'Mayis',
+  'Haziran',
+  'Temmuz',
+  'Agustos',
+  'Eylul',
+  'Ekim',
+  'Kasim',
+  'Aralik',
 ];
 
 const staffPortraits = [
@@ -79,13 +79,13 @@ const staffPortraits = [
 ];
 
 const staffNames = ['Hakan Demir', 'Sinan Kaya', 'Mert Sancak', 'Baris Ekinci', 'Kaan Aral', 'Emre Cetin'];
-const staffTitles = ['Master Barber', 'Senior Stylist', 'Color Specialist', 'Fade Artisan', 'Beard Designer'];
+const staffTitles = ['Usta Berber', 'Kidemli Stilist', 'Renk Uzmn.', 'Fade Ustasi', 'Sakal Tasarimcisi'];
 
 const serviceTemplates = [
-  { name: 'The Obsidian Cut', category: 'Signature', durationMinutes: 60, basePrice: 1150, popularity: 'Cok Satan', level: 4 },
-  { name: 'Beard Sculpting', category: 'Bakim', durationMinutes: 30, basePrice: 650, popularity: 'Dengeli', level: 2 },
-  { name: 'Hot Towel Ritual', category: 'Spa', durationMinutes: 20, basePrice: 480, popularity: 'Stabil', level: 3 },
-  { name: 'Royal Grooming Package', category: 'Ultimate', durationMinutes: 120, basePrice: 1850, popularity: 'Elite Tercih', level: 5 },
+  { name: 'Obsidyen Kesim', category: 'Imza', durationMinutes: 60, basePrice: 1150, popularity: 'Cok Satan', level: 4 },
+  { name: 'Sakal Sekillendirme', category: 'Bakim', durationMinutes: 30, basePrice: 650, popularity: 'Dengeli', level: 2 },
+  { name: 'Sicak Havlu Ritueli', category: 'Rahatlama', durationMinutes: 20, basePrice: 480, popularity: 'Stabil', level: 3 },
+  { name: 'Kraliyet Bakim Paketi', category: 'Tumden', durationMinutes: 120, basePrice: 1850, popularity: 'Gozde Secim', level: 5 },
 ];
 
 function hashValue(input: string) {
@@ -102,7 +102,7 @@ function formatCurrency(amount: number) {
 
 function formatLongDate(dateString: string) {
   const value = new Date(dateString);
-  return `${monthNames[value.getMonth()]} ${value.getDate()}, ${value.getFullYear()}`;
+  return `${value.getDate()} ${monthNames[value.getMonth()]} ${value.getFullYear()}`;
 }
 
 function buildPhoneNumber(hash: number) {
@@ -128,17 +128,17 @@ function buildRatingLabel(hash: number) {
 }
 
 function buildLocationLabel(location: string) {
-  return `${location} / Turkey`;
+  return `${location} / Turkiye`;
 }
 
 function buildSubscription(plan: SalonPlan, hash: number): SalonSubscriptionDetails {
-  const cycleLabel = plan === 'Basic' ? '3 Aylik' : 'Aylik';
+  const cycleLabel = plan === 'Temel' ? '3 Aylik' : 'Aylik';
   const nextPayment = new Date();
   nextPayment.setDate(nextPayment.getDate() + 8 + (hash % 18));
 
   return {
-    planName: `${plan} Tier`,
-    statusLabel: 'ACTIVE',
+    planName: `${plan} Paket`,
+    statusLabel: 'AKTIF',
     cycleLabel,
     nextPaymentLabel: formatLongDate(nextPayment.toISOString()),
   };
@@ -217,13 +217,13 @@ function buildStaffMembers(record: SalonRecord, hash: number): SalonStaffMember[
 }
 
 function buildServices(record: SalonRecord, hash: number): SalonServiceItem[] {
-  const planMultiplier = record.plan === 'Premium' ? 1.16 : record.plan === 'Pro' ? 1.08 : 1;
+  const planMultiplier = record.plan === 'Ozel' ? 1.16 : record.plan === 'Gelismis' ? 1.08 : 1;
 
   return serviceTemplates.map((service, index) => ({
     id: `${record.id}-service-${index + 1}`,
     name: service.name,
     category: service.category,
-    durationLabel: `${service.durationMinutes} MIN`,
+    durationLabel: `${service.durationMinutes} DK`,
     priceLabel: formatCurrency(Math.round(service.basePrice * planMultiplier + (hash % 70) * 5)),
     popularityLabel: service.popularity,
     popularityLevel: Math.min(5, Math.max(1, service.level + ((hash + index) % 2 === 0 ? 0 : -1))),

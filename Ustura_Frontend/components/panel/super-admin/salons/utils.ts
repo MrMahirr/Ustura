@@ -54,7 +54,7 @@ export function getPlanPalette(
   plan: SalonPlan,
   theme: Pick<SuperAdminTheme, 'primary' | 'onSurface' | 'onSurfaceVariant'>
 ) {
-  if (plan === 'Premium') {
+  if (plan === 'Ozel') {
     return {
       dot: theme.primary,
       text: theme.onSurface,
@@ -62,7 +62,7 @@ export function getPlanPalette(
     };
   }
 
-  if (plan === 'Pro') {
+  if (plan === 'Gelismis') {
     return {
       dot: hexToRgba(theme.onSurfaceVariant, 0.58),
       text: theme.onSurface,

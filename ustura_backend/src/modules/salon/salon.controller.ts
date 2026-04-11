@@ -29,8 +29,8 @@ import { CreateSalonDto } from './dto/create-salon.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { OwnedSalonResponseDto } from './dto/owned-salon-response.dto';
 import { OwnedSalonSummaryDto } from './dto/owned-salon-summary.dto';
+import { PaginatedPublicSalonResponseDto } from './dto/paginated-public-salon-response.dto';
 import { PublicSalonDetailDto } from './dto/public-salon-detail.dto';
-import { PublicSalonSummaryDto } from './dto/public-salon-summary.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { SalonManagementService } from './salon-management.service';
 import { SalonQueryService } from './salon-query.service';
@@ -47,9 +47,18 @@ export class SalonController {
   @ApiOperation({ summary: 'List active salons for public discovery' })
   @ApiQuery({ name: 'city', required: false, type: String })
   @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiOkResponse({ type: PublicSalonSummaryDto, isArray: true })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 6 })
+  @ApiOkResponse({ type: PaginatedPublicSalonResponseDto })
   async findAll(@Query() query: FindSalonsQueryDto) {
     return this.salonQueryService.findPublicList(query);
+  }
+
+  @Get('cities')
+  @ApiOperation({ summary: 'List distinct active salon cities for public filters' })
+  @ApiOkResponse({ type: String, isArray: true })
+  async findCities() {
+    return this.salonQueryService.findPublicCities();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

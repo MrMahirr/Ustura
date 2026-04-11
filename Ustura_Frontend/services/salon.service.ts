@@ -19,18 +19,42 @@ export interface SalonRecord {
   updatedAt: string;
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface PaginatedSalonResponse {
+  items: SalonRecord[];
+  pagination: PaginationMeta;
+}
+
 export interface SalonFilters {
   city?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export async function getSalons(filters: SalonFilters = {}) {
-  return apiRequest<SalonRecord[]>({
+  return apiRequest<PaginatedSalonResponse>({
     path: '/salons',
     query: {
       city: filters.city,
       search: filters.search,
+      page: filters.page,
+      pageSize: filters.pageSize,
     },
+  });
+}
+
+export async function getSalonCities() {
+  return apiRequest<string[]>({
+    path: '/salons/cities',
   });
 }
 

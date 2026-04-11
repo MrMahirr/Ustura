@@ -4,6 +4,7 @@ import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { salonNotFoundError } from './errors/salon.errors';
 import type {
   OwnedSalonSummary,
+  PaginatedResult,
   Salon,
   SalonCatalogServiceContract,
   SalonPublicDetail,
@@ -23,13 +24,24 @@ export class SalonQueryService implements SalonCatalogServiceContract {
 
   async findPublicList(
     query: FindSalonsQueryDto,
-  ): Promise<SalonPublicSummary[]> {
-    const salons = await this.salonRepository.findAll({
+  ): Promise<PaginatedResult<SalonPublicSummary>> {
+    const result = await this.salonRepository.findPublicPage({
       city: this.normalizeOptionalString(query.city),
       search: this.normalizeOptionalString(query.search),
+      page: query.page,
+      pageSize: query.pageSize,
     });
 
-    return salons.map((salon) => this.salonProjectionService.toPublicSummary(salon));
+    return {
+      items: result.items.map((salon) =>
+        this.salonProjectionService.toPublicSummary(salon),
+      ),
+      pagination: result.pagination,
+    };
+  }
+
+  async findPublicCities(): Promise<string[]> {
+    return this.salonRepository.findDistinctCities();
   }
 
   async findOwned(currentUser: JwtPayload): Promise<OwnedSalonSummary[]> {

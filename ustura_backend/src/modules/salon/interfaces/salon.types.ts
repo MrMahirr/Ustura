@@ -40,6 +40,25 @@ export interface FindSalonsFilters {
   includeInactive?: boolean;
 }
 
+export interface FindPaginatedSalonsFilters extends FindSalonsFilters {
+  page: number;
+  pageSize: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface PaginatedResult<TItem> {
+  items: TItem[];
+  pagination: PaginationMeta;
+}
+
 export interface CreateSalonInput {
   ownerId: string;
   name: string;

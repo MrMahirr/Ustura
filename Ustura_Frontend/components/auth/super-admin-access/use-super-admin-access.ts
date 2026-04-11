@@ -16,15 +16,15 @@ function validateFields(email: string, password: string): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!email.trim()) {
-    errors.email = 'Admin email alanı zorunludur.';
+    errors.email = 'Yonetici e-posta alani zorunludur.';
   } else if (!EMAIL_PATTERN.test(email.trim())) {
-    errors.email = 'Geçerli bir email formatı gir.';
+    errors.email = 'Gecerli bir e-posta bicimi gir.';
   }
 
   if (!password.trim()) {
-    errors.password = 'Şifre alanı zorunludur.';
+    errors.password = 'Sifre alani zorunludur.';
   } else if (password.trim().length < 8) {
-    errors.password = 'Test akışı için en az 8 karakter kullan.';
+    errors.password = 'Test akisi icin en az 8 karakter kullan.';
   }
 
   return errors;
@@ -90,7 +90,6 @@ export function useSuperAdminAccess() {
       return;
     }
 
-    // Backend auth intentionally stays disconnected until the API contract exists.
     setState('testReady');
   }, [email, password]);
 

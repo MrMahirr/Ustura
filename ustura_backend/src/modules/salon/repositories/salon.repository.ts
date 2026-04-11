@@ -4,7 +4,9 @@ import { DatabaseService } from '../../../database/database.service';
 import { SqlQueryExecutor } from '../../../database/database.types';
 import {
   CreateSalonInput,
+  FindPaginatedSalonsFilters,
   FindSalonsFilters,
+  PaginatedResult,
   Salon,
   UpdateSalonInput,
   WorkingHours,
@@ -15,32 +17,7 @@ export class SalonRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
   async findAll(filters: FindSalonsFilters = {}): Promise<Salon[]> {
-    const clauses: string[] = [];
-    const values: unknown[] = [];
-
-    if (filters.ownerId) {
-      values.push(filters.ownerId);
-      clauses.push(`owner_id = $${values.length}`);
-    }
-
-    if (!filters.includeInactive) {
-      clauses.push(`is_active = TRUE`);
-    }
-
-    if (filters.city) {
-      values.push(filters.city);
-      clauses.push(`LOWER(city) = LOWER($${values.length})`);
-    }
-
-    if (filters.search) {
-      values.push(`%${filters.search}%`);
-      clauses.push(
-        `(name ILIKE $${values.length} OR address ILIKE $${values.length} OR COALESCE(district, '') ILIKE $${values.length})`,
-      );
-    }
-
-    const whereClause =
-      clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const { values, whereClause } = this.buildFilters(filters);
 
     const result = await this.databaseService.query<SalonRow>({
       text: `
@@ -64,6 +41,93 @@ export class SalonRepository {
     });
 
     return result.rows.map((row) => this.mapRow(row) as Salon);
+  }
+
+  async findPublicPage(
+    filters: FindPaginatedSalonsFilters,
+  ): Promise<PaginatedResult<Salon>> {
+    const { page, pageSize, ...baseFilters } = filters;
+    const { values, whereClause } = this.buildFilters(baseFilters);
+    const offset = (page - 1) * pageSize;
+
+    const countResult = await this.databaseService.query<TotalCountRow>({
+      name: 'salon.find-public-page-count',
+      text: `
+        SELECT COUNT(*)::int AS total_count
+        FROM salons
+        ${whereClause}
+      `,
+      values,
+    });
+
+    const total = countResult.rows[0]?.total_count ?? 0;
+    const totalPages = total > 0 ? Math.ceil(total / pageSize) : 0;
+
+    if (total === 0) {
+      return {
+        items: [],
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+
+    const paginatedValues = [...values, pageSize, offset];
+    const result = await this.databaseService.query<SalonRow>({
+      name: 'salon.find-public-page',
+      text: `
+        SELECT
+          id,
+          owner_id,
+          name,
+          address,
+          city,
+          district,
+          photo_url,
+          working_hours,
+          is_active,
+          created_at,
+          updated_at
+        FROM salons
+        ${whereClause}
+        ORDER BY is_active DESC, created_at DESC
+        LIMIT $${paginatedValues.length - 1}
+        OFFSET $${paginatedValues.length}
+      `,
+      values: paginatedValues,
+    });
+
+    return {
+      items: result.rows.map((row) => this.mapRow(row) as Salon),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  async findDistinctCities(): Promise<string[]> {
+    const result = await this.databaseService.query<CityRow>({
+      name: 'salon.find-distinct-cities',
+      text: `
+        SELECT DISTINCT city
+        FROM salons
+        WHERE is_active = TRUE
+        ORDER BY city ASC
+      `,
+      values: [],
+    });
+
+    return result.rows.map((row) => row.city);
   }
 
   async findById(id: string): Promise<Salon | null> {
@@ -248,6 +312,37 @@ export class SalonRepository {
       updatedAt: row.updated_at,
     };
   }
+
+  private buildFilters(filters: FindSalonsFilters) {
+    const clauses: string[] = [];
+    const values: unknown[] = [];
+
+    if (filters.ownerId) {
+      values.push(filters.ownerId);
+      clauses.push(`owner_id = $${values.length}`);
+    }
+
+    if (!filters.includeInactive) {
+      clauses.push(`is_active = TRUE`);
+    }
+
+    if (filters.city) {
+      values.push(filters.city);
+      clauses.push(`LOWER(city) = LOWER($${values.length})`);
+    }
+
+    if (filters.search) {
+      values.push(`%${filters.search}%`);
+      clauses.push(
+        `(name ILIKE $${values.length} OR address ILIKE $${values.length} OR COALESCE(district, '') ILIKE $${values.length})`,
+      );
+    }
+
+    return {
+      values,
+      whereClause: clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '',
+    };
+  }
 }
 
 interface SalonRow extends QueryResultRow {
@@ -262,4 +357,12 @@ interface SalonRow extends QueryResultRow {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+interface TotalCountRow extends QueryResultRow {
+  total_count: number;
+}
+
+interface CityRow extends QueryResultRow {
+  city: string;
 }

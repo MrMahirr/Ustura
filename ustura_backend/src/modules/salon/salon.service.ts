@@ -8,6 +8,7 @@ import type {
   CreateOwnedSalonDraft,
   OwnedSalonDetail,
   OwnedSalonSummary,
+  PaginatedResult,
   PreparedOwnedSalonInput,
   Salon,
   SalonPublicDetail,
@@ -23,8 +24,14 @@ export class SalonService {
     private readonly salonManagementService: SalonManagementService,
   ) {}
 
-  async findAll(query: FindSalonsQueryDto): Promise<SalonPublicSummary[]> {
+  async findAll(
+    query: FindSalonsQueryDto,
+  ): Promise<PaginatedResult<SalonPublicSummary>> {
     return this.salonQueryService.findPublicList(query);
+  }
+
+  async findPublicCities(): Promise<string[]> {
+    return this.salonQueryService.findPublicCities();
   }
 
   async findOwned(currentUser: JwtPayload): Promise<OwnedSalonSummary[]> {

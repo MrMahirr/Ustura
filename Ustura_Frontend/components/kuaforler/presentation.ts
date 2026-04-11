@@ -11,7 +11,7 @@ export interface SalonListItem {
 export const SALON_LIST: SalonListItem[] = [
   {
     id: '1',
-    name: 'The Obsidian Studio',
+    name: 'Obsidyen Studyo',
     location: 'Besiktas, Istanbul',
     rating: 4.9,
     reviewCount: 124,
@@ -21,7 +21,7 @@ export const SALON_LIST: SalonListItem[] = [
   },
   {
     id: '2',
-    name: 'Heritage Grooming',
+    name: 'Miras Bakim Evi',
     location: 'Cankaya, Ankara',
     rating: 4.8,
     reviewCount: 89,
@@ -31,7 +31,7 @@ export const SALON_LIST: SalonListItem[] = [
   },
   {
     id: '3',
-    name: 'Sharp & Co.',
+    name: 'Keskin ve Ortaklari',
     location: 'Bornova, Izmir',
     rating: 5.0,
     reviewCount: 215,

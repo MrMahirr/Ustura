@@ -17,11 +17,11 @@ function validateIdentifier(value: string): string | undefined {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    return 'Telefon veya email alani zorunludur.';
+    return 'Telefon veya e-posta alani zorunludur.';
   }
 
   if (trimmed.includes('@')) {
-    return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir email adresi gir.';
+    return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir e-posta adresi gir.';
   }
 
   const digits = trimmed.replace(/\D/g, '');
