@@ -1,7 +1,7 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Platform, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Platform, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
 import NotificationsMenu from '@/components/panel/super-admin/NotificationsMenu';
 import ThemeToggleButton from '@/components/ui/ThemeToggleButton';
@@ -11,40 +11,6 @@ import { useSuperAdminTheme } from './theme';
 
 const AVATAR_URI =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuCWYaMniv6v5fvJlBzzTSKt09kQNGA6YDye7v8aPsYAWHTPYcT-WhWAHjk3f6d0ni8jX6_-aAVdrNAmMorMXAIWhGgZRw9tWlucStisjiPw0wOR9wtTR5ss8VBorojbYXYONu0oOu0lh6oSKYfQapZo2ba2RCc4mLiQbbzmMf-IDT5Rn-fvXRgkNiqH8fqnZClD-cg4JJvfu5nsXDw05w3f8xT0kzo7aMPFc8k7dNyjh8bkxUTOZa2q-rpY0P5_3QP1eofWLJ3NhOs';
-
-function TopBarIconButton({
-  icon,
-  onPress,
-  showIndicator,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  onPress?: () => void;
-  showIndicator?: boolean;
-}) {
-  const adminTheme = useSuperAdminTheme();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      className="relative h-10 w-10 items-center justify-center">
-      {({ hovered }) => (
-        <>
-          <MaterialIcons
-            name={icon}
-            size={22}
-            color={hovered ? adminTheme.primary : hexToRgba(adminTheme.onSurfaceVariant, 0.75)}
-          />
-          {showIndicator ? (
-            <View
-              className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2"
-              style={{ backgroundColor: adminTheme.primary, borderColor: adminTheme.surface }}
-            />
-          ) : null}
-        </>
-      )}
-    </Pressable>
-  );
-}
 
 export interface PanelTopBarProps {
   query: string;
@@ -99,7 +65,6 @@ export default function PanelTopBar({ query, onQueryChange }: PanelTopBarProps) 
       <View className="shrink-0 flex-row items-center gap-5">
         <ThemeToggleButton />
         <NotificationsMenu />
-        <TopBarIconButton icon="dns" />
         <View className="ml-2 flex-row items-center gap-3">
           <View className="items-end">
             <Text className="font-body text-xs font-bold" style={{ color: adminTheme.onSurface }}>

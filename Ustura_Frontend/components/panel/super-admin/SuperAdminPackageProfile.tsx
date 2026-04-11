@@ -11,8 +11,10 @@ import PackageProfileHero from '@/components/panel/super-admin/package-profile/P
 import { packageProfileClassNames } from '@/components/panel/super-admin/package-profile/presentation';
 import { usePackageProfile } from '@/components/panel/super-admin/package-profile/use-package-profile';
 import SubscriptionListSection from '@/components/panel/super-admin/packages/SubscriptionListSection';
+import type { SubscriptionRecord } from '@/components/panel/super-admin/packages/types';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { panelRoutes } from '@/constants/routes';
+import type { Subscription } from '@/services/package.service';
 import { cn } from '@/utils/cn';
 
 export default function SuperAdminPackageProfile({ packageId }: { packageId?: string }) {
@@ -20,6 +22,33 @@ export default function SuperAdminPackageProfile({ packageId }: { packageId?: st
   const adminTheme = useSuperAdminTheme();
   const { profile, isLoading, formState, handleSave } = usePackageProfile(packageId);
   const [query, setQuery] = React.useState('');
+  const packageSubscribers = React.useMemo<SubscriptionRecord[]>(
+    () =>
+      (profile?.subscribers ?? []).map((subscription: Subscription) => ({
+        id: subscription.id,
+        salonName: subscription.salonName,
+        salonInitial:
+          subscription.salonInitial ??
+          subscription.salonName.slice(0, 1).toLocaleUpperCase('tr-TR'),
+        packageName: subscription.packageName,
+        packageTier: subscription.packageTier,
+        startDate: new Intl.DateTimeFormat('tr-TR').format(
+          new Date(subscription.startDate),
+        ),
+        endDate: subscription.endDate
+          ? new Intl.DateTimeFormat('tr-TR').format(new Date(subscription.endDate))
+          : null,
+        status:
+          subscription.status === 'active'
+            ? 'Aktif'
+            : subscription.status === 'expired'
+              ? 'Suresi Doldu'
+              : subscription.status === 'cancelled'
+                ? 'Iptal Edildi'
+                : 'Beklemede',
+      })),
+    [profile?.subscribers],
+  );
 
   const isWide = width >= 1160;
   const useDesktopTable = width >= 1180;
@@ -95,7 +124,7 @@ export default function SuperAdminPackageProfile({ packageId }: { packageId?: st
           <View className="mt-4">
              <Text className="font-headline text-xl text-center mb-6" style={{color: adminTheme.onSurface}}>Pakete Abone Olan Guncel Salonlar</Text>
              <SubscriptionListSection
-               subscriptions={profile.subscribers}
+               subscriptions={packageSubscribers}
                useDesktopTable={useDesktopTable}
              />
           </View>

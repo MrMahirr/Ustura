@@ -71,7 +71,7 @@ export default function PackageIdentityCard({ formState }: { formState: any }) {
           style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.7) }}>
           Bu paketi platformda nasil sergilemek istediginizi yapilandirin.
         </Text>
-        
+
         <View className="flex-row items-center justify-between rounded-md border px-4 py-4"
               style={{
                 backgroundColor: formState.isFeatured ? hexToRgba(adminTheme.primary, 0.05) : adminTheme.cardBackgroundMuted,

@@ -14,6 +14,7 @@ function StatusBadge({ status }: { status: SubscriptionRecord['status'] }) {
     Aktif: adminTheme.success,
     'Suresi Doldu': adminTheme.error,
     Beklemede: adminTheme.warning,
+    'Iptal Edildi': adminTheme.error,
   };
 
   const color = colorMap[status];

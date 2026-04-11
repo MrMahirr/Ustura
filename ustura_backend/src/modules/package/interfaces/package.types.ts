@@ -50,6 +50,29 @@ export interface Subscription {
   packageTier?: PackageTier;
 }
 
+export interface PackageApproval {
+  id: string;
+  salonId: string;
+  salonName: string;
+  salonCity: string;
+  salonPhotoUrl: string | null;
+  salonCreatedAt: Date;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  packageId: string;
+  packageName: string;
+  packageTier: PackageTier;
+  packagePricePerMonth: number;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionStartDate: Date;
+  subscriptionEndDate: Date | null;
+  submittedAt: Date;
+  updatedAt: Date;
+  staffCount: number;
+  reservationCount: number;
+}
+
 export interface SubscriptionRow extends QueryResultRow {
   id: string;
   salon_id: string;
@@ -64,20 +87,26 @@ export interface SubscriptionRow extends QueryResultRow {
   package_tier?: string;
 }
 
-export interface CreatePackageInput {
-  name: string;
-  tier: PackageTier;
-  tierLabel: string;
-  pricePerMonth: number;
-  features: PackageFeature[];
-  isFeatured?: boolean;
+export interface PackageApprovalRow extends QueryResultRow {
+  id: string;
+  salon_id: string;
+  salon_name: string;
+  salon_city: string;
+  salon_photo_url: string | null;
+  salon_created_at: Date;
+  owner_id: string;
+  owner_name: string;
+  owner_email: string;
+  package_id: string;
+  package_name: string;
+  package_tier: string;
+  package_price_per_month: string | number;
+  subscription_status: SubscriptionStatus;
+  subscription_start_date: Date;
+  subscription_end_date: Date | null;
+  submitted_at: Date;
+  updated_at: Date;
+  staff_count: number;
+  reservation_count: number;
 }
 
-export interface UpdatePackageInput {
-  name?: string;
-  tierLabel?: string;
-  pricePerMonth?: number;
-  features?: PackageFeature[];
-  isFeatured?: boolean;
-  isActive?: boolean;
-}

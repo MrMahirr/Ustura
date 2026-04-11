@@ -21,7 +21,7 @@ import { cn } from '@/utils/cn';
 export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
   const { width } = useWindowDimensions();
   const adminTheme = useSuperAdminTheme();
-  const profile = useUserProfile(userId);
+  const { profile, isLoading, error } = useUserProfile(userId);
   const [query, setQuery] = React.useState('');
 
   const isWide = width >= 1160;
@@ -50,12 +50,16 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
 
         <View className="min-h-[260px] items-center justify-center gap-3 px-6">
           <Text className="text-base" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
-            Kullanici bulunamadi
+            {isLoading ? 'Kullanici yukleniyor' : 'Kullanici bulunamadi'}
           </Text>
           <Text className="max-w-[420px] text-center text-sm leading-5" style={{ color: adminTheme.onSurfaceVariant }}>
-            Secilen kullanici kaydi mevcut degil veya silinmis olabilir.
+            {isLoading
+              ? 'Secilen kullanici profili getiriliyor.'
+              : error ?? 'Secilen kullanici kaydi mevcut degil veya silinmis olabilir.'}
           </Text>
-          <ActionButton label="Kullanicilar Listesine Don" onPress={() => router.push(panelRoutes.kullanicilar)} />
+          {!isLoading ? (
+            <ActionButton label="Kullanicilar Listesine Don" onPress={() => router.push(panelRoutes.kullanicilar)} />
+          ) : null}
         </View>
       </View>
     );

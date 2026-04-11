@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PackagesRepository } from './repositories/packages.repository';
 import { SubscriptionsRepository } from './repositories/subscriptions.repository';
-import { CreatePackageInput, UpdatePackageInput } from './interfaces/package.types';
+import { CreatePackageDto } from './dto/create-package.dto';
+import { UpdatePackageDto } from './dto/update-package.dto';
+import { UpdateSubscriptionStatusDto } from './dto/update-subscription-status.dto';
 
 @Injectable()
 export class PackageService {
@@ -12,6 +14,10 @@ export class PackageService {
 
   async getAllPackages() {
     return this.packagesRepository.findAll();
+  }
+
+  async getAdminPackages() {
+    return this.packagesRepository.findAllAdmin();
   }
 
   async getPackageById(id: string) {
@@ -25,11 +31,11 @@ export class PackageService {
     return { ...pkg, subscribers };
   }
 
-  async createPackage(input: CreatePackageInput) {
+  async createPackage(input: CreatePackageDto) {
     return this.packagesRepository.create(input);
   }
 
-  async updatePackage(id: string, input: UpdatePackageInput) {
+  async updatePackage(id: string, input: UpdatePackageDto) {
     const pkg = await this.packagesRepository.update(id, input);
     if (!pkg) {
       throw new NotFoundException('Guncellenmek istenen paket bulunamadi.');
@@ -41,8 +47,28 @@ export class PackageService {
     return this.subscriptionsRepository.findAllDetailed();
   }
 
+  async getPackageApprovals() {
+    return this.subscriptionsRepository.findApprovalQueue();
+  }
+
+  async updateSubscriptionStatus(
+    id: string,
+    input: UpdateSubscriptionStatusDto,
+  ) {
+    const subscription = await this.subscriptionsRepository.updateStatus(
+      id,
+      input.status,
+    );
+
+    if (!subscription) {
+      throw new NotFoundException('Guncellenecek abonelik bulunamadi.');
+    }
+
+    return subscription;
+  }
+
   async getOverviewStats() {
-    const packages = await this.packagesRepository.findAll();
+    const packages = await this.packagesRepository.findAllAdmin();
     const subscriptions = await this.subscriptionsRepository.findAllDetailed();
     
     const activeSubCount = subscriptions.filter(s => s.status === 'active').length;

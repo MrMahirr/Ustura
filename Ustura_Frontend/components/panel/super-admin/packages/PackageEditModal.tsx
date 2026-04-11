@@ -5,10 +5,12 @@ import { Platform, Pressable, ScrollView, Switch, Text, View } from 'react-nativ
 
 import { usePackageProfile } from '@/components/panel/super-admin/package-profile/use-package-profile';
 import SubscriptionListSection from '@/components/panel/super-admin/packages/SubscriptionListSection';
+import type { SubscriptionRecord } from '@/components/panel/super-admin/packages/types';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import { hexToRgba } from '@/utils/color';
+import type { Subscription } from '@/services/package.service';
 
 interface PackageEditModalProps {
   packageId: string | null;
@@ -22,12 +24,48 @@ export default function PackageEditModal({
   onSaved,
 }: PackageEditModalProps) {
   const adminTheme = useSuperAdminTheme();
-  const { profile, isLoading, formState, handleSave } = usePackageProfile(packageId || undefined);
+  const { profile, isLoading, formState, handleSave, handleDeactivate } =
+    usePackageProfile(packageId || undefined);
+
+  const mapSubscriptionRecord = React.useCallback(
+    (subscription: Subscription): SubscriptionRecord => ({
+      id: subscription.id,
+      salonName: subscription.salonName,
+      salonInitial:
+        subscription.salonInitial ??
+        subscription.salonName.slice(0, 1).toLocaleUpperCase('tr-TR'),
+      packageName: subscription.packageName,
+      packageTier: subscription.packageTier,
+      startDate: new Intl.DateTimeFormat('tr-TR').format(
+        new Date(subscription.startDate),
+      ),
+      endDate: subscription.endDate
+        ? new Intl.DateTimeFormat('tr-TR').format(new Date(subscription.endDate))
+        : null,
+      status:
+        subscription.status === 'active'
+          ? 'Aktif'
+          : subscription.status === 'expired'
+            ? 'Suresi Doldu'
+            : subscription.status === 'cancelled'
+              ? 'Iptal Edildi'
+              : 'Beklemede',
+    }),
+    [],
+  );
 
   if (!packageId) return null;
 
-  const submit = () => {
-    handleSave();
+  const submit = async () => {
+    const didSave = await handleSave();
+    if (!didSave) return;
+    onSaved();
+    onClose();
+  };
+
+  const deactivate = async () => {
+    const didDeactivate = await handleDeactivate();
+    if (!didDeactivate) return;
     onSaved();
     onClose();
   };
@@ -64,6 +102,50 @@ export default function PackageEditModal({
               onChangeText={formState.setName}
               iconLeft="title"
             />
+            <View className="gap-3">
+              <Text
+                className="font-label text-[10px] uppercase tracking-widest"
+                style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+                Paket Kademesi
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {[
+                  { label: 'Baslangic', value: 'baslangic' as const },
+                  { label: 'Profesyonel', value: 'profesyonel' as const },
+                  { label: 'Kurumsal', value: 'kurumsal' as const },
+                ].map((option) => {
+                  const isSelected = option.value === formState.tier;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => formState.setTier(option.value)}
+                      className="rounded-full border px-4 py-2"
+                      style={({ hovered }) => ({
+                        backgroundColor: isSelected
+                          ? hexToRgba(adminTheme.primary, 0.14)
+                          : hovered
+                            ? adminTheme.cardBackgroundStrong
+                            : 'transparent',
+                        borderColor: isSelected
+                          ? hexToRgba(adminTheme.primary, 0.3)
+                          : adminTheme.borderSubtle,
+                      })}>
+                      <Text
+                        className="font-label text-[10px] uppercase tracking-[2px]"
+                        style={{
+                          color: isSelected
+                            ? adminTheme.primary
+                            : adminTheme.onSurfaceVariant,
+                          fontFamily: 'Manrope-Bold',
+                        }}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
             <Input
               label="Tier Etiketi (ornegin: Standard Access)"
               value={formState.tierLabel}
@@ -197,7 +279,7 @@ export default function PackageEditModal({
           </Text>
           {profile.subscribers.length > 0 ? (
              <SubscriptionListSection
-                subscriptions={profile.subscribers}
+                subscriptions={profile.subscribers.map(mapSubscriptionRecord)}
                 useDesktopTable={false} // Force mobile view inside modal since space is tight
              />
           ) : (
@@ -240,7 +322,11 @@ export default function PackageEditModal({
 
       {/* Body */}
       <ScrollView
-        style={{ maxHeight: Platform.OS === 'web' ? '70vh' : 500 }}
+        style={
+          Platform.OS === 'web'
+            ? ({ maxHeight: '70vh' } as any)
+            : { maxHeight: 500 }
+        }
         contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
         {renderContent()}
       </ScrollView>
@@ -254,6 +340,7 @@ export default function PackageEditModal({
             backgroundColor: adminTheme.cardBackgroundMuted,
           }}>
           <Pressable
+            onPress={deactivate}
             className="rounded-md border px-3 py-2"
             style={({ hovered }) => [
               {

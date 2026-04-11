@@ -85,7 +85,11 @@ export default function AllSubscriptionsModal({
 
       {/* Body */}
       <ScrollView
-        style={{ maxHeight: Platform.OS === 'web' ? '65vh' : 500 }}
+        style={
+          Platform.OS === 'web'
+            ? ({ maxHeight: '65vh' } as any)
+            : { maxHeight: 500 }
+        }
         contentContainerStyle={{ padding: 24 }}>
           
         {filteredSubscriptions.length === 0 ? (

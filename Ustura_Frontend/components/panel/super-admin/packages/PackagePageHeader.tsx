@@ -73,7 +73,7 @@ export default function PackagePageHeader({
         <Text
           className={packageClassNames.description}
           style={{ color: adminTheme.onSurfaceVariant, fontWeight: '300' }}>
-          Platform paketlerini, fiyatlandirmayi ve salon aboneliklerini yonet.
+          Platform paketlerini, onay kuyrugunu, fiyatlandirmayi ve salon aboneliklerini yonet.
         </Text>
       </View>
       <HeaderCtaButton onPress={onOpenCreateModal} />

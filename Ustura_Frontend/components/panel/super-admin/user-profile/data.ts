@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { salonRecords } from '@/components/panel/super-admin/salon-management.data';
-import { userRecords, type UserRecord } from '@/components/panel/super-admin/user-management.data';
+import type { UserRecord } from '@/components/panel/super-admin/user-management.data';
 
 export interface UserProfileMetric {
   id: string;
@@ -237,7 +237,7 @@ function createQuickActions(): UserProfileQuickAction[] {
   ];
 }
 
-function buildProfile(user: UserRecord): UserProfile {
+export function buildUserProfile(user: UserRecord): UserProfile {
   const hash = hashValue(user.id);
   const salon = user.salonId ? salonRecords.find((record) => record.id === user.salonId) : undefined;
   const district = extractDistrict(salon?.location ?? user.salonLocation);
@@ -255,17 +255,4 @@ function buildProfile(user: UserRecord): UserProfile {
     activities: createActivities(user),
     quickActions: createQuickActions(),
   };
-}
-
-export function getUserProfileById(userId?: string) {
-  if (!userId) {
-    return null;
-  }
-
-  const user = userRecords.find((record) => record.id === userId);
-  if (!user) {
-    return null;
-  }
-
-  return buildProfile(user);
 }

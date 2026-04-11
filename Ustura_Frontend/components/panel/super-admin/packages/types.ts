@@ -14,9 +14,14 @@ export interface PackageDefinition {
   features: PackageFeature[];
   activeSalonCount: number;
   isFeatured: boolean;
+  isActive: boolean;
 }
 
-export type SubscriptionStatus = 'Aktif' | 'Suresi Doldu' | 'Beklemede';
+export type SubscriptionStatus =
+  | 'Aktif'
+  | 'Suresi Doldu'
+  | 'Beklemede'
+  | 'Iptal Edildi';
 
 export interface SubscriptionRecord {
   id: string;

@@ -50,6 +50,7 @@ export default function SuperAdminUsers() {
           <UserOverviewBar
             isWide={isWide}
             selectedViewMode={userManagement.viewMode}
+            overview={userManagement.overview}
             onViewModeChange={userManagement.setViewMode}
           />
 
@@ -70,6 +71,8 @@ export default function SuperAdminUsers() {
             groupedSalons={userManagement.groupedSalons}
             filteredUsersCount={userManagement.filteredUsersCount}
             viewMode={userManagement.viewMode}
+            isLoading={userManagement.isLoading}
+            error={userManagement.error}
             page={userManagement.page}
             totalPages={userManagement.totalPages}
             startRow={userManagement.startRow}
@@ -81,7 +84,9 @@ export default function SuperAdminUsers() {
             onAddUser={() => undefined}
           />
 
-          {userManagement.viewMode === 'all' ? <UserInsightsSection isWide={isWide} /> : null}
+          {userManagement.viewMode === 'all' ? (
+            <UserInsightsSection isWide={isWide} overview={userManagement.overview} />
+          ) : null}
         </View>
       </ScrollView>
     </View>

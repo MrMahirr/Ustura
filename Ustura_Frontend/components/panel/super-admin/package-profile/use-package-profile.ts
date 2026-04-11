@@ -1,5 +1,11 @@
 import React from 'react';
-import { PackageService, type Package, type Subscription } from '@/services/package.service';
+import {
+  PackageService,
+  type Package,
+  type PackageFeature,
+  type PackageTier,
+  type Subscription,
+} from '@/services/package.service';
 
 export interface PackageProfileData extends Package {
   subscribers: Subscription[];
@@ -12,10 +18,11 @@ export function usePackageProfile(packageId?: string) {
   
   // Editable form state
   const [name, setName] = React.useState('');
+  const [tier, setTier] = React.useState<PackageTier>('baslangic');
   const [tierLabel, setTierLabel] = React.useState('');
   const [pricePerMonth, setPricePerMonth] = React.useState('');
   const [isFeatured, setIsFeatured] = React.useState(false);
-  const [features, setFeatures] = React.useState<any[]>([]);
+  const [features, setFeatures] = React.useState<PackageFeature[]>([]);
 
   const fetchProfile = React.useCallback(async () => {
     if (!packageId) {
@@ -31,6 +38,7 @@ export function usePackageProfile(packageId?: string) {
       
       // Initialize form state
       setName(data.name);
+      setTier(data.tier);
       setTierLabel(data.tierLabel);
       setPricePerMonth(data.pricePerMonth.toString());
       setIsFeatured(data.isFeatured);
@@ -73,6 +81,7 @@ export function usePackageProfile(packageId?: string) {
     try {
       const updatedData = {
         name,
+        tier,
         tierLabel,
         pricePerMonth: parseFloat(pricePerMonth) || 0,
         isFeatured,
@@ -106,6 +115,7 @@ export function usePackageProfile(packageId?: string) {
     error,
     formState: {
       name, setName,
+      tier, setTier,
       tierLabel, setTierLabel,
       pricePerMonth, setPricePerMonth,
       isFeatured, setIsFeatured,

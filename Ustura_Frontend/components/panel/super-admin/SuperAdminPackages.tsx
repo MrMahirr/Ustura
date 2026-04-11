@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
+import PackageApprovalsSection from '@/components/panel/super-admin/package-approvals/PackageApprovalsSection';
 import AllSubscriptionsModal from '@/components/panel/super-admin/packages/AllSubscriptionsModal';
 import PackageCardsGrid from '@/components/panel/super-admin/packages/PackageCardsGrid';
 import PackageCreateModal from '@/components/panel/super-admin/packages/PackageCreateModal';
@@ -66,14 +67,26 @@ export default function SuperAdminPackages() {
 
           <PackageStatsRow overview={packageManagement.overview} />
 
+          <PackageApprovalsSection
+            query={packageManagement.query}
+            records={packageManagement.approvals}
+            onApprove={(recordId) => {
+              void packageManagement.approvePackageSelection(recordId);
+            }}
+            onReject={(recordId) => {
+              void packageManagement.rejectPackageSelection(recordId);
+            }}
+          />
+
           <PackageCardsGrid
             packages={packageManagement.packages}
             onEditPackage={(pkgId) => {
               setEditingPackageId(pkgId);
             }}
-            onDisablePackage={(pkgId) => {
-              console.log('Disable package:', pkgId);
-              // Handle disable confirmation
+            onTogglePackageState={(pkgId, nextIsActive) => {
+              void packageManagement.updatePackage(pkgId, {
+                isActive: nextIsActive,
+              });
             }}
           />
 
@@ -88,18 +101,16 @@ export default function SuperAdminPackages() {
       <PackageCreateModal
         visible={isCreateModalVisible}
         onClose={() => setIsCreateModalVisible(false)}
-        onSubmit={(data) => {
-          console.log('New Package Data Submitted:', data);
-          setIsCreateModalVisible(false);
-          // TODO: hook into packageManagement.createPackage(data) when ready
-        }}
+        onSubmit={packageManagement.createPackage}
+        isSubmitting={packageManagement.isMutating}
+        errorMessage={packageManagement.error}
       />
 
       <PackageEditModal
         packageId={editingPackageId}
         onClose={() => setEditingPackageId(null)}
         onSaved={() => {
-          console.log('Package edited and saved.');
+          void packageManagement.refresh();
         }}
       />
 
