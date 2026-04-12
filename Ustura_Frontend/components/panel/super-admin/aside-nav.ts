@@ -22,6 +22,6 @@ export const superAdminAsideItems: SuperAdminAsideItem[] = [
   { label: 'Odemeler', icon: 'payments', disabled: true },
   { label: 'Paketler', icon: 'inventory-2', href: panelRoutes.paketler },
   { label: 'Raporlar', icon: 'analytics', disabled: true },
-  { label: 'Bildirimler', icon: 'notifications', disabled: true },
+  { label: 'Bildirimler', icon: 'notifications', href: panelRoutes.bildirimler },
   { label: 'Sistem Ayarlari', icon: 'settings', href: panelRoutes.ayarlar },
 ];

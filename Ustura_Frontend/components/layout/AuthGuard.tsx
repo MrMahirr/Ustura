@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter, type Href, Redirect } from 'expo-router';
 
 import { useAuth } from '@/hooks/use-auth';
 
@@ -13,14 +13,8 @@ export default function AuthGuard({ children, loginRedirect = '/giris', fallback
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
-  React.useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace(loginRedirect);
-    }
-  }, [isAuthenticated, loginRedirect, router]);
-
   if (!isAuthenticated) {
-    return <>{fallback}</>;
+    return <Redirect href={loginRedirect} />;
   }
 
   return <>{children}</>;

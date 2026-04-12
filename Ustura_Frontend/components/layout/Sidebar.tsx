@@ -24,7 +24,6 @@ const defaultItems: SidebarItem[] = [
   { label: 'Salonlar', icon: 'storefront', disabled: true },
   { label: 'Kullanicilar', icon: 'group', disabled: true },
   { label: 'Randevular', icon: 'event-available', href: panelRoutes.randevular },
-  { label: 'Berber', icon: 'content-cut', href: panelRoutes.berber },
   { label: 'Personel', icon: 'badge', href: panelRoutes.personel },
   { label: 'Odemeler', icon: 'payments', disabled: true },
   { label: 'Paketler', icon: 'inventory-2', disabled: true },

@@ -54,6 +54,7 @@ interface AuthContextValue {
   isGoogleLoginLoading: boolean;
   login: (input: LoginInput) => Promise<AuthUser>;
   loginSuperAdmin: (input: LoginInput) => Promise<AuthUser>;
+  loginStaff: (input: LoginInput) => Promise<AuthUser>;
   loginWithGoogle: () => Promise<AuthUser>;
   register: (input: RegistrationInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
@@ -70,6 +71,9 @@ const AuthContext = createContext<AuthContextValue>({
     throw new Error('AuthContext hazir degil.');
   },
   loginSuperAdmin: async () => {
+    throw new Error('AuthContext hazir degil.');
+  },
+  loginStaff: async () => {
     throw new Error('AuthContext hazir degil.');
   },
   loginWithGoogle: async () => {
@@ -223,7 +227,17 @@ function mapAuthSession(session: AuthSession): StoredSession {
   };
 }
 
-function ensureExpectedRole(session: AuthSession, expectedRole: AuthUserRole) {
+const STAFF_ROLES: readonly AuthUserRole[] = ['owner', 'barber', 'receptionist'];
+
+function ensureExpectedRole(session: AuthSession, expectedRole: AuthUserRole | 'staff') {
+  if (expectedRole === 'staff') {
+    if (STAFF_ROLES.includes(session.user.role)) {
+      return session;
+    }
+
+    throw new Error('Bu hesap personel paneline erisim yetkisine sahip degil.');
+  }
+
   if (session.user.role === expectedRole) {
     return session;
   }
@@ -349,6 +363,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               password: input.password.trim(),
             }),
             'super_admin',
+          ),
+        );
+        setSession(nextSession);
+        return nextSession.user;
+      },
+      loginStaff: async (input) => {
+        const nextSession = mapAuthSession(
+          ensureExpectedRole(
+            await loginWithPassword({
+              email: normalizeEmail(input.identifier),
+              password: input.password.trim(),
+            }),
+            'staff',
           ),
         );
         setSession(nextSession);

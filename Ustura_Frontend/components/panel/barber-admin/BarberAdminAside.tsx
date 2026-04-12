@@ -7,8 +7,8 @@ import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from
 import { hexToRgba } from '@/utils/color';
 import { cn } from '@/utils/cn';
 
-import { superAdminAsideItems, type SuperAdminAsideItem } from './aside-nav';
-import { useSuperAdminTheme } from './theme';
+import { barberAsideItems, type BarberAsideItem } from './barber-aside-nav';
+import { useBarberAdminTheme } from './theme';
 
 const INACTIVE_GRAY = '#6B7280';
 const OPEN_RAZOR = require('../../../assets/images/panel/superadmin_acik.png');
@@ -23,21 +23,6 @@ function normalizePath(path: string) {
   return p;
 }
 
-function isItemActive(pathname: string, item: SuperAdminAsideItem) {
-  const currentPath = normalizePath(pathname);
-  const itemPath = normalizePath(String(item.href ?? ''));
-
-  if (!itemPath) {
-    return false;
-  }
-
-  if (currentPath === itemPath) {
-    return true;
-  }
-
-  return Boolean(item.matchSubroutes && itemPath !== '/' && currentPath.startsWith(`${itemPath}/`));
-}
-
 function AsideNavRow({
   item,
   isActive,
@@ -48,7 +33,7 @@ function AsideNavRow({
   activeBackground,
   borderSubtle,
 }: {
-  item: SuperAdminAsideItem;
+  item: BarberAsideItem;
   isActive: boolean;
   isDesktop: boolean;
   collapsed: boolean;
@@ -58,31 +43,23 @@ function AsideNavRow({
   borderSubtle: string;
 }) {
   const router = useRouter();
-  const href = item.href;
-  const handlePress =
-    item.disabled || !href
-      ? undefined
-      : () => {
-          router.push(href);
-        };
 
   return (
     <Pressable
-      onPress={handlePress}
-      disabled={item.disabled}
-      accessibilityRole={handlePress ? 'link' : undefined}
+      onPress={() => router.push(item.href)}
+      accessibilityRole="link"
       accessibilityLabel={collapsed ? item.label : undefined}
-      accessibilityState={{ disabled: item.disabled, selected: isActive }}
+      accessibilityState={{ selected: isActive }}
       className={cn(
         isDesktop
           ? 'w-full flex-row items-center justify-start px-4 py-3'
           : 'min-h-12 min-w-0 flex-row items-center gap-3 rounded-sm border px-4 py-2.5',
         isDesktop && !collapsed && 'gap-3',
-        isDesktop && collapsed && 'min-h-[52px]'
+        isDesktop && collapsed && 'min-h-[52px] justify-center',
       )}
       style={({ hovered, pressed }) => {
         const canHover = isDesktop && Platform.OS === 'web';
-        const isHovered = canHover && hovered && !item.disabled;
+        const isHovered = canHover && hovered;
 
         let bg = 'transparent';
         if (isActive || isHovered) {
@@ -101,7 +78,7 @@ function AsideNavRow({
                 : isHovered
                   ? hexToRgba(primary, 0.28)
                   : borderSubtle,
-            transform: [{ scale: pressed && !item.disabled ? 0.995 : 1 }],
+            transform: [{ scale: pressed ? 0.995 : 1 }],
           },
           Platform.OS === 'web'
             ? ({
@@ -114,12 +91,10 @@ function AsideNavRow({
       }}>
       {({ hovered }) => {
         const canHover = isDesktop && Platform.OS === 'web';
-        const isHovered = canHover && hovered && !item.disabled;
+        const isHovered = canHover && hovered;
 
         let fg = INACTIVE_GRAY;
-        if (item.disabled) {
-          fg = hexToRgba(INACTIVE_GRAY, 0.55);
-        } else if (isActive || isHovered) {
+        if (isActive || isHovered) {
           fg = primary;
         }
 
@@ -171,12 +146,12 @@ function AsideNavRow({
   );
 }
 
-export default function SuperAdminAside({
-  items = superAdminAsideItems,
+export default function BarberAdminAside({
+  items = barberAsideItems,
   collapsed = false,
   onToggleCollapse,
 }: {
-  items?: SuperAdminAsideItem[];
+  items?: BarberAsideItem[];
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }) {
@@ -189,7 +164,7 @@ export default function SuperAdminAside({
     sidebarBackground,
     sidebarActiveBackground,
     borderSubtle,
-  } = useSuperAdminTheme();
+  } = useBarberAdminTheme();
 
   const isDesktop = width >= 1100;
   const canCollapse = isDesktop && typeof onToggleCollapse === 'function';
@@ -202,7 +177,16 @@ export default function SuperAdminAside({
         { backgroundColor: sidebarBackground },
         Platform.OS === 'web' && isDesktop ? ({ height: '100vh' } as any) : null,
       ]}>
-      <View className={cn(collapsed ? 'mb-2 px-2.5' : 'mb-8 px-5')}>
+      <View
+        className={cn(collapsed ? 'mb-2 px-2.5' : 'mb-8 px-5')}
+        style={
+          Platform.OS === 'web'
+            ? ({
+                transition:
+                  'padding 420ms cubic-bezier(0.22, 1, 0.36, 1), margin 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+              } as any)
+            : null
+        }>
         <View className={cn('flex-row gap-3', collapsed ? 'items-center justify-center gap-0' : 'items-start justify-between')}>
           <View
             className="min-w-0 flex-1 overflow-hidden"
@@ -251,7 +235,7 @@ export default function SuperAdminAside({
                   : null,
                 collapsed ? { transform: [{ translateX: -12 }] } : null,
               ]}>
-              SaaS Platform
+              Barber Admin
             </Text>
           </View>
 
@@ -349,12 +333,20 @@ export default function SuperAdminAside({
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 8 }}
           showsVerticalScrollIndicator={false}>
-          <View className={cn(collapsed ? 'w-full gap-2 px-0' : 'gap-1')}>
+          <View
+            className={cn(collapsed ? 'w-full gap-2 px-0' : 'gap-1')}
+            style={
+              Platform.OS === 'web'
+                ? ({
+                    transition: 'gap 420ms cubic-bezier(0.22, 1, 0.36, 1), padding 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  } as any)
+                : null
+            }>
             {items.map((item) => (
               <AsideNavRow
                 key={item.label}
                 item={item}
-                isActive={isItemActive(pathname, item)}
+                isActive={normalizePath(pathname) === normalizePath(String(item.href))}
                 isDesktop
                 collapsed={collapsed}
                 primary={primary}
@@ -374,7 +366,7 @@ export default function SuperAdminAside({
             <View key={item.label} style={{ minWidth: 168 }}>
               <AsideNavRow
                 item={item}
-                isActive={isItemActive(pathname, item)}
+                isActive={normalizePath(pathname) === normalizePath(String(item.href))}
                 isDesktop={false}
                 collapsed={false}
                 primary={primary}
@@ -390,15 +382,29 @@ export default function SuperAdminAside({
       {isDesktop ? (
         <View
           className={cn('mt-auto border-t pt-6', collapsed ? 'px-2.5' : 'px-4')}
-          style={{ borderTopColor: borderSubtle }}>
+          style={[
+            { borderTopColor: borderSubtle },
+            Platform.OS === 'web'
+              ? ({
+                  transition: 'padding 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                } as any)
+              : null,
+          ]}>
           <Pressable style={Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : null}>
             {({ hovered }) => {
               const fg = Platform.OS === 'web' && hovered ? primary : INACTIVE_GRAY;
 
               return (
                 <View
-                  className="flex-row items-center gap-3 px-4 py-3"
-                  style={Platform.OS === 'web' ? ({ transition: 'color 180ms ease' } as any) : null}>
+                  className={cn('flex-row items-center py-3', collapsed ? 'justify-center' : 'gap-3 px-4')}
+                  style={
+                    Platform.OS === 'web'
+                      ? ({
+                          transition:
+                            'color 180ms ease, padding 420ms cubic-bezier(0.22, 1, 0.36, 1), gap 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                        } as any)
+                      : null
+                  }>
                   <MaterialIcons name="logout" size={22} color={fg} />
                   <View
                     className={cn('overflow-hidden', collapsed ? 'max-w-0 opacity-0' : 'max-w-[140px]')}

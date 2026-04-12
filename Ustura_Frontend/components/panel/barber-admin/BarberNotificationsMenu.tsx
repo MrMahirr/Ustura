@@ -11,15 +11,15 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import { panelRoutes } from '@/constants/routes';
+import { staffRoutes } from '@/constants/routes';
 import type { NotificationRecord } from '@/services/notification.service';
 import { hexToRgba } from '@/utils/color';
 
-import { useSuperAdminTheme } from './theme';
 import {
   formatRelativeTime,
   useNotificationsDropdown,
-} from './use-notifications-dropdown';
+} from '../super-admin/use-notifications-dropdown';
+import { useBarberAdminTheme } from './theme';
 
 function NotificationRow({
   item,
@@ -28,16 +28,16 @@ function NotificationRow({
   item: NotificationRecord;
   onPress: () => void;
 }) {
-  const adminTheme = useSuperAdminTheme();
+  const theme = useBarberAdminTheme();
 
   const toneColor =
     item.tone === 'success'
-      ? adminTheme.success
+      ? theme.success
       : item.tone === 'warning'
-        ? adminTheme.warning
+        ? theme.warning
         : item.tone === 'error'
-          ? adminTheme.error
-          : adminTheme.primary;
+          ? theme.error
+          : theme.primary;
 
   const toneIcon =
     item.tone === 'success'
@@ -54,7 +54,7 @@ function NotificationRow({
       className="flex-row items-start gap-3 rounded-2xl border px-2.5 py-3"
       style={({ hovered }) => [
         {
-          backgroundColor: hovered ? adminTheme.cardBackgroundMuted : 'transparent',
+          backgroundColor: hovered ? theme.cardBackgroundMuted : 'transparent',
           borderColor: !item.isRead ? hexToRgba(toneColor, 0.16) : 'transparent',
         },
         Platform.OS === 'web'
@@ -70,15 +70,15 @@ function NotificationRow({
 
       <View className="min-w-0 flex-1 gap-1.5">
         <View className="flex-row items-start justify-between gap-2.5">
-          <Text numberOfLines={1} className="flex-1 font-body text-base font-semibold leading-5" style={{ color: adminTheme.onSurface }}>
+          <Text numberOfLines={1} className="flex-1 font-body text-base font-semibold leading-5" style={{ color: theme.onSurface }}>
             {item.title}
           </Text>
-          <Text className="shrink-0 font-label text-[9px] uppercase tracking-wide" style={{ color: adminTheme.onSurfaceVariant }}>
+          <Text className="shrink-0 font-label text-[9px] uppercase tracking-wide" style={{ color: theme.onSurfaceVariant }}>
             {formatRelativeTime(item.createdAt)}
           </Text>
         </View>
 
-        <Text numberOfLines={2} className="font-body text-[13px] leading-[19px]" style={{ color: adminTheme.onSurfaceVariant }}>
+        <Text numberOfLines={2} className="font-body text-[13px] leading-[19px]" style={{ color: theme.onSurfaceVariant }}>
           {item.body}
         </Text>
       </View>
@@ -92,9 +92,9 @@ function padStat(n: number): string {
   return n < 10 ? `0${n}` : String(n);
 }
 
-export default function NotificationsMenu() {
+export default function BarberNotificationsMenu() {
   const { width } = useWindowDimensions();
-  const adminTheme = useSuperAdminTheme();
+  const theme = useBarberAdminTheme();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
 
@@ -114,8 +114,8 @@ export default function NotificationsMenu() {
         className="relative z-[130] h-10 w-10 items-center justify-center rounded-xl border"
         style={({ hovered, pressed }) => [
           {
-            backgroundColor: hovered || open ? adminTheme.cardBackgroundMuted : 'transparent',
-            borderColor: open ? adminTheme.borderStrong : 'transparent',
+            backgroundColor: hovered || open ? theme.cardBackgroundMuted : 'transparent',
+            borderColor: open ? theme.borderStrong : 'transparent',
             transform: [{ scale: pressed ? 0.96 : 1 }],
           },
           Platform.OS === 'web'
@@ -130,11 +130,11 @@ export default function NotificationsMenu() {
             <MaterialIcons
               name="notifications"
               size={22}
-              color={hovered || open ? adminTheme.primary : hexToRgba(adminTheme.onSurfaceVariant, 0.75)}
+              color={hovered || open ? theme.primary : hexToRgba(theme.onSurfaceVariant, 0.75)}
             />
             {stats.unread > 0 ? (
-              <View className="absolute right-px top-px min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 px-1" style={{ backgroundColor: adminTheme.primary, borderColor: adminTheme.surface }}>
-                <Text className="font-body text-[9px] font-bold leading-[10px]" style={{ color: adminTheme.onPrimary }}>
+              <View className="absolute right-px top-px min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 px-1" style={{ backgroundColor: theme.primary, borderColor: theme.surface }}>
+                <Text className="font-body text-[9px] font-bold leading-[10px]" style={{ color: theme.onPrimary }}>
                   {stats.unread > 9 ? '9+' : stats.unread}
                 </Text>
               </View>
@@ -148,62 +148,62 @@ export default function NotificationsMenu() {
           className="absolute right-0 top-[52px] z-[130] overflow-hidden rounded-[20px] border"
           style={{
             width: menuWidth,
-            backgroundColor: adminTheme.cardBackground,
-            borderColor: adminTheme.borderSubtle,
+            backgroundColor: theme.cardBackground,
+            borderColor: theme.borderSubtle,
             ...(Platform.OS === 'web'
               ? ({
                   boxShadow:
-                    adminTheme.theme === 'light'
+                    theme.theme === 'light'
                       ? '0 24px 60px rgba(27, 27, 32, 0.12)'
                       : '0 24px 60px rgba(0, 0, 0, 0.32)',
                 } as any)
               : {
                   shadowColor: '#000000',
-                  shadowOpacity: adminTheme.theme === 'light' ? 0.12 : 0.26,
+                  shadowOpacity: theme.theme === 'light' ? 0.12 : 0.26,
                   shadowRadius: 20,
                   shadowOffset: { width: 0, height: 10 },
                   elevation: 12,
                 }),
           }}>
-          <View className="flex-row items-start justify-between gap-3 border-b px-5 pb-4 pt-5" style={{ borderBottomColor: adminTheme.borderSubtle }}>
+          <View className="flex-row items-start justify-between gap-3 border-b px-5 pb-4 pt-5" style={{ borderBottomColor: theme.borderSubtle }}>
             <View>
-              <Text className="mb-1 font-headline text-[22px]" style={{ color: adminTheme.onSurface }}>
+              <Text className="mb-1 font-headline text-[22px]" style={{ color: theme.onSurface }}>
                 Bildirimler
               </Text>
-              <Text className="max-w-[220px] font-body text-sm" style={{ color: adminTheme.onSurfaceVariant }}>
-                {stats.unread} yeni olay, panel akisinda onceliklendirildi.
+              <Text className="max-w-[220px] font-body text-sm" style={{ color: theme.onSurfaceVariant }}>
+                {stats.unread} yeni bildirim bekliyor.
               </Text>
             </View>
 
-            <View className="rounded-full px-2.5 py-1.5" style={{ backgroundColor: hexToRgba(adminTheme.primary, 0.12) }}>
-              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: adminTheme.primary }}>
+            <View className="rounded-full px-2.5 py-1.5" style={{ backgroundColor: hexToRgba(theme.primary, 0.12) }}>
+              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: theme.primary }}>
                 Canli
               </Text>
             </View>
           </View>
 
           <View className="flex-row gap-2.5 px-5 pb-1.5 pt-[14px]">
-            <View className="flex-1 gap-1.5 rounded-[14px] px-3 py-3" style={{ backgroundColor: adminTheme.cardBackgroundMuted }}>
-              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: adminTheme.onSurfaceVariant }}>
+            <View className="flex-1 gap-1.5 rounded-[14px] px-3 py-3" style={{ backgroundColor: theme.cardBackgroundMuted }}>
+              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: theme.onSurfaceVariant }}>
                 Bekleyen
               </Text>
-              <Text className="font-headline text-xl leading-[22px]" style={{ color: adminTheme.onSurface }}>
+              <Text className="font-headline text-xl leading-[22px]" style={{ color: theme.onSurface }}>
                 {padStat(stats.unread)}
               </Text>
             </View>
-            <View className="flex-1 gap-1.5 rounded-[14px] px-3 py-3" style={{ backgroundColor: adminTheme.cardBackgroundMuted }}>
-              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: adminTheme.onSurfaceVariant }}>
+            <View className="flex-1 gap-1.5 rounded-[14px] px-3 py-3" style={{ backgroundColor: theme.cardBackgroundMuted }}>
+              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: theme.onSurfaceVariant }}>
                 Kritik
               </Text>
-              <Text className="font-headline text-xl leading-[22px]" style={{ color: adminTheme.error }}>
+              <Text className="font-headline text-xl leading-[22px]" style={{ color: theme.error }}>
                 {padStat(stats.critical)}
               </Text>
             </View>
-            <View className="flex-1 gap-1.5 rounded-[14px] px-3 py-3" style={{ backgroundColor: adminTheme.cardBackgroundMuted }}>
-              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: adminTheme.onSurfaceVariant }}>
+            <View className="flex-1 gap-1.5 rounded-[14px] px-3 py-3" style={{ backgroundColor: theme.cardBackgroundMuted }}>
+              <Text className="font-label text-[9px] uppercase tracking-wide" style={{ color: theme.onSurfaceVariant }}>
                 Bugun
               </Text>
-              <Text className="font-headline text-xl leading-[22px]" style={{ color: adminTheme.primary }}>
+              <Text className="font-headline text-xl leading-[22px]" style={{ color: theme.primary }}>
                 {padStat(stats.today)}
               </Text>
             </View>
@@ -212,12 +212,12 @@ export default function NotificationsMenu() {
           <ScrollView style={{ maxHeight: 340 }} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, gap: 8 }} showsVerticalScrollIndicator={false}>
             {loading && items.length === 0 ? (
               <View className="items-center justify-center py-10">
-                <ActivityIndicator size="small" color={adminTheme.primary} />
+                <ActivityIndicator size="small" color={theme.primary} />
               </View>
             ) : items.length === 0 ? (
               <View className="items-center justify-center gap-2 py-10">
-                <MaterialIcons name="notifications-none" size={32} color={adminTheme.onSurfaceVariant} />
-                <Text className="font-body text-sm" style={{ color: adminTheme.onSurfaceVariant }}>
+                <MaterialIcons name="notifications-none" size={32} color={theme.onSurfaceVariant} />
+                <Text className="font-body text-sm" style={{ color: theme.onSurfaceVariant }}>
                   Henuz bildirim yok.
                 </Text>
               </View>
@@ -234,16 +234,16 @@ export default function NotificationsMenu() {
             )}
           </ScrollView>
 
-          <View className="border-t p-3" style={{ borderTopColor: adminTheme.borderSubtle }}>
+          <View className="border-t p-3" style={{ borderTopColor: theme.borderSubtle }}>
             <Pressable
               onPress={() => {
                 setOpen(false);
-                router.push(panelRoutes.bildirimler);
+                router.push(staffRoutes.bildirimler);
               }}
               className="min-h-[46px] flex-row items-center justify-between rounded-[14px] px-4"
               style={({ hovered }) => [
                 {
-                  backgroundColor: hovered ? adminTheme.cardBackgroundStrong : adminTheme.cardBackgroundMuted,
+                  backgroundColor: hovered ? theme.cardBackgroundStrong : theme.cardBackgroundMuted,
                 },
                 Platform.OS === 'web'
                   ? ({
@@ -252,10 +252,10 @@ export default function NotificationsMenu() {
                     } as any)
                   : null,
               ]}>
-              <Text className="font-label text-[10px] uppercase tracking-wide" style={{ color: adminTheme.onSurface }}>
+              <Text className="font-label text-[10px] uppercase tracking-wide" style={{ color: theme.onSurface }}>
                 Tum bildirimleri gor
               </Text>
-              <MaterialIcons name="east" size={16} color={adminTheme.primary} />
+              <MaterialIcons name="east" size={16} color={theme.primary} />
             </Pressable>
           </View>
         </View>

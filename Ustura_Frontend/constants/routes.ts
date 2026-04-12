@@ -11,9 +11,18 @@ export const panelRoutes = {
   kullanicilar: route('/panel/kullanicilar'),
   randevular: route('/panel/randevular'),
   paketler: route('/panel/paketler'),
-  berber: route('/panel/berber'),
+  bildirimler: route('/panel/bildirimler'),
   personel: route('/panel/personel'),
   ayarlar: route('/panel/ayarlar'),
+} as const satisfies Record<string, Href>;
+
+/** Berber / Personel paneli — URL segmenti: `/berber` */
+export const staffRoutes = {
+  home: route('/berber'),
+  randevular: route('/berber/randevular'),
+  bildirimler: route('/berber/bildirimler'),
+  personel: route('/berber/personel'),
+  ayarlar: route('/berber/ayarlar'),
 } as const satisfies Record<string, Href>;
 
 export const buildPanelSalonDetailRoute = (salonId: string): Href => ({

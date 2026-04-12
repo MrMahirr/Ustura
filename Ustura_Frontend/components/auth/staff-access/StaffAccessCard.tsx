@@ -5,11 +5,8 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import {
   STAFF_ACCESS_COPY,
   type StaffAccessNotice,
-  type StaffSalonOption,
 } from '@/components/auth/staff-access/presentation';
-import StaffAccessSalonModal from '@/components/auth/staff-access/StaffAccessSalonModal';
 import AuthCredentialField from '@/components/auth/shared/AuthCredentialField';
-import AuthSelectField from '@/components/auth/shared/AuthSelectField';
 import AuthStatusNotice from '@/components/auth/shared/AuthStatusNotice';
 import { useAuthAccessTheme } from '@/components/auth/shared/use-auth-access-theme';
 import Button from '@/components/ui/Button';
@@ -21,19 +18,14 @@ interface StaffAccessCardProps {
   identifier: string;
   password: string;
   rememberMe: boolean;
-  selectedSalonLabel: string;
-  selectedSalonId: string;
-  salonOptions: StaffSalonOption[];
-  isSalonModalOpen: boolean;
   notice: StaffAccessNotice;
   identifierError?: string;
   passwordError?: string;
+  submitLabel?: string;
+  submitDisabled?: boolean;
   onIdentifierChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onToggleRememberMe: () => void;
-  onOpenSalonModal: () => void;
-  onCloseSalonModal: () => void;
-  onSalonSelect: (salonId: string) => void;
   onForgotPassword: () => void;
   onSubmit: () => void;
 }
@@ -43,19 +35,14 @@ export default function StaffAccessCard({
   identifier,
   password,
   rememberMe,
-  selectedSalonLabel,
-  selectedSalonId,
-  salonOptions,
-  isSalonModalOpen,
   notice,
   identifierError,
   passwordError,
+  submitLabel = STAFF_ACCESS_COPY.submitLabel,
+  submitDisabled = false,
   onIdentifierChange,
   onPasswordChange,
   onToggleRememberMe,
-  onOpenSalonModal,
-  onCloseSalonModal,
-  onSalonSelect,
   onForgotPassword,
   onSubmit,
 }: StaffAccessCardProps) {
@@ -141,13 +128,6 @@ export default function StaffAccessCard({
               onActionPress={onForgotPassword}
             />
 
-            <AuthSelectField
-              label={STAFF_ACCESS_COPY.salonLabel}
-              value={selectedSalonLabel}
-              icon="storefront"
-              onPress={onOpenSalonModal}
-            />
-
             <Pressable
               accessibilityRole="checkbox"
               accessibilityState={{ checked: rememberMe }}
@@ -171,7 +151,7 @@ export default function StaffAccessCard({
               tone={notice.tone}
             />
 
-            <Button title={STAFF_ACCESS_COPY.submitLabel} onPress={onSubmit} interactionPreset="cta" style={{ width: '100%' }} />
+            <Button title={submitLabel} onPress={onSubmit} interactionPreset="cta" disabled={submitDisabled} style={{ width: '100%' }} />
           </View>
         </View>
 
@@ -192,13 +172,7 @@ export default function StaffAccessCard({
         </View>
       </View>
 
-      <StaffAccessSalonModal
-        visible={isSalonModalOpen}
-        options={salonOptions}
-        selectedSalonId={selectedSalonId}
-        onClose={onCloseSalonModal}
-        onSelect={onSalonSelect}
-      />
+      
     </>
   );
 }
