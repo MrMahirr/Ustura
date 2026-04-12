@@ -79,7 +79,7 @@ export class SubscriptionsRepository {
           COALESCE(reservation_stats.reservation_count, 0)::int AS reservation_count
         FROM subscriptions s
         INNER JOIN salons sl ON sl.id = s.salon_id
-        INNER JOIN users u ON u.id = sl.owner_id
+        INNER JOIN personnel u ON u.id = sl.owner_id
         INNER JOIN packages p ON p.id = s.package_id
         LEFT JOIN LATERAL (
           SELECT COUNT(*)::int AS staff_count

@@ -1,8 +1,14 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import {
+  EMAIL_SERVICE,
+  type EmailServiceContract,
+} from '../email/interfaces/email.types';
+import { generateTemporaryPassword } from '../email/utils/password-generator';
 import {
   SALON_OWNER_PROVISIONING_SERVICE,
   type SalonOwnerProvisioningServiceContract,
@@ -26,6 +32,7 @@ import { PlatformAdminRepository } from './repositories/platform-admin.repositor
 
 @Injectable()
 export class PlatformAdminService {
+  private readonly logger = new Logger(PlatformAdminService.name);
   private readonly passwordCost = 12;
 
   constructor(
@@ -37,6 +44,9 @@ export class PlatformAdminService {
     @Inject(SALON_OWNER_PROVISIONING_SERVICE)
     private readonly salonOwnerProvisioningService: SalonOwnerProvisioningServiceContract,
     private readonly domainEventBus: DomainEventBus,
+    @Inject(EMAIL_SERVICE)
+    private readonly emailService: EmailServiceContract,
+    private readonly appConfig: AppConfigService,
   ) {}
 
   async createOwnerApplication(
@@ -63,14 +73,15 @@ export class PlatformAdminService {
       photoUrl: createOwnerApplicationDto.salonPhotoUrl,
       workingHours: createOwnerApplicationDto.salonWorkingHours,
     });
+    const placeholderHash = await bcrypt.hash(
+      generateTemporaryPassword(),
+      this.passwordCost,
+    );
     const createdApplication = await this.platformAdminRepository.create({
       applicantName: createOwnerApplicationDto.applicantName.trim(),
       applicantEmail,
       applicantPhone: createOwnerApplicationDto.applicantPhone.trim(),
-      passwordHash: await bcrypt.hash(
-        createOwnerApplicationDto.password,
-        this.passwordCost,
-      ),
+      passwordHash: placeholderHash,
       salonName: normalizedSalonInput.name,
       salonAddress: normalizedSalonInput.address,
       salonCity: normalizedSalonInput.city,
@@ -98,6 +109,12 @@ export class PlatformAdminService {
   ): Promise<OwnerApplication> {
     this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
 
+    const temporaryPassword = generateTemporaryPassword();
+    const temporaryPasswordHash = await bcrypt.hash(
+      temporaryPassword,
+      this.passwordCost,
+    );
+
     const approvedApplication = await this.databaseService.transaction(async (transaction) => {
       const application =
         await this.platformAdminRepository.findByIdForUpdate(
@@ -116,7 +133,7 @@ export class PlatformAdminService {
           name: application.applicantName,
           email: application.applicantEmail,
           phone: application.applicantPhone,
-          passwordHash: application.passwordHash,
+          passwordHash: temporaryPasswordHash,
         },
         transaction,
       );
@@ -165,7 +182,32 @@ export class PlatformAdminService {
       },
     });
 
+    const loginUrl = this.buildUniqueLoginUrl(approvedApplication.applicantEmail);
+
+    this.emailService
+      .sendOwnerApprovalEmail({
+        recipientEmail: approvedApplication.applicantEmail,
+        recipientName: approvedApplication.applicantName,
+        salonName: approvedApplication.salonName,
+        temporaryPassword,
+        loginUrl,
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Approval email failed for ${approvedApplication.applicantEmail}`,
+          err instanceof Error ? err.stack : String(err),
+        ),
+      );
+
     return approvedApplication;
+  }
+
+  private buildUniqueLoginUrl(email: string): string {
+    const baseUrl = this.appConfig.frontend.baseUrl.replace(/\/+$/, '');
+    const token = Buffer.from(
+      JSON.stringify({ email, ts: Date.now() }),
+    ).toString('base64url');
+    return `${baseUrl}/personel/giris?token=${token}`;
   }
 
   async rejectOwnerApplication(

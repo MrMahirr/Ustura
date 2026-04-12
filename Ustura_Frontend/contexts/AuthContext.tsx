@@ -348,6 +348,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await loginWithPassword({
               email: normalizeEmail(input.identifier),
               password: input.password.trim(),
+              principalKind: 'customer',
             }),
             'customer',
           ),
@@ -361,6 +362,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await loginWithPassword({
               email: normalizeEmail(input.identifier),
               password: input.password.trim(),
+              principalKind: 'platform_admin',
             }),
             'super_admin',
           ),
@@ -374,6 +376,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await loginWithPassword({
               email: normalizeEmail(input.identifier),
               password: input.password.trim(),
+              principalKind: 'personnel',
             }),
             'staff',
           ),

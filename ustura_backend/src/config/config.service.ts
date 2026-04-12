@@ -4,8 +4,10 @@ import {
   AppConfig,
   CorsConfig,
   DatabaseConfig,
+  EmailJsConfig,
   EnvironmentVariables,
   FirebaseConfig,
+  FrontendConfig,
   GoogleAuthConfig,
   JwtConfig,
   NodeEnvironment,
@@ -23,6 +25,8 @@ export class AppConfigService {
   readonly google: GoogleAuthConfig;
   readonly redis: RedisConfig;
   readonly cors: CorsConfig;
+  readonly emailJs: EmailJsConfig;
+  readonly frontend: FrontendConfig;
 
   constructor(
     private readonly configService: ConfigService<EnvironmentVariables, true>,
@@ -77,6 +81,17 @@ export class AppConfigService {
     this.cors = Object.freeze({
       origins: this.getValue<string[]>('CORS_ORIGINS'),
       credentials: this.getValue<boolean>('CORS_CREDENTIALS'),
+    });
+
+    this.emailJs = Object.freeze({
+      serviceId: this.getValue<string>('EMAILJS_SERVICE_ID'),
+      templateApproval: this.getValue<string>('EMAILJS_TEMPLATE_APPROVAL'),
+      publicKey: this.getValue<string>('EMAILJS_PUBLIC_KEY'),
+      privateKey: this.getValue<string>('EMAILJS_PRIVATE_KEY'),
+    });
+
+    this.frontend = Object.freeze({
+      baseUrl: this.getValue<string>('FRONTEND_BASE_URL'),
     });
   }
 

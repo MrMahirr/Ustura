@@ -17,6 +17,7 @@ export interface SuperAdminAsideItem {
 export const superAdminAsideItems: SuperAdminAsideItem[] = [
   { label: 'Dashboard', icon: 'dashboard', href: panelRoutes.home },
   { label: 'Salonlar', icon: 'storefront', href: panelRoutes.salonlar, matchSubroutes: true },
+  { label: 'Basvurular', icon: 'assignment', href: panelRoutes.basvurular },
   { label: 'Kullanicilar', icon: 'group', href: panelRoutes.kullanicilar, matchSubroutes: true },
   { label: 'Randevular', icon: 'event-available', href: panelRoutes.randevular },
   { label: 'Odemeler', icon: 'payments', disabled: true },

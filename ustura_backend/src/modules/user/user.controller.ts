@@ -14,8 +14,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
+import { roleToPrincipalKind } from '../../shared/auth/principal-kind.mapper';
+import { Role } from '../../shared/auth/role.enum';
 import { FindAdminUsersQueryDto } from './dto/find-admin-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserAdminQueryService } from './user-admin-query.service';
@@ -55,8 +57,10 @@ export class UserController {
 
   @Get('me')
   async getMyProfile(@CurrentUser() currentUser?: JwtPayload) {
-    return this.userProfileService.getProfileById(
-      this.requireAuthenticatedUserId(currentUser),
+    const user = this.requireAuthenticatedUser(currentUser);
+    return this.userProfileService.getProfileByPrincipal(
+      this.resolvePrincipalKind(user),
+      user.sub,
     );
   }
 
@@ -65,17 +69,23 @@ export class UserController {
     @CurrentUser() currentUser: JwtPayload | undefined,
     @Body() updateUserDto: UpdateUserDto,
   ) {
+    const user = this.requireAuthenticatedUser(currentUser);
     return this.userProfileService.updateProfile(
-      this.requireAuthenticatedUserId(currentUser),
+      this.resolvePrincipalKind(user),
+      user.sub,
       updateUserDto,
     );
   }
 
-  private requireAuthenticatedUserId(currentUser?: JwtPayload): string {
+  private requireAuthenticatedUser(currentUser?: JwtPayload): JwtPayload {
     if (!currentUser?.sub) {
       throw new UnauthorizedException('Authentication required.');
     }
 
-    return currentUser.sub;
+    return currentUser;
+  }
+
+  private resolvePrincipalKind(payload: JwtPayload): PrincipalKind {
+    return payload.principalKind ?? roleToPrincipalKind(payload.role);
   }
 }

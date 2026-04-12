@@ -31,7 +31,6 @@ export interface SubmitOwnerApplicationInput {
   applicantName: string;
   applicantEmail: string;
   applicantPhone: string;
-  password: string;
   salonName: string;
   salonAddress: string;
   salonCity: string;
@@ -53,7 +52,6 @@ interface SubmitOwnerApplicationPayload {
   applicantName: string;
   applicantEmail: string;
   applicantPhone: string;
-  password: string;
   salonName: string;
   salonAddress: string;
   salonCity: string;
@@ -72,7 +70,6 @@ export async function submitOwnerApplication(input: SubmitOwnerApplicationInput)
     applicantName: input.applicantName.trim(),
     applicantEmail: input.applicantEmail.trim().toLowerCase(),
     applicantPhone: input.applicantPhone.trim(),
-    password: input.password,
     salonName: input.salonName.trim(),
     salonAddress: input.salonAddress.trim(),
     salonCity: input.salonCity.trim(),
@@ -85,5 +82,32 @@ export async function submitOwnerApplication(input: SubmitOwnerApplicationInput)
     path: '/owner-applications',
     method: 'POST',
     body: payload,
+  });
+}
+
+export async function getOwnerApplications() {
+  return apiRequest<OwnerApplicationRecord[]>({
+    path: '/admin/owner-applications',
+    auth: true,
+  });
+}
+
+export async function approveOwnerApplication(applicationId: string) {
+  return apiRequest<OwnerApplicationRecord>({
+    path: `/admin/owner-applications/${applicationId}/approve`,
+    method: 'POST',
+    auth: true,
+  });
+}
+
+export async function rejectOwnerApplication(
+  applicationId: string,
+  reason?: string,
+) {
+  return apiRequest<OwnerApplicationRecord, { rejectionReason?: string }>({
+    path: `/admin/owner-applications/${applicationId}/reject`,
+    method: 'POST',
+    auth: true,
+    body: reason ? { rejectionReason: reason } : undefined,
   });
 }

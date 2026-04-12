@@ -6,6 +6,7 @@ import { scheduleClassNames } from './presentation';
 import ScheduleCalendarGrid from './ScheduleCalendarGrid';
 import ScheduleHeader from './ScheduleHeader';
 import ScheduleSidebar from './ScheduleSidebar';
+import ScheduleWeekGrid from './ScheduleWeekGrid';
 import StaffFilterBar from './StaffFilterBar';
 import { useBarberSchedule } from './use-barber-schedule';
 
@@ -15,8 +16,13 @@ export default function BarberSchedulePage() {
   const schedule = useBarberSchedule();
 
   const showSidebar = width >= 1080;
+  const isWeekView = schedule.viewMode === 'week';
 
-  if (schedule.loading && schedule.scheduleDay.appointments.length === 0) {
+  const hasData = isWeekView
+    ? schedule.scheduleWeek.days.some((d) => d.appointments.length > 0)
+    : schedule.scheduleDay.appointments.length > 0;
+
+  if (schedule.loading && !hasData) {
     return (
       <View
         className="flex-1 items-center justify-center"
@@ -26,7 +32,7 @@ export default function BarberSchedulePage() {
     );
   }
 
-  if (schedule.error && schedule.scheduleDay.appointments.length === 0) {
+  if (schedule.error && !hasData) {
     return (
       <View
         className="flex-1 items-center justify-center gap-2"
@@ -39,6 +45,13 @@ export default function BarberSchedulePage() {
       </View>
     );
   }
+
+  const overview = isWeekView
+    ? schedule.scheduleWeek.overview
+    : schedule.scheduleDay.overview;
+  const nextUp = isWeekView
+    ? schedule.scheduleWeek.nextUp
+    : schedule.scheduleDay.nextUp;
 
   return (
     <View
@@ -74,19 +87,25 @@ export default function BarberSchedulePage() {
 
       <View className={scheduleClassNames.mainArea}>
         <View className={scheduleClassNames.calendarColumn}>
-          <ScheduleCalendarGrid
-            appointments={schedule.scheduleDay.appointments}
-            onCancel={schedule.handleCancel}
-            onUpdateStatus={schedule.handleUpdateStatus}
-            mutating={schedule.mutating}
-          />
+          {isWeekView ? (
+            <ScheduleWeekGrid
+              week={schedule.scheduleWeek}
+              onCancel={schedule.handleCancel}
+              onUpdateStatus={schedule.handleUpdateStatus}
+              mutating={schedule.mutating}
+            />
+          ) : (
+            <ScheduleCalendarGrid
+              appointments={schedule.scheduleDay.appointments}
+              onCancel={schedule.handleCancel}
+              onUpdateStatus={schedule.handleUpdateStatus}
+              mutating={schedule.mutating}
+            />
+          )}
         </View>
 
         {showSidebar ? (
-          <ScheduleSidebar
-            overview={schedule.scheduleDay.overview}
-            nextUp={schedule.scheduleDay.nextUp}
-          />
+          <ScheduleSidebar overview={overview} nextUp={nextUp} />
         ) : null}
       </View>
     </View>

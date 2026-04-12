@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { QueryResultRow } from 'pg';
 import { DatabaseService } from '../../../database/database.service';
 import { SqlQueryExecutor } from '../../../database/database.types';
+import { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
 import { RefreshTokenRecord } from '../interfaces/auth.types';
 
 @Injectable()
@@ -10,7 +11,8 @@ export class AuthRepository {
 
   async saveRefreshToken(
     input: {
-      userId: string;
+      principalId: string;
+      principalKind: PrincipalKind;
       tokenHash: string;
       expiresAt: Date;
       userAgent?: string | null;
@@ -23,17 +25,19 @@ export class AuthRepository {
       name: 'auth.save-refresh-token',
       text: `
         INSERT INTO refresh_tokens (
-          user_id,
+          principal_id,
+          principal_kind,
           token_hash,
           expires_at,
           user_agent,
           ip_address,
           rotated_from
         )
-        VALUES ($1, $2, $3, $4, $5::inet, $6)
+        VALUES ($1, $2, $3, $4, $5, $6::inet, $7)
         RETURNING
           id,
-          user_id,
+          principal_id,
+          principal_kind,
           token_hash,
           expires_at,
           revoked,
@@ -44,7 +48,8 @@ export class AuthRepository {
           created_at
       `,
       values: [
-        input.userId,
+        input.principalId,
+        input.principalKind,
         input.tokenHash,
         input.expiresAt,
         input.userAgent ?? null,
@@ -62,7 +67,8 @@ export class AuthRepository {
       text: `
         SELECT
           id,
-          user_id,
+          principal_id,
+          principal_kind,
           token_hash,
           expires_at,
           revoked,
@@ -83,11 +89,16 @@ export class AuthRepository {
 
   async revokeToken(
     tokenHash: string,
-    userId?: string,
+    principal?: { id: string; kind: PrincipalKind },
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<boolean> {
     const values: unknown[] = [tokenHash];
-    const userFilter = userId ? `AND user_id = $${values.push(userId)}` : '';
+    let principalFilter = '';
+
+    if (principal) {
+      values.push(principal.id, principal.kind);
+      principalFilter = `AND principal_id = $2 AND principal_kind = $3`;
+    }
 
     const result = await executor.query({
       name: 'auth.revoke-refresh-token',
@@ -98,7 +109,7 @@ export class AuthRepository {
         WHERE token_hash = $1
           AND revoked = FALSE
           AND revoked_at IS NULL
-          ${userFilter}
+          ${principalFilter}
       `,
       values,
     });
@@ -106,21 +117,23 @@ export class AuthRepository {
     return result.rowCount !== null && result.rowCount > 0;
   }
 
-  async revokeAllUserTokens(
-    userId: string,
+  async revokeAllPrincipalTokens(
+    principalId: string,
+    principalKind: PrincipalKind,
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<number> {
     const result = await executor.query({
-      name: 'auth.revoke-all-user-refresh-tokens',
+      name: 'auth.revoke-all-principal-refresh-tokens',
       text: `
         UPDATE refresh_tokens
         SET revoked = TRUE,
             revoked_at = NOW()
-        WHERE user_id = $1
+        WHERE principal_id = $1
+          AND principal_kind = $2
           AND revoked = FALSE
           AND revoked_at IS NULL
       `,
-      values: [userId],
+      values: [principalId, principalKind],
     });
 
     return result.rowCount ?? 0;
@@ -133,7 +146,8 @@ export class AuthRepository {
 
     return {
       id: row.id,
-      userId: row.user_id,
+      principalId: row.principal_id,
+      principalKind: row.principal_kind as PrincipalKind,
       tokenHash: row.token_hash,
       expiresAt: row.expires_at,
       revoked: row.revoked,
@@ -148,7 +162,8 @@ export class AuthRepository {
 
 interface RefreshTokenRow extends QueryResultRow {
   id: string;
-  user_id: string;
+  principal_id: string;
+  principal_kind: string;
   token_hash: string;
   expires_at: Date;
   revoked: boolean;

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
@@ -315,7 +316,10 @@ export class ReservationService {
     createReservationDto: CreateReservationDto,
   ) {
     if (currentUser.role === Role.CUSTOMER) {
-      const customer = await this.userQueryService.findById(currentUser.sub);
+      const customer = await this.userQueryService.findByPrincipal(
+        PrincipalKind.CUSTOMER,
+        currentUser.sub,
+      );
 
       if (!customer || customer.role !== Role.CUSTOMER || !customer.isActive) {
         throw customerNotFoundError();
@@ -325,7 +329,8 @@ export class ReservationService {
     }
 
     if (createReservationDto.customerId) {
-      const customer = await this.userQueryService.findById(
+      const customer = await this.userQueryService.findByPrincipal(
+        PrincipalKind.CUSTOMER,
         createReservationDto.customerId,
       );
 
@@ -397,7 +402,10 @@ export class ReservationService {
 
   private async findCustomerForEvent(customerId: string) {
     try {
-      const customer = await this.userQueryService.findById(customerId);
+      const customer = await this.userQueryService.findByPrincipal(
+        PrincipalKind.CUSTOMER,
+        customerId,
+      );
 
       if (!customer || customer.role !== Role.CUSTOMER) {
         return null;

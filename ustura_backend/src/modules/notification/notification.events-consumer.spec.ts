@@ -14,6 +14,7 @@ describe('NotificationEventsConsumer', () => {
       | 'sendReservationCancelledBestEffort'
       | 'sendOwnerApprovedBestEffort'
       | 'sendAuthSecurityBestEffort'
+      | 'persistBestEffort'
     >
   >;
 
@@ -24,6 +25,7 @@ describe('NotificationEventsConsumer', () => {
       sendReservationCancelledBestEffort: jest.fn(),
       sendOwnerApprovedBestEffort: jest.fn(),
       sendAuthSecurityBestEffort: jest.fn(),
+      persistBestEffort: jest.fn(),
     };
     consumer = new NotificationEventsConsumer(
       domainEventBus,

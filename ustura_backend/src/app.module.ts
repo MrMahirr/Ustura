@@ -7,6 +7,7 @@ import { EventsModule } from './events/events.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
@@ -32,6 +33,7 @@ import { StartupValidationService } from './startup/startup-validation.service';
     ]),
     AuthModule,
     AuditLogModule,
+    EmailModule,
     HealthModule,
     NotificationModule,
     PlatformAdminModule,

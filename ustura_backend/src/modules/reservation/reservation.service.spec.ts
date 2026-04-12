@@ -59,7 +59,7 @@ describe('ReservationService', () => {
       updateStatus: jest.fn(),
     } as unknown as jest.Mocked<ReservationRepository>;
     userService = {
-      findById: jest.fn(),
+      findByPrincipal: jest.fn(),
       findOrCreateManagedCustomer: jest.fn(),
     } as unknown as jest.Mocked<UserService>;
     slotService = {
@@ -109,7 +109,7 @@ describe('ReservationService', () => {
       role: Role.BARBER,
       isActive: true,
     } as any);
-    userService.findById.mockResolvedValue({
+    userService.findByPrincipal.mockResolvedValue({
       id: 'customer-1',
       name: 'Customer',
       email: 'customer@example.com',
@@ -239,7 +239,7 @@ describe('ReservationService', () => {
       role: Role.BARBER,
       isActive: true,
     } as any);
-    userService.findById.mockResolvedValue({
+    userService.findByPrincipal.mockResolvedValue({
       id: 'customer-1',
       name: 'Customer',
       email: 'customer@example.com',
@@ -298,7 +298,7 @@ describe('ReservationService', () => {
       displayName: 'Barber One',
       isActive: true,
     } as any);
-    userService.findById.mockResolvedValue({
+    userService.findByPrincipal.mockResolvedValue({
       id: 'customer-1',
       name: 'Customer',
       email: 'customer@example.com',
@@ -517,7 +517,7 @@ describe('ReservationService', () => {
       role: Role.BARBER,
       isActive: true,
     } as any);
-    userService.findById.mockResolvedValue({
+    userService.findByPrincipal.mockResolvedValue({
       id: 'customer-1',
       name: 'Customer',
       email: 'customer@example.com',
@@ -584,7 +584,7 @@ describe('ReservationService', () => {
         displayName: 'Barber One',
         isActive: true,
       } as any);
-      userService.findById.mockResolvedValue({
+      userService.findByPrincipal.mockResolvedValue({
         id: 'customer-1',
         name: 'Customer',
         email: 'customer@example.com',

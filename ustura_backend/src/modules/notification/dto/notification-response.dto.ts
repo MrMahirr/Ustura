@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
 
 export class NotificationResponseDto {
   @ApiProperty({ format: 'uuid' })
@@ -6,6 +7,9 @@ export class NotificationResponseDto {
 
   @ApiProperty({ nullable: true, format: 'uuid' })
   recipientId: string | null;
+
+  @ApiProperty({ enum: PrincipalKind })
+  recipientKind: PrincipalKind;
 
   @ApiProperty()
   key: string;

@@ -11,6 +11,7 @@ export const panelRoutes = {
   kullanicilar: route('/panel/kullanicilar'),
   randevular: route('/panel/randevular'),
   paketler: route('/panel/paketler'),
+  basvurular: route('/panel/basvurular'),
   bildirimler: route('/panel/bildirimler'),
   personel: route('/panel/personel'),
   ayarlar: route('/panel/ayarlar'),

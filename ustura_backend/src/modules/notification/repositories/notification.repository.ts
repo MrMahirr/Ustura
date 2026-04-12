@@ -22,19 +22,21 @@ export class NotificationRepository {
       text: `
         INSERT INTO notifications (
           recipient_id,
+          recipient_kind,
           key,
           title,
           body,
           tone,
           metadata
         )
-        VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
         RETURNING
-          id, recipient_id, key, title, body, tone,
+          id, recipient_id, recipient_kind, key, title, body, tone,
           metadata, is_read, created_at
       `,
       values: [
         input.recipientId ?? null,
+        input.recipientKind,
         input.key,
         input.title,
         input.body,
@@ -75,7 +77,7 @@ export class NotificationRepository {
     const result = await this.databaseService.query<NotificationRow>({
       text: `
         SELECT
-          id, recipient_id, key, title, body, tone,
+          id, recipient_id, recipient_kind, key, title, body, tone,
           metadata, is_read, created_at
         FROM notifications
         ${clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : ''}
@@ -129,7 +131,7 @@ export class NotificationRepository {
         SET is_read = TRUE
         WHERE id = $1
         RETURNING
-          id, recipient_id, key, title, body, tone,
+          id, recipient_id, recipient_kind, key, title, body, tone,
           metadata, is_read, created_at
       `,
       values: [id],
@@ -167,6 +169,7 @@ export class NotificationRepository {
     return {
       id: row.id,
       recipientId: row.recipient_id,
+      recipientKind: row.recipient_kind as NotificationRecord['recipientKind'],
       key: row.key,
       title: row.title,
       body: row.body,
@@ -181,6 +184,7 @@ export class NotificationRepository {
 interface NotificationRow extends QueryResultRow {
   id: string;
   recipient_id: string | null;
+  recipient_kind: string;
   key: string;
   title: string;
   body: string;

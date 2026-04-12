@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
+import { roleToPrincipalKind } from '../../shared/auth/principal-kind.mapper';
 import { Role } from '../../shared/auth/role.enum';
 import {
   emailAlreadyExistsError,
@@ -31,12 +33,21 @@ export class UserService
     private readonly userAccountPolicy: UserAccountPolicy,
   ) {}
 
-  async findById(id: string): Promise<User | null> {
-    return this.userRepository.findById(id);
+  async findByPrincipal(
+    kind: PrincipalKind,
+    id: string,
+  ): Promise<User | null> {
+    return this.userRepository.findByPrincipal(kind, id);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findByEmail(this.normalizeEmail(email));
+  async findByEmailForPrincipal(
+    email: string,
+    kind: PrincipalKind,
+  ): Promise<User | null> {
+    return this.userRepository.findByEmailForPrincipal(
+      this.normalizeEmail(email),
+      kind,
+    );
   }
 
   async findByFirebaseUid(firebaseUid: string): Promise<User | null> {
@@ -56,7 +67,10 @@ export class UserService
     phone: string;
   }): Promise<User> {
     const normalizedEmail = this.normalizeEmail(input.email);
-    const existingUser = await this.userRepository.findByEmail(normalizedEmail);
+    const existingUser = await this.userRepository.findByEmailForPrincipal(
+      normalizedEmail,
+      PrincipalKind.CUSTOMER,
+    );
 
     if (existingUser) {
       this.userAccountPolicy.assertCanReuseManagedCustomer(existingUser);
@@ -93,8 +107,11 @@ export class UserService
     );
   }
 
-  async deactivateUser(id: string): Promise<UserProfile> {
-    const user = await this.userRepository.deactivate(id);
+  async deactivateUser(
+    kind: PrincipalKind,
+    id: string,
+  ): Promise<UserProfile> {
+    const user = await this.userRepository.deactivate(kind, id);
 
     if (!user) {
       throw userNotFoundError();
@@ -107,7 +124,10 @@ export class UserService
     id: string,
     firebaseUid: string,
   ): Promise<User> {
-    const user = await this.userRepository.findById(id);
+    const user = await this.userRepository.findByPrincipal(
+      PrincipalKind.CUSTOMER,
+      id,
+    );
 
     if (!user) {
       throw userNotFoundError();
@@ -153,8 +173,10 @@ export class UserService
       allowEmptyPhone: input.allowEmptyPhone,
     });
 
-    const existingUser = await this.userRepository.findByEmailWithExecutor(
+    const principalKind = roleToPrincipalKind(input.role);
+    const existingUser = await this.userRepository.findByEmailForPrincipal(
       normalizedEmail,
+      principalKind,
       executor,
     );
 
@@ -163,8 +185,9 @@ export class UserService
     }
 
     if (normalizedPhone.length > 0) {
-      const existingPhoneUser = await this.userRepository.findByPhoneWithExecutor(
+      const existingPhoneUser = await this.userRepository.findByPhoneForPrincipal(
         normalizedPhone,
+        principalKind,
         executor,
       );
 
@@ -188,14 +211,18 @@ export class UserService
     } catch (error) {
       if (
         error instanceof DatabaseConstraintViolationError &&
-        error.constraint === 'uq_users_phone_non_empty'
+        (error.constraint === 'uq_users_phone_non_empty' ||
+          error.constraint?.includes('phone'))
       ) {
         throw phoneAlreadyExistsError();
       }
 
       if (
         error instanceof DatabaseConstraintViolationError &&
-        error.constraint === 'users_email_key'
+        (error.constraint === 'users_email_key' ||
+          error.constraint === 'uq_customers_lower_email' ||
+          error.constraint === 'uq_personnel_lower_email' ||
+          error.constraint === 'uq_platform_admins_lower_email')
       ) {
         throw emailAlreadyExistsError();
       }

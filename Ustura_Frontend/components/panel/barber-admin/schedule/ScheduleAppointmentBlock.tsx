@@ -42,6 +42,7 @@ interface ScheduleAppointmentBlockProps {
   onCancel: (reservationId: string) => void;
   onUpdateStatus: (reservationId: string, status: OperationalReservationStatus) => void;
   mutating: boolean;
+  compact?: boolean;
 }
 
 function ActionMenu({
@@ -128,6 +129,7 @@ export default function ScheduleAppointmentBlock({
   onCancel,
   onUpdateStatus,
   mutating,
+  compact = false,
 }: ScheduleAppointmentBlockProps) {
   const theme = useBarberAdminTheme();
   const isDark = theme.theme === 'dark';
@@ -138,7 +140,7 @@ export default function ScheduleAppointmentBlock({
     HOUR_SLOT_HEIGHT;
   const blockHeight = (appointment.durationMinutes / 60) * HOUR_SLOT_HEIGHT;
   const isCancelled = appointment.status === 'cancelled';
-  const isCompact = blockHeight <= 60;
+  const isCompact = compact || blockHeight <= 60;
   const color = statusColor(appointment.status, theme);
 
   const startStr = `${pad(appointment.startHour)}:${pad(appointment.startMinute)}`;
@@ -159,7 +161,7 @@ export default function ScheduleAppointmentBlock({
         {
           top: topOffset,
           left: 0,
-          right: '10%',
+          right: compact ? 0 : '10%',
           height: blockHeight,
           backgroundColor: hovered
             ? (isDark ? theme.surfaceContainerLow : theme.surfaceContainerLow)
@@ -188,7 +190,22 @@ export default function ScheduleAppointmentBlock({
             />
           ) : null}
 
-          {isCompact ? (
+          {isCompact && compact ? (
+            <View className="flex-1 justify-center px-1.5 py-1">
+              <Text
+                numberOfLines={1}
+                className="font-body text-[11px] font-bold leading-tight"
+                style={{ color: theme.onSurface }}>
+                {appointment.customerName}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className="font-label text-[9px] leading-tight"
+                style={{ color: theme.onSurfaceVariant }}>
+                {startStr} · {appointment.staffName}
+              </Text>
+            </View>
+          ) : isCompact ? (
             <View className="flex-1 flex-row items-center gap-4 px-3">
               {appointment.imageUrl ? (
                 <Image
@@ -232,6 +249,27 @@ export default function ScheduleAppointmentBlock({
                   {startStr}
                 </Text>
               </View>
+            </View>
+          ) : compact ? (
+            <View className="flex-1 justify-center px-2 py-1.5">
+              <Text
+                numberOfLines={1}
+                className="font-body text-[11px] font-bold leading-tight"
+                style={{ color: theme.onSurface }}>
+                {appointment.customerName}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className="mt-0.5 font-label text-[9px] leading-tight"
+                style={{ color: theme.onSurfaceVariant }}>
+                {startStr} — {endStr}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className="mt-0.5 font-label text-[9px] leading-tight"
+                style={{ color: hexToRgba(theme.onSurfaceVariant, 0.7) }}>
+                {appointment.staffName} · {appointment.durationMinutes} dk
+              </Text>
             </View>
           ) : (
             <View className="flex-1 p-4">

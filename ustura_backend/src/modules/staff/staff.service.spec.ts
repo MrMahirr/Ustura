@@ -109,7 +109,7 @@ describe('StaffService', () => {
   let service: StaffService;
   let staffRepository: jest.Mocked<StaffRepository>;
   let salonCatalogService: { findActiveById: jest.Mock };
-  let userQueryService: { findById: jest.Mock };
+  let userQueryService: { findByPrincipal: jest.Mock };
   let userProvisioningService: { createEmployee: jest.Mock };
   let databaseService: { transaction: jest.Mock };
   let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
@@ -132,7 +132,7 @@ describe('StaffService', () => {
       findActiveById: jest.fn(),
     };
     userQueryService = {
-      findById: jest.fn(),
+      findByPrincipal: jest.fn(),
     };
     userProvisioningService = {
       createEmployee: jest.fn(),
@@ -239,7 +239,7 @@ describe('StaffService', () => {
 
   it('reactivates an existing inactive staff assignment instead of creating a duplicate row', async () => {
     salonCatalogService.findActiveById.mockResolvedValue(createSalon());
-    userQueryService.findById.mockResolvedValue(createUser());
+    userQueryService.findByPrincipal.mockResolvedValue(createUser());
     staffRepository.findByUserIdAndSalon.mockResolvedValue(
       createStaffMember({
         id: 'staff-9',
@@ -286,7 +286,7 @@ describe('StaffService', () => {
 
   it('rejects creating duplicate active staff assignments in the same salon', async () => {
     salonCatalogService.findActiveById.mockResolvedValue(createSalon());
-    userQueryService.findById.mockResolvedValue(createUser());
+    userQueryService.findByPrincipal.mockResolvedValue(createUser());
     staffRepository.findByUserIdAndSalon.mockResolvedValue(createStaffMember());
 
     await expect(
@@ -350,7 +350,7 @@ describe('StaffService', () => {
 
   it('rejects creating staff assignments with user roles that do not match the staff role', async () => {
     salonCatalogService.findActiveById.mockResolvedValue(createSalon());
-    userQueryService.findById.mockResolvedValue(
+    userQueryService.findByPrincipal.mockResolvedValue(
       createUser({
         role: Role.RECEPTIONIST,
       }),

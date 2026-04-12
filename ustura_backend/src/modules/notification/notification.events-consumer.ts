@@ -4,6 +4,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { NotificationService } from './notification.service';
 
 @Injectable()
@@ -31,6 +32,7 @@ export class NotificationEventsConsumer
 
         this.notificationService.persistBestEffort({
           recipientId: event.payload.customerId ?? null,
+          recipientKind: PrincipalKind.CUSTOMER,
           key: 'reservation.created',
           title: `${event.payload.salonName} rezervasyonu olusturuldu`,
           body: `${event.payload.customerName}, ${event.payload.staffDisplayName} ile randevu olusturdu.`,
@@ -64,6 +66,7 @@ export class NotificationEventsConsumer
 
         this.notificationService.persistBestEffort({
           recipientId: event.payload.customerId ?? null,
+          recipientKind: PrincipalKind.CUSTOMER,
           key: 'reservation.cancelled',
           title: `${event.payload.salonName} rezervasyonu iptal edildi`,
           body: `${event.payload.customerName} randevusu ${event.payload.actorRole} tarafindan iptal edildi.`,
@@ -85,6 +88,7 @@ export class NotificationEventsConsumer
 
         this.notificationService.persistBestEffort({
           recipientId: event.payload.approvedOwnerUserId ?? null,
+          recipientKind: PrincipalKind.PERSONNEL,
           key: 'owner.approved',
           title: `${event.payload.salonName} basvurusu onaylandi`,
           body: `${event.payload.applicantName} salon sahibi basvurusu onaylandi.`,
@@ -112,6 +116,8 @@ export class NotificationEventsConsumer
 
         this.notificationService.persistBestEffort({
           recipientId: event.payload.userId ?? null,
+          recipientKind:
+            event.payload.principalKind ?? PrincipalKind.CUSTOMER,
           key: 'auth.security',
           title: 'Oturum guvenligi bildirimi',
           body: `Hesabiniz icin guvenlik olayi tespit edildi. Etkilenen oturum: ${event.payload.revokedSessionCount}.`,

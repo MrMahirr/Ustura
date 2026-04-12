@@ -48,3 +48,17 @@ export interface ScheduleDay {
   overview: ScheduleOverview;
   nextUp: ScheduleNextUp | null;
 }
+
+export interface ScheduleWeekDay {
+  date: Date;
+  dayLabel: string;
+  dateLabel: string;
+  isToday: boolean;
+  appointments: ScheduleAppointment[];
+}
+
+export interface ScheduleWeek {
+  days: ScheduleWeekDay[];
+  overview: ScheduleOverview;
+  nextUp: ScheduleNextUp | null;
+}

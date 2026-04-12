@@ -18,6 +18,7 @@ export const SCHEDULE_COPY = {
   completedStatus: 'Tamamlandi',
   upcomingStatus: 'Bekliyor',
   cancelledStatus: 'Iptal',
+  weekDayLabels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] as readonly string[],
   allStaffLabel: 'Tüm Personel',
   staffFilterTitle: 'PERSONEL',
   staffRoleBarber: 'Berber',

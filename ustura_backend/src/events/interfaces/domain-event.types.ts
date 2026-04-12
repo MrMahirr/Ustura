@@ -1,3 +1,4 @@
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import { ReservationStatus } from '../../modules/reservation/enums/reservation-status.enum';
 
@@ -111,6 +112,7 @@ export interface AuthLoggedOutEvent
       userId: string;
       userEmail?: string | null;
       userName?: string | null;
+      principalKind?: PrincipalKind;
       provider: 'refresh_token';
       reason: 'manual_logout' | 'logout_all' | 'suspicious_reuse';
       revokedSessionCount: number;

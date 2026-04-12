@@ -1,5 +1,8 @@
 import { apiRequest } from '@/services/api';
 
+/** Backend `PrincipalKind` — login isteğinde hangi kimlik tablosunda aranacağını belirler. */
+export type PrincipalKind = 'customer' | 'personnel' | 'platform_admin';
+
 export type SessionRole = 'customer' | 'owner' | 'barber' | 'receptionist' | 'super_admin';
 
 export interface SessionTokens {
@@ -41,6 +44,8 @@ interface RegisterCustomerPayload {
 interface LoginWithPasswordPayload {
   email: string;
   password: string;
+  /** Verilmezse backend müşteri kabul eder; personel ve süper admin için zorunlu. */
+  principalKind?: PrincipalKind;
 }
 
 interface LoginCustomerWithGoogleWebPayload {
@@ -72,7 +77,10 @@ export async function loginWithPassword(payload: LoginWithPasswordPayload) {
 }
 
 export async function loginCustomer(payload: LoginWithPasswordPayload) {
-  return loginWithPassword(payload);
+  return loginWithPassword({
+    ...payload,
+    principalKind: payload.principalKind ?? 'customer',
+  });
 }
 
 export async function getGoogleCustomerWebConfiguration() {

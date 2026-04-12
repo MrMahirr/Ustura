@@ -1,4 +1,5 @@
 import type { SqlQueryExecutor } from '../../../database/database.types';
+import type { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
 import type {
   CreateCustomerInput,
   CreateEmployeeInput,
@@ -10,8 +11,14 @@ import type {
 export const USER_QUERY_SERVICE = Symbol('USER_QUERY_SERVICE');
 
 export interface UserQueryServiceContract {
-  findById(id: string): Promise<User | null>;
-  findByEmail(email: string): Promise<User | null>;
+  findByPrincipal(
+    kind: PrincipalKind,
+    id: string,
+  ): Promise<User | null>;
+  findByEmailForPrincipal(
+    email: string,
+    kind: PrincipalKind,
+  ): Promise<User | null>;
   findByFirebaseUid(firebaseUid: string): Promise<User | null>;
 }
 
@@ -32,6 +39,9 @@ export interface UserProvisioningServiceContract {
     input: CreateOwnerInput,
     executor?: SqlQueryExecutor,
   ): Promise<User>;
-  deactivateUser(id: string): Promise<UserProfile>;
+  deactivateUser(
+    kind: PrincipalKind,
+    id: string,
+  ): Promise<UserProfile>;
   linkFirebaseCustomerIdentity(id: string, firebaseUid: string): Promise<User>;
 }

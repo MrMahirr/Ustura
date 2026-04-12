@@ -4,6 +4,7 @@ import { DatabaseConstraintViolationError } from '../../database/database.errors
 import { DatabaseService } from '../../database/database.service';
 import type { SqlQueryExecutor } from '../../database/database.types';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
@@ -305,7 +306,10 @@ export class StaffService {
   }
 
   private async requireUser(userId: string) {
-    const user = await this.userQueryService.findById(userId);
+    const user = await this.userQueryService.findByPrincipal(
+      PrincipalKind.PERSONNEL,
+      userId,
+    );
 
     if (!user) {
       throw staffUserNotFoundError();

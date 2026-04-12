@@ -132,7 +132,7 @@ export class SalonRepository {
       text: `
         SELECT COUNT(*)::int AS total_count
         FROM salons s
-        INNER JOIN users u ON u.id = s.owner_id
+        INNER JOIN personnel u ON u.id = s.owner_id
         ${whereClause}
       `,
       values,
@@ -173,7 +173,7 @@ export class SalonRepository {
           s.created_at,
           s.updated_at
         FROM salons s
-        INNER JOIN users u ON u.id = s.owner_id
+        INNER JOIN personnel u ON u.id = s.owner_id
         ${whereClause}
         ORDER BY ${this.getAdminSortClause(sort)}
         LIMIT $${paginatedValues.length - 1}

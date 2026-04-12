@@ -46,6 +46,7 @@ function clearFieldError(errors: FieldErrors, field: keyof FieldErrors): FieldEr
 }
 
 interface UseStaffAccessOptions {
+  initialIdentifier?: string;
   onSubmitSuccess?: (payload: {
     identifier: string;
     password: string;
@@ -53,7 +54,9 @@ interface UseStaffAccessOptions {
 }
 
 export function useStaffAccess(options: UseStaffAccessOptions = {}) {
-  const [identifier, setIdentifier] = React.useState('');
+  const [identifier, setIdentifier] = React.useState(
+    options.initialIdentifier ?? '',
+  );
   const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(false);
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({});

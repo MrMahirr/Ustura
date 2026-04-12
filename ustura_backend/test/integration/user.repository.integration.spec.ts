@@ -3,12 +3,13 @@ import { ConfigModule } from '../../src/config/config.module';
 import { DatabaseModule } from '../../src/database/database.module';
 import { DatabaseService } from '../../src/database/database.service';
 import { UserRepository } from '../../src/modules/user/repositories/user.repository';
+import { PrincipalKind } from '../../src/shared/auth/principal-kind.enum';
 import { createContractTestApp } from '../helpers/create-contract-test-app';
 import { Role } from '../../src/shared/auth/role.enum';
 
 describe('UserRepository (Integration)', () => {
   let app: INestApplication;
-  let databaseService: any;
+  let databaseService: DatabaseService;
   let userRepository: UserRepository;
 
   beforeAll(async () => {
@@ -26,8 +27,16 @@ describe('UserRepository (Integration)', () => {
 
   beforeEach(async () => {
     await databaseService.query({
-      name: 'test.clear-users',
-      text: 'DELETE FROM users',
+      name: 'test.clear-identity-tables',
+      text: `
+        DELETE FROM refresh_tokens;
+        DELETE FROM reservations;
+        DELETE FROM staff;
+        DELETE FROM salons;
+        DELETE FROM customers;
+        DELETE FROM personnel;
+        DELETE FROM platform_admins;
+      `,
     });
   });
 
@@ -45,16 +54,26 @@ describe('UserRepository (Integration)', () => {
     expect(created.isActive).toBe(true);
     expect(created.role).toBe(Role.CUSTOMER);
 
-    let found = await userRepository.findById(created.id);
+    let found = await userRepository.findByPrincipal(
+      PrincipalKind.CUSTOMER,
+      created.id,
+    );
     expect(found?.email).toBe('integration@test.com');
 
-    found = await userRepository.findByPhone('+905554443322');
+    found = await userRepository.findByPhoneForPrincipal(
+      '+905554443322',
+      PrincipalKind.CUSTOMER,
+    );
     expect(found?.id).toBe(created.id);
 
-    const updated = await userRepository.updateProfile(created.id, {
-      name: 'Updated Name',
-      phone: '+905554443311',
-    });
+    const updated = await userRepository.updateProfile(
+      PrincipalKind.CUSTOMER,
+      created.id,
+      {
+        name: 'Updated Name',
+        phone: '+905554443311',
+      },
+    );
     expect(updated?.name).toBe('Updated Name');
     expect(updated?.phone).toBe('+905554443311');
 
@@ -63,12 +82,18 @@ describe('UserRepository (Integration)', () => {
     expect(found?.id).toBe(created.id);
     expect(found?.firebaseUid).toBe('firebase-123');
 
-    const deactivated = await userRepository.deactivate(created.id);
+    const deactivated = await userRepository.deactivate(
+      PrincipalKind.CUSTOMER,
+      created.id,
+    );
     expect(deactivated?.isActive).toBe(false);
   });
 
   it('find returns null for non existing user', async () => {
-    const found = await userRepository.findById('00000000-0000-0000-0000-000000000000');
+    const found = await userRepository.findByPrincipal(
+      PrincipalKind.CUSTOMER,
+      '00000000-0000-0000-0000-000000000000',
+    );
     expect(found).toBeNull();
   });
 });

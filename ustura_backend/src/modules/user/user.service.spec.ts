@@ -1,6 +1,7 @@
 import { ConflictException, HttpException, NotFoundException } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import { CreateEmployeeInput, User } from './interfaces/user.types';
 import { UserAccountPolicy } from './policies/user-account.policy';
@@ -47,12 +48,10 @@ describe('UserService', () => {
     findByEmailMock = jest.fn();
     createUserMock = jest.fn();
     userRepository = {
-      findById: jest.fn(),
-      findByEmail: findByEmailMock,
-      findByEmailWithExecutor: findByEmailMock,
+      findByPrincipal: jest.fn(),
+      findByEmailForPrincipal: findByEmailMock,
       findByFirebaseUid: jest.fn(),
-      findByPhone: jest.fn(),
-      findByPhoneWithExecutor: jest.fn(),
+      findByPhoneForPrincipal: jest.fn(),
       create: createUserMock,
       updateProfile: jest.fn(),
       deactivate: jest.fn(),
@@ -80,6 +79,7 @@ describe('UserService', () => {
 
     expect(findByEmailMock).toHaveBeenCalledWith(
       'customer@example.com',
+      PrincipalKind.CUSTOMER,
       undefined,
     );
     expect(createUserMock).toHaveBeenCalledWith(
@@ -122,7 +122,7 @@ describe('UserService', () => {
 
   it('rejects duplicate phones before writing to the database', async () => {
     findByEmailMock.mockResolvedValue(null);
-    userRepository.findByPhoneWithExecutor.mockResolvedValue(
+    userRepository.findByPhoneForPrincipal.mockResolvedValue(
       createUser({
         id: 'user-2',
         phone: '+905559998877',
@@ -221,7 +221,11 @@ describe('UserService', () => {
       passwordHash: 'hashed-password',
     });
 
-    expect(findByEmailMock).toHaveBeenCalledWith('owner@example.com', undefined);
+    expect(findByEmailMock).toHaveBeenCalledWith(
+      'owner@example.com',
+      PrincipalKind.PERSONNEL,
+      undefined,
+    );
     expect(createUserMock).toHaveBeenCalledWith(
       {
         name: 'Owner Candidate',
@@ -238,7 +242,7 @@ describe('UserService', () => {
 
   it('maps the phone uniqueness index to a stable user error code', async () => {
     findByEmailMock.mockResolvedValue(null);
-    userRepository.findByPhoneWithExecutor.mockResolvedValue(null);
+    userRepository.findByPhoneForPrincipal.mockResolvedValue(null);
     createUserMock.mockRejectedValue(
       new DatabaseConstraintViolationError('duplicate phone', {
         constraint: 'uq_users_phone_non_empty',

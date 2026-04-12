@@ -4,6 +4,7 @@ import type {
 } from '@/services/reservation.service';
 import type { StaffRecord } from '@/services/staff.service';
 
+import { SCHEDULE_COPY } from './presentation';
 import type {
   ScheduleAppointment,
   ScheduleAppointmentStatus,
@@ -11,6 +12,8 @@ import type {
   ScheduleNextUp,
   ScheduleOverview,
   ScheduleStaffMember,
+  ScheduleWeek,
+  ScheduleWeekDay,
 } from './types';
 
 export const SCHEDULE_START_HOUR = 9;
@@ -166,4 +169,59 @@ export function mapReservationsToScheduleDay(
     overview,
     nextUp,
   };
+}
+
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export function mapReservationsToScheduleWeek(
+  reservations: ReservationRecord[],
+  anchorDate: Date,
+  staff: StaffRecord[],
+  selectedStaffId: string | null,
+): ScheduleWeek {
+  const staffLookup = buildStaffLookup(staff);
+  const weekStart = getWeekStart(anchorDate);
+  const today = new Date();
+
+  const days: ScheduleWeekDay[] = [];
+  const allAppointments: ScheduleAppointment[] = [];
+
+  for (let i = 0; i < 7; i++) {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + i);
+
+    const dayReservations = reservations.filter((r) =>
+      isSameDay(new Date(r.slotStart), dayDate),
+    );
+
+    const filtered = selectedStaffId
+      ? dayReservations.filter((r) => r.staffId === selectedStaffId)
+      : dayReservations;
+
+    const appointments = filtered.map((r) =>
+      mapReservationToAppointment(r, staffLookup),
+    );
+
+    allAppointments.push(...appointments);
+
+    days.push({
+      date: dayDate,
+      dayLabel: SCHEDULE_COPY.weekDayLabels[i],
+      dateLabel: String(dayDate.getDate()),
+      isToday: isSameDay(dayDate, today),
+      appointments,
+    });
+  }
+
+  const overview = computeOverview(allAppointments);
+  const nextUp = computeNextUp(allAppointments);
+
+  return { days, overview, nextUp };
 }

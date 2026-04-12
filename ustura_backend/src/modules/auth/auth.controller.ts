@@ -155,7 +155,7 @@ export class AuthController {
     @Body() refreshTokenDto: RefreshTokenDto,
   ) {
     return this.authService.logout(
-      currentUser.sub,
+      currentUser,
       refreshTokenDto.refreshToken,
     );
   }

@@ -10,8 +10,8 @@ import {
 import { getOwnedSalons } from '@/services/salon.service';
 import { getStaffBySalon, type StaffRecord } from '@/services/staff.service';
 
-import { mapReservationsToScheduleDay, mapStaffToScheduleMembers } from './data';
-import type { ScheduleDay, ScheduleStaffMember, ScheduleViewMode } from './types';
+import { mapReservationsToScheduleDay, mapReservationsToScheduleWeek, mapStaffToScheduleMembers } from './data';
+import type { ScheduleDay, ScheduleStaffMember, ScheduleViewMode, ScheduleWeek } from './types';
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
@@ -119,6 +119,15 @@ export function useBarberSchedule() {
     );
   }, [reservations, currentDate, staffRecords, selectedStaffId]);
 
+  const scheduleWeek: ScheduleWeek = useMemo(() => {
+    return mapReservationsToScheduleWeek(
+      reservations,
+      currentDate,
+      staffRecords,
+      selectedStaffId,
+    );
+  }, [reservations, currentDate, staffRecords, selectedStaffId]);
+
   const dateRangeLabel = useMemo(() => {
     return viewMode === 'week'
       ? formatWeekRange(currentDate)
@@ -180,6 +189,7 @@ export function useBarberSchedule() {
     goBack,
     goForward,
     scheduleDay,
+    scheduleWeek,
     loading,
     error,
     mutating,

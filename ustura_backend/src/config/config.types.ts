@@ -52,6 +52,17 @@ export interface CorsConfig {
   credentials: boolean;
 }
 
+export interface EmailJsConfig {
+  serviceId: string;
+  templateApproval: string;
+  publicKey: string;
+  privateKey: string;
+}
+
+export interface FrontendConfig {
+  baseUrl: string;
+}
+
 export interface EnvironmentVariables {
   PORT: number;
   NODE_ENV: NodeEnvironment;
@@ -76,4 +87,9 @@ export interface EnvironmentVariables {
   GOOGLE_WEB_CLIENT_ID: string;
   CORS_ORIGINS: string[];
   CORS_CREDENTIALS: boolean;
+  EMAILJS_SERVICE_ID: string;
+  EMAILJS_TEMPLATE_APPROVAL: string;
+  EMAILJS_PUBLIC_KEY: string;
+  EMAILJS_PRIVATE_KEY: string;
+  FRONTEND_BASE_URL: string;
 }

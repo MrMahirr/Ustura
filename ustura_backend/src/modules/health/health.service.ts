@@ -15,20 +15,37 @@ const REQUIRED_MIGRATIONS = [
   '005_create_audit_logs.sql',
   '006_harden_refresh_tokens.sql',
   '007_enforce_user_phone_uniqueness.sql',
+  '008_seed_default_super_admin.sql',
+  '009_create_packages_schema.sql',
+  '010_seed_test_staff_accounts.sql',
+  '011_create_notifications.sql',
+  '012_split_identity_tables.sql',
+  '013_seed_demo_identity.sql',
 ] as const;
 
-const REQUIRED_USER_COLUMNS = [
+const REQUIRED_IDENTITY_TABLES = [
   {
-    name: 'password_hash',
-    isNullable: 'YES',
+    table: 'customers',
+    columns: [
+      { name: 'password_hash', isNullable: 'YES' as const },
+      { name: 'firebase_uid', isNullable: 'YES' as const },
+    ],
+    indexes: ['uq_customers_lower_email'],
   },
   {
-    name: 'firebase_uid',
-    isNullable: 'YES',
+    table: 'personnel',
+    columns: [
+      { name: 'password_hash', isNullable: 'YES' as const },
+      { name: 'role', isNullable: 'NO' as const },
+    ],
+    indexes: ['uq_personnel_lower_email'],
+  },
+  {
+    table: 'platform_admins',
+    columns: [{ name: 'password_hash', isNullable: 'NO' as const }],
+    indexes: ['uq_platform_admins_lower_email'],
   },
 ] as const;
-
-const REQUIRED_USER_INDEXES = ['uq_users_phone_non_empty'] as const;
 
 const REQUIRED_RESERVATION_COLUMNS = [
   {
@@ -85,6 +102,14 @@ const DATABASE_UNAVAILABLE_CHECKS = {
 
 const REQUIRED_REFRESH_TOKEN_COLUMNS = [
   {
+    name: 'principal_id',
+    isNullable: 'NO',
+  },
+  {
+    name: 'principal_kind',
+    isNullable: 'NO',
+  },
+  {
     name: 'revoked_at',
     isNullable: 'YES',
   },
@@ -100,6 +125,10 @@ const REQUIRED_REFRESH_TOKEN_COLUMNS = [
     name: 'rotated_from',
     isNullable: 'YES',
   },
+] as const;
+
+const REQUIRED_REFRESH_TOKEN_INDEXES = [
+  'idx_refresh_tokens_principal',
 ] as const;
 
 @Injectable()
@@ -265,74 +294,77 @@ export class HealthService {
 
   private async checkUsersTableSchema(): Promise<HealthCheckResult> {
     try {
-      const result = await this.databaseService.query<InformationSchemaColumnRow>({
-        name: 'health.users-table-columns',
-        text: `
-          SELECT
-            column_name,
-            is_nullable
-          FROM information_schema.columns
-          WHERE table_schema = 'public'
-            AND table_name = 'users'
-            AND column_name = ANY($1::text[])
-        `,
-        values: [REQUIRED_USER_COLUMNS.map((column) => column.name)],
-      });
-      const columnsByName = new Map(
-        result.rows.map((row) => [row.column_name, row.is_nullable]),
-      );
-      const missingColumns = REQUIRED_USER_COLUMNS.filter((column) => {
-        return !columnsByName.has(column.name);
-      }).map((column) => column.name);
+      for (const spec of REQUIRED_IDENTITY_TABLES) {
+        const result = await this.databaseService.query<InformationSchemaColumnRow>({
+          name: `health.identity-table-columns-${spec.table}`,
+          text: `
+            SELECT
+              column_name,
+              is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = $1
+              AND column_name = ANY($2::text[])
+          `,
+          values: [spec.table, spec.columns.map((column) => column.name)],
+        });
+        const columnsByName = new Map(
+          result.rows.map((row) => [row.column_name, row.is_nullable]),
+        );
+        const missingColumns = spec.columns
+          .filter((column) => !columnsByName.has(column.name))
+          .map((column) => column.name);
 
-      if (missingColumns.length > 0) {
-        return {
-          status: 'down',
-          message: `Users table is missing required column(s): ${missingColumns.join(', ')}. Run \`npm run migrate\`.`,
-        };
-      }
+        if (missingColumns.length > 0) {
+          return {
+            status: 'down',
+            message: `Table "${spec.table}" is missing required column(s): ${missingColumns.join(', ')}. Run \`npm run migrate\`.`,
+          };
+        }
 
-      const invalidNullability = REQUIRED_USER_COLUMNS.filter((column) => {
-        return columnsByName.get(column.name) !== column.isNullable;
-      }).map((column) => `${column.name} should be nullable`);
+        const invalidNullability = spec.columns
+          .filter((column) => columnsByName.get(column.name) !== column.isNullable)
+          .map((column) => `${spec.table}.${column.name} nullability mismatch`);
 
-      if (invalidNullability.length > 0) {
-        return {
-          status: 'down',
-          message: `Users table schema is outdated: ${invalidNullability.join(', ')}. Run \`npm run migrate\`.`,
-        };
-      }
+        if (invalidNullability.length > 0) {
+          return {
+            status: 'down',
+            message: `Identity schema is outdated: ${invalidNullability.join(', ')}. Run \`npm run migrate\`.`,
+          };
+        }
 
-      const indexesResult = await this.databaseService.query<PgIndexRow>({
-        name: 'health.users-table-indexes',
-        text: `
-          SELECT indexname
-          FROM pg_indexes
-          WHERE schemaname = 'public'
-            AND tablename = 'users'
-        `,
-      });
-      const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
-      const missingIndexes = REQUIRED_USER_INDEXES.filter((indexName) => {
-        return !indexNames.has(indexName);
-      });
+        const indexesResult = await this.databaseService.query<PgIndexRow>({
+          name: `health.identity-table-indexes-${spec.table}`,
+          text: `
+            SELECT indexname
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+              AND tablename = $1
+          `,
+          values: [spec.table],
+        });
+        const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
+        const missingIndexes = spec.indexes.filter(
+          (indexName) => !indexNames.has(indexName),
+        );
 
-      if (missingIndexes.length > 0) {
-        return {
-          status: 'down',
-          message: `Users table is missing required index(es): ${missingIndexes.join(', ')}. Run \`npm run migrate\`.`,
-        };
+        if (missingIndexes.length > 0) {
+          return {
+            status: 'down',
+            message: `Table "${spec.table}" is missing required index(es): ${missingIndexes.join(', ')}. Run \`npm run migrate\`.`,
+          };
+        }
       }
 
       return {
         status: 'up',
-        message: 'Users table schema is up to date.',
+        message: 'Identity tables (customers, personnel, platform_admins) are up to date.',
       };
     } catch (error) {
       return {
         status: 'down',
         message: this.appendCause(
-          'Unable to inspect the users table schema. Check the configured PostgreSQL database.',
+          'Unable to inspect identity table schemas. Check the configured PostgreSQL database.',
           error,
         ),
       };
@@ -508,12 +540,33 @@ export class HealthService {
 
       const invalidNullability = REQUIRED_REFRESH_TOKEN_COLUMNS.filter((column) => {
         return columnsByName.get(column.name) !== column.isNullable;
-      }).map((column) => `${column.name} should be nullable`);
+      }).map((column) => `${column.name} nullability mismatch`);
 
       if (invalidNullability.length > 0) {
         return {
           status: 'down',
           message: `Refresh tokens table schema is outdated: ${invalidNullability.join(', ')}. Run \`npm run migrate\`.`,
+        };
+      }
+
+      const indexesResult = await this.databaseService.query<PgIndexRow>({
+        name: 'health.refresh-tokens-table-indexes',
+        text: `
+          SELECT indexname
+          FROM pg_indexes
+          WHERE schemaname = 'public'
+            AND tablename = 'refresh_tokens'
+        `,
+      });
+      const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
+      const missingIndexes = REQUIRED_REFRESH_TOKEN_INDEXES.filter(
+        (indexName) => !indexNames.has(indexName),
+      );
+
+      if (missingIndexes.length > 0) {
+        return {
+          status: 'down',
+          message: `Refresh tokens table is missing required index(es): ${missingIndexes.join(', ')}. Run \`npm run migrate\`.`,
         };
       }
 

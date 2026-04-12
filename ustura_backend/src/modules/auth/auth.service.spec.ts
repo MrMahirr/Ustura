@@ -3,6 +3,7 @@ import { HttpException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
@@ -80,15 +81,15 @@ describe('AuthService', () => {
       saveRefreshToken: saveRefreshTokenMock,
       findByTokenHash: jest.fn(),
       revokeToken: revokeTokenMock,
-      revokeAllUserTokens: jest.fn(),
+      revokeAllPrincipalTokens: jest.fn(),
     } as unknown as jest.Mocked<AuthRepository>;
 
     createCustomerMock = jest.fn();
     linkFirebaseCustomerIdentityMock = jest.fn();
     userService = {
       createCustomer: createCustomerMock,
-      findByEmail: jest.fn(),
-      findById: jest.fn(),
+      findByEmailForPrincipal: jest.fn(),
+      findByPrincipal: jest.fn(),
       findByFirebaseUid: jest.fn(),
       linkFirebaseCustomerIdentity: linkFirebaseCustomerIdentityMock,
     } as unknown as jest.Mocked<UserService>;
@@ -164,7 +165,8 @@ describe('AuthService', () => {
     jwtService.decode.mockReturnValue({ exp: 1_800_000_000 });
     saveRefreshTokenMock.mockResolvedValue({
       id: 'refresh-1',
-      userId: 'user-1',
+      principalId: 'user-1',
+      principalKind: PrincipalKind.CUSTOMER,
       tokenHash: 'stored-token-hash',
       expiresAt: new Date('2027-01-15T08:00:00.000Z'),
       revoked: false,
@@ -204,7 +206,8 @@ describe('AuthService', () => {
     });
     expect(saveRefreshTokenMock).toHaveBeenCalledWith(
       {
-        userId: 'user-1',
+        principalId: 'user-1',
+        principalKind: PrincipalKind.CUSTOMER,
         tokenHash: expectedRefreshHash,
         expiresAt: new Date(1_800_000_000 * 1000),
         userAgent: null,
@@ -232,7 +235,7 @@ describe('AuthService', () => {
   });
 
   it('rejects login when the password is invalid', async () => {
-    userService.findByEmail.mockResolvedValue(createUser());
+    userService.findByEmailForPrincipal.mockResolvedValue(createUser());
     bcryptCompareMock.mockResolvedValue(false);
 
     await expect(
@@ -269,7 +272,8 @@ describe('AuthService', () => {
     });
     authRepository.findByTokenHash.mockResolvedValue({
       id: 'refresh-1',
-      userId: 'user-1',
+      principalId: 'user-1',
+      principalKind: PrincipalKind.CUSTOMER,
       tokenHash: currentTokenHash,
       expiresAt: new Date('2099-01-01T00:00:00.000Z'),
       revoked: false,
@@ -279,7 +283,7 @@ describe('AuthService', () => {
       rotatedFrom: null,
       createdAt: new Date('2026-04-07T00:00:00.000Z'),
     });
-    userService.findById.mockResolvedValue(existingUser);
+    userService.findByPrincipal.mockResolvedValue(existingUser);
     revokeTokenMock.mockResolvedValue(true);
     jwtService.signAsync.mockReset();
     jwtService.signAsync
@@ -293,12 +297,13 @@ describe('AuthService', () => {
     expect(transactionMock).toHaveBeenCalledTimes(1);
     expect(revokeTokenMock).toHaveBeenCalledWith(
       currentTokenHash,
-      'user-1',
+      { id: 'user-1', kind: PrincipalKind.CUSTOMER },
       transactionExecutor,
     );
     expect(saveRefreshTokenMock).toHaveBeenCalledWith(
       {
-        userId: 'user-1',
+        principalId: 'user-1',
+        principalKind: PrincipalKind.CUSTOMER,
         tokenHash: nextRefreshHash,
         expiresAt: new Date(1_800_000_000 * 1000),
         userAgent: null,
@@ -333,7 +338,7 @@ describe('AuthService', () => {
       name: 'Google Customer',
     });
     userService.findByFirebaseUid.mockResolvedValue(null);
-    userService.findByEmail.mockResolvedValue(null);
+    userService.findByEmailForPrincipal.mockResolvedValue(null);
     createCustomerMock.mockResolvedValue(googleCustomer);
     jwtService.signAsync.mockReset();
     jwtService.signAsync
@@ -371,7 +376,7 @@ describe('AuthService', () => {
       name: 'Linked Customer',
     });
     userService.findByFirebaseUid.mockResolvedValue(null);
-    userService.findByEmail.mockResolvedValue(existingCustomer);
+    userService.findByEmailForPrincipal.mockResolvedValue(existingCustomer);
     linkFirebaseCustomerIdentityMock.mockResolvedValue(linkedCustomer);
     jwtService.signAsync.mockReset();
     jwtService.signAsync
@@ -395,7 +400,7 @@ describe('AuthService', () => {
       name: 'Linked Customer',
     });
     userService.findByFirebaseUid.mockResolvedValue(null);
-    userService.findByEmail.mockResolvedValue(
+    userService.findByEmailForPrincipal.mockResolvedValue(
       createUser({
         email: 'linked@example.com',
         firebaseUid: 'firebase-uid-1',
@@ -429,7 +434,7 @@ describe('AuthService', () => {
       email: 'google-web@example.com',
       name: 'Google Web Customer',
     });
-    userService.findByEmail.mockResolvedValue(null);
+    userService.findByEmailForPrincipal.mockResolvedValue(null);
     createCustomerMock.mockResolvedValue(googleCustomer);
     jwtService.signAsync.mockReset();
     jwtService.signAsync
@@ -451,7 +456,7 @@ describe('AuthService', () => {
   });
 
   it('rejects password login for a Google-only account', async () => {
-    userService.findByEmail.mockResolvedValue(
+    userService.findByEmailForPrincipal.mockResolvedValue(
       createUser({
         passwordHash: null,
         firebaseUid: 'firebase-uid-only',
@@ -479,13 +484,26 @@ describe('AuthService', () => {
       .digest('hex');
 
     revokeTokenMock.mockResolvedValue(true);
-    userService.findById.mockResolvedValue(createUser());
+    userService.findByPrincipal.mockResolvedValue(createUser());
 
-    await expect(authService.logout('user-1', refreshToken)).resolves.toEqual({
+    await expect(
+      authService.logout(
+        {
+          sub: 'user-1',
+          email: 'john@example.com',
+          role: Role.CUSTOMER,
+          tokenType: 'access',
+        },
+        refreshToken,
+      ),
+    ).resolves.toEqual({
       success: true,
     });
 
-    expect(revokeTokenMock).toHaveBeenCalledWith(refreshHash, 'user-1');
+    expect(revokeTokenMock).toHaveBeenCalledWith(refreshHash, {
+      id: 'user-1',
+      kind: PrincipalKind.CUSTOMER,
+    });
     expect(domainEventBus.publish).toHaveBeenCalledWith({
       name: 'auth.logged_out',
       occurredAt: expect.any(Date),
@@ -493,6 +511,7 @@ describe('AuthService', () => {
         userId: 'user-1',
         userEmail: 'john@example.com',
         userName: 'John Doe',
+        principalKind: PrincipalKind.CUSTOMER,
         provider: 'refresh_token',
         reason: 'manual_logout',
         revokedSessionCount: 1,
@@ -502,8 +521,8 @@ describe('AuthService', () => {
   });
 
   it('revokes all sessions when logout-all is requested', async () => {
-    authRepository.revokeAllUserTokens.mockResolvedValue(3);
-    userService.findById.mockResolvedValue(createUser());
+    authRepository.revokeAllPrincipalTokens.mockResolvedValue(3);
+    userService.findByPrincipal.mockResolvedValue(createUser());
 
     await expect(
       authService.logoutAll({
@@ -517,7 +536,10 @@ describe('AuthService', () => {
       revokedSessionCount: 3,
     });
 
-    expect(authRepository.revokeAllUserTokens).toHaveBeenCalledWith('user-1');
+    expect(authRepository.revokeAllPrincipalTokens).toHaveBeenCalledWith(
+      'user-1',
+      PrincipalKind.CUSTOMER,
+    );
     expect(domainEventBus.publish).toHaveBeenCalledWith({
       name: 'auth.logged_out',
       occurredAt: expect.any(Date),
@@ -525,6 +547,7 @@ describe('AuthService', () => {
         userId: 'user-1',
         userEmail: 'john@example.com',
         userName: 'John Doe',
+        principalKind: PrincipalKind.CUSTOMER,
         provider: 'refresh_token',
         reason: 'logout_all',
         revokedSessionCount: 3,
@@ -547,7 +570,8 @@ describe('AuthService', () => {
     });
     authRepository.findByTokenHash.mockResolvedValue({
       id: 'refresh-1',
-      userId: 'user-1',
+      principalId: 'user-1',
+      principalKind: PrincipalKind.CUSTOMER,
       tokenHash: reusedTokenHash,
       expiresAt: new Date('2099-01-01T00:00:00.000Z'),
       revoked: true,
@@ -557,8 +581,8 @@ describe('AuthService', () => {
       rotatedFrom: null,
       createdAt: new Date('2026-04-07T00:00:00.000Z'),
     });
-    authRepository.revokeAllUserTokens.mockResolvedValue(2);
-    userService.findById.mockResolvedValue(createUser());
+    authRepository.revokeAllPrincipalTokens.mockResolvedValue(2);
+    userService.findByPrincipal.mockResolvedValue(createUser());
 
     let capturedError: unknown;
 
@@ -573,7 +597,10 @@ describe('AuthService', () => {
     expect(getExceptionCode(capturedError)).toBe(
       ERROR_CODES.AUTH.REFRESH_TOKEN_REUSE_DETECTED,
     );
-    expect(authRepository.revokeAllUserTokens).toHaveBeenCalledWith('user-1');
+    expect(authRepository.revokeAllPrincipalTokens).toHaveBeenCalledWith(
+      'user-1',
+      PrincipalKind.CUSTOMER,
+    );
     expect(domainEventBus.publish).toHaveBeenCalledWith({
       name: 'auth.logged_out',
       occurredAt: expect.any(Date),
@@ -581,6 +608,7 @@ describe('AuthService', () => {
         userId: 'user-1',
         userEmail: 'john@example.com',
         userName: 'John Doe',
+        principalKind: PrincipalKind.CUSTOMER,
         provider: 'refresh_token',
         reason: 'suspicious_reuse',
         revokedSessionCount: 2,

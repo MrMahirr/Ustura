@@ -1,4 +1,4 @@
-import { Link, Redirect, useRouter } from 'expo-router';
+import { Link, Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
@@ -16,13 +16,31 @@ import { hexToRgba } from '@/utils/color';
 
 const STAFF_ROLES = ['owner', 'barber', 'receptionist'] as const;
 
+function decodeLoginToken(token: string | undefined): string | undefined {
+  if (!token || typeof token !== 'string') return undefined;
+  try {
+    const base64 = token.replace(/-/g, '+').replace(/_/g, '/');
+    const json = JSON.parse(atob(base64));
+    return typeof json.email === 'string' ? json.email : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function StaffAccessScreen() {
   const { width } = useWindowDimensions();
   const theme = useAuthAccessTheme();
   const router = useRouter();
   const { isAuthenticated, role, loginStaff } = useAuth();
+  const params = useLocalSearchParams<{ token?: string }>();
+
+  const emailFromToken = React.useMemo(
+    () => decodeLoginToken(params.token),
+    [params.token],
+  );
 
   const access = useStaffAccess({
+    initialIdentifier: emailFromToken,
     onSubmitSuccess: async ({ identifier, password }) => {
       await loginStaff({ identifier, password });
       router.replace('/berber');
@@ -43,6 +61,28 @@ export default function StaffAccessScreen() {
       contentMaxWidth={480}>
       <View style={{ gap: 32 }}>
         <StaffAccessIdentity />
+
+        {emailFromToken ? (
+          <View
+            style={{
+              backgroundColor: hexToRgba(theme.primary, 0.08),
+              borderWidth: 1,
+              borderColor: hexToRgba(theme.primary, 0.2),
+              borderRadius: 8,
+              padding: 16,
+            }}>
+            <Text
+              className="font-body text-sm"
+              style={{ color: theme.primary, fontWeight: '600', marginBottom: 4 }}>
+              Hesabiniz onaylandi
+            </Text>
+            <Text
+              className="font-body text-xs"
+              style={{ color: theme.onSurfaceVariant }}>
+              Gecici sifreniz e-posta adresinize gonderildi. Lutfen sifrenizi girerek giris yapin.
+            </Text>
+          </View>
+        ) : null}
 
         <StaffAccessCard
           compact={isCompact}

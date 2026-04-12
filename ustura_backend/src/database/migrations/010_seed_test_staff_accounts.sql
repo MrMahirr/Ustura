@@ -2,9 +2,9 @@
 -- USTURA — Veritabanı Migration
 -- Dosya  : 010_seed_test_staff_accounts.sql
 -- Tarih  : 2026-04-12
--- Notlar : Test amaçlı owner, barber ve receptionist hesapları
---          oluşturur. Ayrıca bir test salonu ve staff atamaları
---          ekler. Tüm şifreler bcrypt ile hashlenir.
+-- Notlar : Legacy `users` + salons + staff test verisi. 012 sonrası
+--          kullanıcı satırları personnel'a taşınır. Çakışmada satır
+--          korunur (ON CONFLICT id).
 --
 --   ┌──────────────┬─────────────────────────┬──────────────┐
 --   │ Rol          │ E-posta                 │ Şifre        │
@@ -26,7 +26,7 @@ VALUES (
     crypt('Owner123!', gen_salt('bf', 12)),
     'owner'
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- 2. TEST BERBER HESABI 1
 INSERT INTO users (id, name, email, phone, password_hash, role)
@@ -38,7 +38,7 @@ VALUES (
     crypt('Berber123!', gen_salt('bf', 12)),
     'barber'
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- 3. TEST BERBER HESABI 2
 INSERT INTO users (id, name, email, phone, password_hash, role)
@@ -50,7 +50,7 @@ VALUES (
     crypt('Berber123!', gen_salt('bf', 12)),
     'barber'
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- 4. TEST RESEPSIYONIST HESABI
 INSERT INTO users (id, name, email, phone, password_hash, role)
@@ -62,7 +62,7 @@ VALUES (
     crypt('Resepsiyon1!', gen_salt('bf', 12)),
     'receptionist'
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- 5. TEST SALONU
 INSERT INTO salons (id, owner_id, name, address, city, district, working_hours)
@@ -83,7 +83,7 @@ VALUES (
       "sunday":    null
     }'::jsonb
 )
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- 6. STAFF ATAMALARI
 INSERT INTO staff (user_id, salon_id, role, bio)

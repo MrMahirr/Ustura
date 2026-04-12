@@ -167,6 +167,18 @@ export function validateEnvironment(env: Env): EnvironmentVariables {
     GOOGLE_WEB_CLIENT_ID: readOptionalString(env, 'GOOGLE_WEB_CLIENT_ID'),
     CORS_ORIGINS: readCorsOrigins(env),
     CORS_CREDENTIALS: readBoolean(env, 'CORS_CREDENTIALS', true),
+    EMAILJS_SERVICE_ID: readOptionalString(env, 'EMAILJS_SERVICE_ID'),
+    EMAILJS_TEMPLATE_APPROVAL: readOptionalString(
+      env,
+      'EMAILJS_TEMPLATE_APPROVAL',
+    ),
+    EMAILJS_PUBLIC_KEY: readOptionalString(env, 'EMAILJS_PUBLIC_KEY'),
+    EMAILJS_PRIVATE_KEY: readOptionalString(env, 'EMAILJS_PRIVATE_KEY'),
+    FRONTEND_BASE_URL: readOptionalString(
+      env,
+      'FRONTEND_BASE_URL',
+      'http://localhost:8081',
+    ),
   };
 }
 

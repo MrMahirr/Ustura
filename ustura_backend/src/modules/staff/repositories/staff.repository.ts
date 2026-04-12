@@ -32,7 +32,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.id = $1
         LIMIT 1
       `,
@@ -58,7 +58,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.salon_id = $1
         ORDER BY s.created_at ASC
       `,
@@ -84,7 +84,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.salon_id = $1
           AND s.is_active = TRUE
         ORDER BY s.created_at ASC
@@ -111,7 +111,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.salon_id = $1
           AND s.role = $2
           AND s.is_active = TRUE
@@ -142,7 +142,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.user_id = $1
           AND s.salon_id = $2
           AND s.is_active = TRUE
@@ -170,7 +170,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.user_id = $1
           AND s.is_active = TRUE
         ORDER BY s.created_at ASC
@@ -200,7 +200,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.user_id = $1
           AND s.salon_id = $2
         LIMIT 1

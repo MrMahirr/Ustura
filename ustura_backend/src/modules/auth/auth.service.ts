@@ -3,6 +3,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
+import { roleToPrincipalKind } from '../../shared/auth/principal-kind.mapper';
 import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
 import type { SqlQueryExecutor } from '../../database/database.types';
@@ -26,6 +28,7 @@ import { RegisterDto } from './dto/register.dto';
 import {
   AuthSessionResponse,
   AuthTokens,
+  RefreshTokenRecord,
   SessionClientContext,
   VerifiedRefreshToken,
 } from './interfaces/auth.types';
@@ -97,7 +100,12 @@ export class AuthService {
     loginDto: LoginDto,
     clientContext?: SessionClientContext,
   ): Promise<AuthSessionResponse> {
-    const user = await this.userQueryService.findByEmail(loginDto.email);
+    const principalKind =
+      loginDto.principalKind ?? PrincipalKind.CUSTOMER;
+    const user = await this.userQueryService.findByEmailForPrincipal(
+      loginDto.email,
+      principalKind,
+    );
 
     if (!user?.isActive || !user.passwordHash) {
       throw invalidCredentialsError();
@@ -154,8 +162,9 @@ export class AuthService {
       return session;
     }
 
-    const userByEmail = await this.userQueryService.findByEmail(
+    const userByEmail = await this.userQueryService.findByEmailForPrincipal(
       googleIdentity.email,
+      PrincipalKind.CUSTOMER,
     );
 
     if (userByEmail) {
@@ -225,7 +234,11 @@ export class AuthService {
       await this.googleWebTokenVerifierService.verifyCustomerAccessToken(
         googleWebCustomerAuthDto.accessToken,
       );
-    const existingUser = await this.userQueryService.findByEmail(googleIdentity.email);
+    const existingUser =
+      await this.userQueryService.findByEmailForPrincipal(
+        googleIdentity.email,
+        PrincipalKind.CUSTOMER,
+      );
 
     if (existingUser) {
       this.assertCustomerGoogleEligibility(existingUser);
@@ -283,19 +296,29 @@ export class AuthService {
       throw refreshTokenInvalidError();
     }
 
-    if (storedToken.userId !== verifiedToken.sub) {
+    const verifiedPrincipalKind =
+      verifiedToken.principalKind ??
+      roleToPrincipalKind(verifiedToken.role);
+
+    if (
+      storedToken.principalId !== verifiedToken.sub ||
+      storedToken.principalKind !== verifiedPrincipalKind
+    ) {
       throw refreshTokenInvalidError();
     }
 
     if (storedToken.revoked) {
-      await this.handleRefreshTokenReuse(storedToken.userId, storedToken);
+      await this.handleRefreshTokenReuse(storedToken);
     }
 
     if (storedToken.expiresAt.getTime() <= Date.now()) {
       throw refreshTokenInvalidError();
     }
 
-    const user = await this.userQueryService.findById(verifiedToken.sub);
+    const user = await this.userQueryService.findByPrincipal(
+      verifiedPrincipalKind,
+      verifiedToken.sub,
+    );
 
     if (!user?.isActive) {
       throw refreshTokenInvalidError();
@@ -304,7 +327,10 @@ export class AuthService {
     const session = await this.databaseService.transaction(async (transaction) => {
       const revoked = await this.authRepository.revokeToken(
         tokenHash,
-        user.id,
+        {
+          id: user.id,
+          kind: verifiedPrincipalKind,
+        },
         transaction,
       );
 
@@ -327,11 +353,16 @@ export class AuthService {
   }
 
   async logout(
-    userId: string,
+    currentUser: JwtPayload,
     refreshToken: string,
   ): Promise<{ success: true }> {
+    const principalKind =
+      currentUser.principalKind ?? roleToPrincipalKind(currentUser.role);
     const tokenHash = this.hashRefreshToken(refreshToken);
-    const revoked = await this.authRepository.revokeToken(tokenHash, userId);
+    const revoked = await this.authRepository.revokeToken(tokenHash, {
+      id: currentUser.sub,
+      kind: principalKind,
+    });
 
     if (!revoked) {
       throw refreshTokenInvalidError(
@@ -339,11 +370,15 @@ export class AuthService {
       );
     }
 
-    const user = await this.userQueryService.findById(userId);
+    const user = await this.userQueryService.findByPrincipal(
+      principalKind,
+      currentUser.sub,
+    );
     this.publishLogoutEvent({
-      userId,
+      userId: currentUser.sub,
       userEmail: user?.email ?? null,
       userName: user?.name ?? null,
+      principalKind,
       provider: 'refresh_token',
       reason: 'manual_logout',
       revokedSessionCount: 1,
@@ -355,15 +390,23 @@ export class AuthService {
   async logoutAll(
     currentUser: JwtPayload,
   ): Promise<{ success: true; revokedSessionCount: number }> {
-    const revokedSessionCount = await this.authRepository.revokeAllUserTokens(
+    const principalKind =
+      currentUser.principalKind ?? roleToPrincipalKind(currentUser.role);
+    const revokedSessionCount =
+      await this.authRepository.revokeAllPrincipalTokens(
+        currentUser.sub,
+        principalKind,
+      );
+    const user = await this.userQueryService.findByPrincipal(
+      principalKind,
       currentUser.sub,
     );
-    const user = await this.userQueryService.findById(currentUser.sub);
 
     this.publishLogoutEvent({
       userId: currentUser.sub,
       userEmail: user?.email ?? currentUser.email,
       userName: user?.name ?? null,
+      principalKind,
       provider: 'refresh_token',
       reason: 'logout_all',
       revokedSessionCount,
@@ -397,7 +440,8 @@ export class AuthService {
 
     await this.authRepository.saveRefreshToken(
       {
-        userId: user.id,
+        principalId: user.id,
+        principalKind: roleToPrincipalKind(user.role),
         tokenHash: refreshTokenHash,
         expiresAt: this.getTokenExpirationDate(tokens.refreshToken),
         userAgent: options.clientContext?.userAgent ?? null,
@@ -414,10 +458,12 @@ export class AuthService {
   }
 
   private async generateTokens(user: UserProfile): Promise<AuthTokens> {
+    const principalKind = roleToPrincipalKind(user.role);
     const accessPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
+      principalKind,
       tokenType: 'access',
     };
     const refreshPayload: JwtPayload = {
@@ -536,18 +582,23 @@ export class AuthService {
   }
 
   private async handleRefreshTokenReuse(
-    userId: string,
-    storedToken: { id: string },
+    storedToken: RefreshTokenRecord,
   ): Promise<never> {
-    const revokedSessionCount = await this.authRepository.revokeAllUserTokens(
-      userId,
+    const revokedSessionCount =
+      await this.authRepository.revokeAllPrincipalTokens(
+        storedToken.principalId,
+        storedToken.principalKind,
+      );
+    const user = await this.userQueryService.findByPrincipal(
+      storedToken.principalKind,
+      storedToken.principalId,
     );
-    const user = await this.userQueryService.findById(userId);
 
     this.publishLogoutEvent({
-      userId,
+      userId: storedToken.principalId,
       userEmail: user?.email ?? null,
       userName: user?.name ?? null,
+      principalKind: storedToken.principalKind,
       provider: 'refresh_token',
       reason: 'suspicious_reuse',
       revokedSessionCount,
@@ -561,6 +612,7 @@ export class AuthService {
     userId: string;
     userEmail?: string | null;
     userName?: string | null;
+    principalKind: PrincipalKind;
     provider: 'refresh_token';
     reason: 'manual_logout' | 'logout_all' | 'suspicious_reuse';
     revokedSessionCount: number;
@@ -573,6 +625,7 @@ export class AuthService {
         userId: input.userId,
         userEmail: input.userEmail ?? null,
         userName: input.userName ?? null,
+        principalKind: input.principalKind,
         provider: input.provider,
         reason: input.reason,
         revokedSessionCount: input.revokedSessionCount,

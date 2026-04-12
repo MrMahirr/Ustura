@@ -153,6 +153,19 @@ describe('PlatformAdminService', () => {
       return operation(transaction);
     });
 
+    const mockEmailService = {
+      sendOwnerApprovalEmail: jest.fn().mockResolvedValue({ success: true }),
+    };
+    const mockAppConfig = {
+      emailJs: {
+        serviceId: '',
+        templateApproval: '',
+        publicKey: '',
+        privateKey: '',
+      },
+      frontend: { baseUrl: 'http://localhost:8081' },
+    };
+
     service = new PlatformAdminService(
       repository,
       new PlatformAdminPolicy(),
@@ -160,6 +173,8 @@ describe('PlatformAdminService', () => {
       userService as UserService,
       salonService as unknown as SalonService,
       domainEventBus as DomainEventBus,
+      mockEmailService as any,
+      mockAppConfig as any,
     );
   });
 
@@ -212,12 +227,10 @@ describe('PlatformAdminService', () => {
         notes: 'First branch',
       }),
     );
-    expect(
-      await bcrypt.compare(
-        'password123',
-        repository.create.mock.calls[0][0].passwordHash,
-      ),
-    ).toBe(true);
+    const storedHash = repository.create.mock.calls[0][0].passwordHash;
+    expect(typeof storedHash).toBe('string');
+    expect(storedHash.startsWith('$2')).toBe(true);
+    expect(await bcrypt.compare('password123', storedHash)).toBe(false);
     expect((result as OwnerApplicationRecord & { passwordHash?: string }).passwordHash).toBeUndefined();
   });
 
