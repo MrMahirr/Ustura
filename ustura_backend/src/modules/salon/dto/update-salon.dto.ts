@@ -1,10 +1,45 @@
-// TODO: class-validator dekoratörleri eklenecek
+import {
+  IsBoolean,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Length,
+  MaxLength,
+} from 'class-validator';
+
 export class UpdateSalonDto {
+  @IsOptional()
+  @IsString()
+  @Length(2, 150)
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(5, 500)
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 80)
   city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
   district?: string;
-  photo_url?: string;
-  working_hours?: Record<string, any>;
-  is_active?: boolean;
+
+  @IsOptional()
+  @IsUrl({
+    require_protocol: true,
+  })
+  photoUrl?: string;
+
+  @IsOptional()
+  @IsObject()
+  workingHours?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

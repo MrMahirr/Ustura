@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import { userOverview, type UserViewMode } from '@/components/panel/super-admin/user-management.data';
+import type { UserOverview, UserViewMode } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 import { cn } from '@/utils/cn';
@@ -12,6 +12,7 @@ import { formatCompactNumber } from './utils';
 interface UserOverviewBarProps {
   isWide: boolean;
   selectedViewMode: UserViewMode;
+  overview: UserOverview;
   onViewModeChange: (viewMode: UserViewMode) => void;
 }
 
@@ -58,6 +59,7 @@ function ViewSwitchButton({
 export default function UserOverviewBar({
   isWide,
   selectedViewMode,
+  overview,
   onViewModeChange,
 }: UserOverviewBarProps) {
   const adminTheme = useSuperAdminTheme();
@@ -84,7 +86,7 @@ export default function UserOverviewBar({
             TOPLAM KULLANICI
           </Text>
           <Text className={userClassNames.overviewValue} style={{ color: adminTheme.primary }}>
-            {formatCompactNumber(userOverview.totalUsers)}
+            {formatCompactNumber(overview.totalUsers)}
           </Text>
         </View>
 
@@ -93,7 +95,7 @@ export default function UserOverviewBar({
             AKTIF BUGUN
           </Text>
           <Text className={userClassNames.overviewValue} style={{ color: adminTheme.onSurface }}>
-            {formatCompactNumber(userOverview.activeToday)}
+            {formatCompactNumber(overview.activeToday)}
           </Text>
         </View>
       </View>

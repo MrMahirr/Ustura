@@ -228,7 +228,7 @@ export default function HeroSection({ onRegisterPress }: HeroSectionProps) {
                 />
                 <View>
                   <Text className="font-label text-xs uppercase tracking-[1.2px]" style={{ color: primary }}>
-                    MASTER BARBER
+                    USTA BERBER
                   </Text>
                   <Text className="font-body text-lg font-bold" style={{ color: onSurface }}>
                     Murat Yilmaz

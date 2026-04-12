@@ -1,11 +1,40 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { AppConfigService } from '../../config/config.service';
+import { DatabaseModule } from '../../database/database.module';
+import { EventsModule } from '../../events/events.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
+import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
+import { FirebaseTokenVerifierService } from './firebase-token-verifier.service';
 import { AuthService } from './auth.service';
+import { GoogleWebTokenVerifierService } from './google-web-token-verifier.service';
 import { AuthRepository } from './repositories/auth.repository';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
+  imports: [
+    DatabaseModule,
+    EventsModule,
+    AuditLogModule,
+    UserModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.registerAsync({
+      inject: [AppConfigService],
+      useFactory: (configService: AppConfigService) => ({
+        secret: configService.jwt.secret,
+      }),
+    }),
+  ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository],
+  providers: [
+    AuthService,
+    AuthRepository,
+    JwtStrategy,
+    FirebaseTokenVerifierService,
+    GoogleWebTokenVerifierService,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

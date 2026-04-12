@@ -1,7 +1,39 @@
-// TODO: class-validator dekoratörleri eklenecek
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUrl,
+  IsUUID,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { Role } from '../../../shared/auth/role.enum';
+import { CreateEmployeeAccountDto } from './create-employee-account.dto';
+
+const STAFF_ROLES = [Role.BARBER, Role.RECEPTIONIST] as const;
+
 export class CreateStaffDto {
-  user_id: string;
-  role: string;   // 'barber' | 'receptionist'
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateEmployeeAccountDto)
+  employee?: CreateEmployeeAccountDto;
+
+  @IsIn(STAFF_ROLES)
+  role: Role.BARBER | Role.RECEPTIONIST;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   bio?: string;
-  photo_url?: string;
+
+  @IsOptional()
+  @IsUrl({
+    require_protocol: true,
+  })
+  photoUrl?: string;
 }

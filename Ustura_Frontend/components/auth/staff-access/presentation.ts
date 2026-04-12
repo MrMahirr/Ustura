@@ -2,18 +2,20 @@ import type { Href } from 'expo-router';
 
 import type { AuthStatusTone } from '@/components/auth/shared/AuthStatusNotice';
 
-export type StaffAccessState = 'idle' | 'validationError' | 'testReady' | 'forgotPassword';
+export type StaffAccessState =
+  | 'idle'
+  | 'validationError'
+  | 'authorizing'
+  | 'accessGranted'
+  | 'invalidCredentials'
+  | 'requestError'
+  | 'forgotPassword';
 
 export interface StaffAccessNotice {
   badge: string;
   title: string;
   description: string;
   tone: AuthStatusTone;
-}
-
-export interface StaffSalonOption {
-  id: string;
-  label: string;
 }
 
 export interface StaffAccessSupportLink {
@@ -24,56 +26,70 @@ export interface StaffAccessSupportLink {
 export const STAFF_ACCESS_COPY = {
   eyebrow: 'Personel Girisi',
   subtitle: 'Salon paneline erisim sagla',
-  identifierLabel: 'Telefon veya Email',
+  identifierLabel: 'Telefon veya E-posta',
   identifierPlaceholder: 'ad@ustura.com',
   passwordLabel: 'Sifre',
-  passwordPlaceholder: '••••••••',
+  passwordPlaceholder: '********',
   forgotPasswordLabel: 'Sifremi Unuttum',
-  salonLabel: 'Salon Sec',
   rememberLabel: 'Beni Hatirla',
   submitLabel: 'GIRIS YAP',
+  submittingLabel: 'GIRIS YAPILIYOR',
   restrictedAreaLabel: 'Bu alan sadece yetkili personel icindir',
   customerPromptLabel: 'Musteri misin?',
-  customerPromptAction: 'Kullanici girisine git',
-  footerNote: '© 2024 THE OBSIDIAN ATELIER. ALL RIGHTS RESERVED.',
+  customerPromptAction: 'Musteri girisine git',
+  footerNote: '(c) 2024 OBSIDYEN ATOLYESI. Tum haklari saklidir.',
 } as const;
 
-export const STAFF_SALON_OPTIONS: StaffSalonOption[] = [
-  { id: 'nisantasi', label: 'Merkez Salon (Nisantasi)' },
-  { id: 'erenkoy', label: 'Erenkoy Subesi' },
-  { id: 'besiktas', label: 'Besiktas Atelier' },
-];
-
 export const STAFF_ACCESS_SUPPORT_LINKS: StaffAccessSupportLink[] = [
-  { label: 'Privacy Policy', href: '/gizlilik-politikasi' },
-  { label: 'Terms of Service', href: '/kullanim-kosullari' },
-  { label: 'System Status' },
+  { label: 'Gizlilik Politikasi', href: '/gizlilik-politikasi' },
+  { label: 'Kullanim Kosullari', href: '/kullanim-kosullari' },
+  { label: 'Sistem Durumu' },
 ];
 
 export function getStaffAccessNotice(
   state: StaffAccessState,
-  selectedSalonLabel: string
 ): StaffAccessNotice {
   switch (state) {
     case 'validationError':
       return {
         badge: 'Form Kontrolu',
         title: 'Bilgileri yeniden kontrol et',
-        description: 'Telefon/email, sifre ve salon bilgisi gecerli olmadan test akisi ilerlemez.',
+        description: 'Telefon/e-posta ve sifre gecerli olmadan giris ilerlemez.',
         tone: 'error',
       };
-    case 'testReady':
+    case 'authorizing':
       return {
-        badge: 'Test Onayi',
-        title: 'Yerel dogrulama tamamlandi',
-        description: `${selectedSalonLabel} icin giris bilgileri yerelde dogrulandi. Gercek panel erisimi backend auth sonrasi eklenecek.`,
+        badge: 'Dogrulama',
+        title: 'Kimlik dogrulaniyor',
+        description: 'Giris bilgileri kontrol ediliyor. Lutfen bekleyin...',
+        tone: 'neutral',
+      };
+    case 'accessGranted':
+      return {
+        badge: 'Basarili',
+        title: 'Giris onaylandi',
+        description: 'Salon paneline yonlendiriliyorsunuz...',
         tone: 'success',
+      };
+    case 'invalidCredentials':
+      return {
+        badge: 'Hatali Bilgi',
+        title: 'Giris basarisiz',
+        description: 'E-posta veya sifre hatali. Lutfen bilgileri kontrol edip tekrar dene.',
+        tone: 'error',
+      };
+    case 'requestError':
+      return {
+        badge: 'Sunucu Hatasi',
+        title: 'Giris tamamlanamadi',
+        description: 'Sunucuyla iletisim kurulamadi. Lutfen internet baglantini kontrol edip tekrar dene.',
+        tone: 'error',
       };
     case 'forgotPassword':
       return {
         badge: 'Destek Notu',
         title: 'Sifre yenileme henuz bagli degil',
-        description: 'Personel ve salon sahibine yonelik sifre yenileme akisi backend ve bildirim servisiyle birlikte eklenecek.',
+        description: 'Personel ve salon sahibine yonelik sifre yenileme akisi arka uc ve bildirim servisiyle birlikte eklenecek.',
         tone: 'warning',
       };
     case 'idle':
@@ -81,7 +97,7 @@ export function getStaffAccessNotice(
       return {
         badge: 'Hazirlik',
         title: 'Personel erisim katmani hazir',
-        description: 'Bu ekran su an UI ve yerel form dogrulama testi icin aktif. Gercek salon paneli baglantisi sonra eklenecek.',
+        description: 'Salon paneline erisim icin e-posta ve sifre bilgilerinizi girin.',
         tone: 'neutral',
       };
   }

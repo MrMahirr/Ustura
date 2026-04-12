@@ -11,7 +11,7 @@ import { superAdminAsideItems, type SuperAdminAsideItem } from './aside-nav';
 import { useSuperAdminTheme } from './theme';
 
 const INACTIVE_GRAY = '#6B7280';
-const OPEN_RAZOR = require('../../../assets/images/panel/superadmin_acık.png');
+const OPEN_RAZOR = require('../../../assets/images/panel/superadmin_acik.png');
 const CLOSED_RAZOR = require('../../../assets/images/panel/superadmin_kapali.png');
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];

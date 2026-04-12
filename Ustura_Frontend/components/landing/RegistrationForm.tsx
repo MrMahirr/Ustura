@@ -5,6 +5,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { getLandingLayout } from '@/components/landing/layout';
+import { submitOwnerApplication } from '@/services/platform-admin.service';
 import { hexToRgba } from '@/utils/color';
 
 type RegistrationFormProps = {
@@ -23,13 +24,76 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
   const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
   const surface = useThemeColor({}, 'surface');
   const outlineVariant = useThemeColor({}, 'outlineVariant');
+  const errorColor = '#B3261E';
+  const successColor = '#2E7D32';
 
   const [form, setForm] = useState({
     salonName: '',
     ownerName: '',
     phone: '',
     email: '',
+    password: '',
+    city: '',
+    district: '',
+    address: '',
+    notes: '',
   });
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updateFormValue = <TKey extends keyof typeof form,>(
+    key: TKey,
+    value: (typeof form)[TKey],
+  ) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      [key]: value,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    try {
+      setIsSubmitting(true);
+      await submitOwnerApplication({
+        applicantName: form.ownerName,
+        applicantEmail: form.email,
+        applicantPhone: form.phone,
+        password: form.password,
+        salonName: form.salonName,
+        salonAddress: form.address,
+        salonCity: form.city,
+        salonDistrict: form.district,
+        notes: form.notes,
+      });
+
+      setSubmitSuccess(
+        'Basvurunuz alindi. Super admin onayindan sonra sizinle iletisime gecilecek.',
+      );
+      setForm({
+        salonName: '',
+        ownerName: '',
+        phone: '',
+        email: '',
+        password: '',
+        city: '',
+        district: '',
+        address: '',
+        notes: '',
+      });
+    } catch (submissionError) {
+      setSubmitError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : 'Basvuru gonderilemedi.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <View
@@ -78,14 +142,14 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
               <Input
                 label="SALON ADI"
                 value={form.salonName}
-                onChangeText={(val) => setForm({ ...form, salonName: val })}
+                onChangeText={(value) => updateFormValue('salonName', value)}
               />
             </View>
             <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
               <Input
                 label="SAHIBI"
                 value={form.ownerName}
-                onChangeText={(val) => setForm({ ...form, ownerName: val })}
+                onChangeText={(value) => updateFormValue('ownerName', value)}
               />
             </View>
           </View>
@@ -96,7 +160,7 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
                 label="TELEFON"
                 keyboardType="phone-pad"
                 value={form.phone}
-                onChangeText={(val) => setForm({ ...form, phone: val })}
+                onChangeText={(value) => updateFormValue('phone', value)}
               />
             </View>
             <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
@@ -105,13 +169,80 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={form.email}
-                onChangeText={(val) => setForm({ ...form, email: val })}
+                onChangeText={(value) => updateFormValue('email', value)}
               />
             </View>
           </View>
 
+          <View className="mb-8" style={{ flexDirection: isDesktop ? 'row' : 'column', gap: width < 768 ? 20 : 32 }}>
+            <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
+              <Input
+                label="SIFRE"
+                secureTextEntry
+                autoCapitalize="none"
+                value={form.password}
+                onChangeText={(value) => updateFormValue('password', value)}
+              />
+            </View>
+            <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
+              <Input
+                label="SEHIR"
+                value={form.city}
+                onChangeText={(value) => updateFormValue('city', value)}
+              />
+            </View>
+          </View>
+
+          <View className="mb-8" style={{ flexDirection: isDesktop ? 'row' : 'column', gap: width < 768 ? 20 : 32 }}>
+            <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
+              <Input
+                label="ILCE"
+                value={form.district}
+                onChangeText={(value) => updateFormValue('district', value)}
+              />
+            </View>
+            <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
+              <Input
+                label="ADRES"
+                value={form.address}
+                onChangeText={(value) => updateFormValue('address', value)}
+              />
+            </View>
+          </View>
+
+          <View className="mb-6">
+            <Input
+              label="NOTLAR"
+              value={form.notes}
+              onChangeText={(value) => updateFormValue('notes', value)}
+              multiline
+              numberOfLines={4}
+              style={{ minHeight: 96, textAlignVertical: 'top' }}
+            />
+          </View>
+
+          {submitError ? (
+            <Text className="mb-4 font-body text-sm" style={{ color: errorColor }}>
+              {submitError}
+            </Text>
+          ) : null}
+
+          {submitSuccess ? (
+            <Text className="mb-4 font-body text-sm" style={{ color: successColor }}>
+              {submitSuccess}
+            </Text>
+          ) : null}
+
           <View className="mt-4">
-            <Button title="Hemen Basvur" interactionPreset="subtle" style={{ width: '100%' }} />
+            <Button
+              title={isSubmitting ? 'Basvuru Gonderiliyor' : 'Hemen Basvur'}
+              interactionPreset="subtle"
+              style={{ width: '100%' }}
+              onPress={() => {
+                void handleSubmit();
+              }}
+              disabled={isSubmitting}
+            />
           </View>
         </View>
       </View>

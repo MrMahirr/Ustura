@@ -1,22 +1,31 @@
 import React from 'react';
 
-import {
-  type GroupedSalonRecord,
-  type UserViewMode,
-  userCityOptions,
-  userRecords,
-  userRoleOptions,
-  userSalonOptions,
-  userStatusOptions,
+import type {
+  GroupedSalonRecord,
+  UserFilterOption,
+  UserOverview,
+  UserRecord,
+  UserViewMode,
 } from '@/components/panel/super-admin/user-management.data';
-import { salonRecords } from '@/components/panel/super-admin/salon-management.data';
-import { matchesQuery } from '@/utils/matches-query';
+import type { AdminUsersQuery } from '@/services/user.service';
+import { UserService } from '@/services/user.service';
+
+import {
+  createCityOptions,
+  createRoleOptions,
+  createSalonOptions,
+  createStatusOptions,
+  mapAdminUserRecord,
+  mapOverview,
+  mapSalonMetadata,
+} from './mappers';
 
 const PAGE_SIZE = 4;
-const salonRecordsById = new Map(salonRecords.map((record) => [record.id, record]));
 
 function createGroupId(user: { salonId?: string; salonName: string }) {
-  return (user.salonId ?? user.salonName).toLocaleLowerCase('tr-TR').replace(/[^a-z0-9]+/g, '-');
+  return (user.salonId ?? user.salonName)
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[^a-z0-9]+/g, '-');
 }
 
 function getStatusOrder(status: GroupedSalonRecord['users'][number]['status']) {
@@ -51,81 +60,43 @@ function getSalonOrder(status?: GroupedSalonRecord['salonStatus']) {
   return 3;
 }
 
-export function useUserManagement() {
-  const [query, setQuery] = React.useState('');
-  const [viewMode, setViewMode] = React.useState<UserViewMode>('all');
-  const [roleIndex, setRoleIndex] = React.useState(0);
-  const [statusIndex, setStatusIndex] = React.useState(0);
-  const [salonIndex, setSalonIndex] = React.useState(0);
-  const [cityIndex, setCityIndex] = React.useState(0);
-  const [page, setPage] = React.useState(1);
-
-  React.useEffect(() => {
-    setPage(1);
-  }, [query, viewMode, roleIndex, statusIndex, salonIndex, cityIndex]);
-
-  const filteredUsers = userRecords.filter((user) => {
-    const selectedRole = userRoleOptions[roleIndex];
-    const selectedStatus = userStatusOptions[statusIndex];
-    const selectedSalon = userSalonOptions[salonIndex];
-    const selectedCity = userCityOptions[cityIndex];
-
-    return (
-      (selectedRole === 'Tum Roller' || user.role === selectedRole) &&
-      (selectedStatus === 'Tum Durumlar' || user.status === selectedStatus) &&
-      (selectedSalon === 'Tum Salonlar' || user.salonName === selectedSalon) &&
-      (selectedCity === 'Tum Sehirler' || user.city === selectedCity) &&
-      matchesQuery(query, [
-        user.name,
-        user.email,
-        user.role,
-        user.title,
-        user.salonName,
-        user.salonLocation,
-        user.city,
-        user.status,
-        ...user.specialties,
-      ])
-    );
-  });
-
-  const sortedUsers = filteredUsers.sort(
-    (left, right) => new Date(right.joinedAt).getTime() - new Date(left.joinedAt).getTime()
-  );
-
-  const groupedSalonMap = sortedUsers.reduce<Record<string, GroupedSalonRecord>>((acc, user) => {
-    const salonRecord = user.salonId ? salonRecordsById.get(user.salonId) : undefined;
+function buildGroupedSalons(
+  users: UserRecord[],
+  metadataByUserId: Map<string, ReturnType<typeof mapSalonMetadata>>,
+) {
+  const groupedSalonMap = users.reduce<Record<string, GroupedSalonRecord>>((accumulator, user) => {
+    const metadata = metadataByUserId.get(user.id);
     const groupKey = createGroupId(user);
-    const existing = acc[groupKey];
+    const existing = accumulator[groupKey];
 
     if (!existing) {
-      acc[groupKey] = {
+      accumulator[groupKey] = {
         id: groupKey,
         salonId: user.salonId,
-        salonName: salonRecord?.name ?? user.salonName,
-        salonLocation: salonRecord?.location ?? user.salonLocation,
+        salonName: user.salonName,
+        salonLocation: user.salonLocation,
         city: user.city,
-        plan: salonRecord?.plan,
-        salonStatus: salonRecord?.status,
+        plan: metadata?.plan,
+        salonStatus: metadata?.salonStatus,
         totalUsers: 1,
         activeUsers: user.status === 'Aktif' ? 1 : 0,
-        ownerCount: user.role === 'Owner' ? 1 : 0,
-        adminCount: user.role === 'Admin' ? 1 : 0,
-        employeeCount: user.role === 'Employee' ? 1 : 0,
+        ownerCount: user.role === 'Sahip' ? 1 : 0,
+        adminCount: user.role === 'Yonetici' ? 1 : 0,
+        employeeCount: user.role === 'Calisan' ? 1 : 0,
         occupancyRate: user.dailyCapacity ? user.dailyCapacity.booked / user.dailyCapacity.total : undefined,
         capacityCount: user.dailyCapacity ? 1 : 0,
         users: [user],
       };
 
-      return acc;
+      return accumulator;
     }
 
     existing.users.push(user);
     existing.totalUsers += 1;
     existing.activeUsers += user.status === 'Aktif' ? 1 : 0;
-    existing.ownerCount += user.role === 'Owner' ? 1 : 0;
-    existing.adminCount += user.role === 'Admin' ? 1 : 0;
-    existing.employeeCount += user.role === 'Employee' ? 1 : 0;
+    existing.ownerCount += user.role === 'Sahip' ? 1 : 0;
+    existing.adminCount += user.role === 'Yonetici' ? 1 : 0;
+    existing.employeeCount += user.role === 'Calisan' ? 1 : 0;
 
     if (user.dailyCapacity) {
       const currentRate = user.dailyCapacity.booked / user.dailyCapacity.total;
@@ -136,14 +107,15 @@ export function useUserManagement() {
       existing.capacityCount += 1;
     }
 
-    return acc;
+    return accumulator;
   }, {});
 
-  const groupedSalons = Object.values(groupedSalonMap)
+  return Object.values(groupedSalonMap)
     .map((group) => ({
       ...group,
       users: [...group.users].sort((left, right) => {
         const statusDiff = getStatusOrder(left.status) - getStatusOrder(right.status);
+
         if (statusDiff !== 0) {
           return statusDiff;
         }
@@ -153,14 +125,130 @@ export function useUserManagement() {
     }))
     .sort((left, right) => {
       const statusDiff = getSalonOrder(left.salonStatus) - getSalonOrder(right.salonStatus);
+
       if (statusDiff !== 0) {
         return statusDiff;
       }
 
       return right.totalUsers - left.totalUsers;
     });
+}
 
-  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / PAGE_SIZE));
+function getSelectedOption(options: UserFilterOption[], index: number) {
+  return options[Math.min(index, Math.max(0, options.length - 1))] ?? options[0] ?? { label: '' };
+}
+
+export function useUserManagement() {
+  const [query, setQuery] = React.useState('');
+  const [viewMode, setViewMode] = React.useState<UserViewMode>('all');
+  const [roleIndex, setRoleIndex] = React.useState(0);
+  const [statusIndex, setStatusIndex] = React.useState(0);
+  const [salonIndex, setSalonIndex] = React.useState(0);
+  const [cityIndex, setCityIndex] = React.useState(0);
+  const [page, setPage] = React.useState(1);
+  const [users, setUsers] = React.useState<UserRecord[]>([]);
+  const [groupedSalons, setGroupedSalons] = React.useState<GroupedSalonRecord[]>([]);
+  const [overview, setOverview] = React.useState<UserOverview>({
+    totalUsers: 0,
+    activeToday: 0,
+    newRegistrations: '+0',
+    conversion: '0.0%',
+  });
+  const [roleOptions] = React.useState(() => createRoleOptions());
+  const [statusOptions] = React.useState(() => createStatusOptions());
+  const [salonOptions, setSalonOptions] = React.useState<UserFilterOption[]>([{ label: 'Tum Salonlar' }]);
+  const [cityOptions, setCityOptions] = React.useState<UserFilterOption[]>([{ label: 'Tum Sehirler' }]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const deferredQuery = React.useDeferredValue(query);
+
+  const selectedRole = getSelectedOption(roleOptions, roleIndex);
+  const selectedStatus = getSelectedOption(statusOptions, statusIndex);
+  const selectedSalon = getSelectedOption(salonOptions, salonIndex);
+  const selectedCity = getSelectedOption(cityOptions, cityIndex);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [deferredQuery, viewMode, roleIndex, statusIndex, salonIndex, cityIndex]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await UserService.getAdminUsers({
+          search: deferredQuery.trim() || undefined,
+          role: selectedRole.value as AdminUsersQuery['role'],
+          status: selectedStatus.value as AdminUsersQuery['status'],
+          salonId: selectedSalon.value,
+          city: selectedCity.value,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        const metadataByUserId = new Map(
+          response.items.map((item) => [item.id, mapSalonMetadata(item)]),
+        );
+        const mappedUsers = response.items.map(mapAdminUserRecord);
+
+        setUsers(mappedUsers);
+        setGroupedSalons(buildGroupedSalons(mappedUsers, metadataByUserId));
+        setOverview(mapOverview(response.overview));
+        setSalonOptions(createSalonOptions(response.filters.salons));
+        setCityOptions(createCityOptions(response.filters.cities));
+      } catch (err: any) {
+        if (!isMounted) {
+          return;
+        }
+
+        console.error('Failed to fetch admin users:', err);
+        setError(err?.message || 'Kullanici verileri yuklenemedi.');
+        setUsers([]);
+        setGroupedSalons([]);
+        setOverview({
+          totalUsers: 0,
+          activeToday: 0,
+          newRegistrations: '+0',
+          conversion: '0.0%',
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void fetchUsers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [deferredQuery, selectedCity.value, selectedRole.value, selectedSalon.value, selectedStatus.value]);
+
+  React.useEffect(() => {
+    if (roleIndex >= roleOptions.length) {
+      setRoleIndex(0);
+    }
+
+    if (statusIndex >= statusOptions.length) {
+      setStatusIndex(0);
+    }
+
+    if (salonIndex >= salonOptions.length) {
+      setSalonIndex(0);
+    }
+
+    if (cityIndex >= cityOptions.length) {
+      setCityIndex(0);
+    }
+  }, [cityIndex, cityOptions.length, roleIndex, roleOptions.length, salonIndex, salonOptions.length, statusIndex, statusOptions.length]);
+
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
 
   React.useEffect(() => {
     if (page > totalPages) {
@@ -168,9 +256,12 @@ export function useUserManagement() {
     }
   }, [page, totalPages]);
 
-  const visibleUsers = sortedUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const startRow = sortedUsers.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(page * PAGE_SIZE, sortedUsers.length);
+  const visibleUsers = React.useMemo(
+    () => users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [page, users],
+  );
+  const startRow = users.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const endRow = Math.min(page * PAGE_SIZE, users.length);
 
   return {
     query,
@@ -182,17 +273,20 @@ export function useUserManagement() {
     totalPages,
     visibleUsers,
     groupedSalons,
-    filteredUsersCount: sortedUsers.length,
+    filteredUsersCount: users.length,
     startRow,
     endRow,
-    selectedRole: userRoleOptions[roleIndex],
-    selectedStatus: userStatusOptions[statusIndex],
-    selectedSalon: userSalonOptions[salonIndex],
-    selectedCity: userCityOptions[cityIndex],
-    cycleRole: () => setRoleIndex((current) => (current + 1) % userRoleOptions.length),
-    cycleStatus: () => setStatusIndex((current) => (current + 1) % userStatusOptions.length),
-    cycleSalon: () => setSalonIndex((current) => (current + 1) % userSalonOptions.length),
-    cycleCity: () => setCityIndex((current) => (current + 1) % userCityOptions.length),
+    selectedRole: selectedRole.label,
+    selectedStatus: selectedStatus.label,
+    selectedSalon: selectedSalon.label,
+    selectedCity: selectedCity.label,
+    overview,
+    isLoading,
+    error,
+    cycleRole: () => setRoleIndex((current) => (current + 1) % roleOptions.length),
+    cycleStatus: () => setStatusIndex((current) => (current + 1) % statusOptions.length),
+    cycleSalon: () => setSalonIndex((current) => (current + 1) % salonOptions.length),
+    cycleCity: () => setCityIndex((current) => (current + 1) % cityOptions.length),
     resetFilters: () => {
       setRoleIndex(0);
       setStatusIndex(0);

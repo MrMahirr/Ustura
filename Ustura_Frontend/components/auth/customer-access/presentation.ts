@@ -1,7 +1,6 @@
 import type { Href } from 'expo-router';
 
 import type { AuthStatusTone } from '@/components/auth/shared/AuthStatusNotice';
-import { MOCK_CUSTOMER_CREDENTIALS } from '@/constants/mock-auth';
 
 export interface CustomerAuthNotice {
   badge: string;
@@ -14,10 +13,16 @@ export type CustomerAccessState =
   | 'idle'
   | 'validationError'
   | 'invalidCredentials'
+  | 'requestError'
   | 'forgotPassword'
   | 'providerPreview'
   | 'testReady';
-export type CustomerRegistrationState = 'idle' | 'validationError' | 'alternateRoute' | 'testReady';
+export type CustomerRegistrationState =
+  | 'idle'
+  | 'validationError'
+  | 'alternateRoute'
+  | 'requestError'
+  | 'testReady';
 
 export interface CustomerAccessBarberProfile {
   id: string;
@@ -26,16 +31,16 @@ export interface CustomerAccessBarberProfile {
 }
 
 export const CUSTOMER_ACCESS_COPY = {
-  footerNote: '(c) 2026 USTURA. ALL RIGHTS RESERVED.',
-  eyebrow: 'Premium Grooming Login',
+  footerNote: '(c) 2026 USTURA. Tum haklari saklidir.',
+  eyebrow: 'Ozel Bakim Girisi',
   brandTitle: 'USTURA',
   brandTagline: 'Keskin Stil, Kolay Randevu.',
   brandDescription:
-    'Favori berberini sec, zamanini rezerve et. En iyi grooming deneyimi seni bekliyor.',
-  brandRosterLabel: '50+ Premium Berber',
+    'Favori berberini sec, zamanini rezerve et. En iyi bakim deneyimi seni bekliyor.',
+  brandRosterLabel: '50+ Seckin Berber',
   formTitle: 'Giris Yap',
-  formDescription: 'USTURA hesabina giris yap',
-  identifierLabel: 'E-posta veya Telefon',
+  formDescription: 'USTURA musteri hesabina giris yap',
+  identifierLabel: 'E-posta',
   identifierPlaceholder: 'isim@ornek.com',
   passwordLabel: 'Sifre',
   passwordPlaceholder: '********',
@@ -47,14 +52,7 @@ export const CUSTOMER_ACCESS_COPY = {
   registerPromptLabel: 'Hesabin yok mu?',
   registerPromptAction: 'Kayit Ol',
   staffLabel: 'Personel Girisi',
-  adminLabel: 'Super Admin',
-  mockAccountTitle: 'Gecici Test Hesabi',
-  mockAccountDescription: 'Backend auth tamamlanana kadar giris icin bu sabit musteri hesabini kullan.',
-  mockAccountIdentifierLabel: 'E-posta',
-  mockAccountIdentifierValue: MOCK_CUSTOMER_CREDENTIALS.identifier,
-  mockAccountPasswordLabel: 'Sifre',
-  mockAccountPasswordValue: MOCK_CUSTOMER_CREDENTIALS.password,
-  mockAccountFootnote: 'Not: Backend auth entegrasyonu tamamlandiginda bu sabit kullanici kaldirilacak.',
+  adminLabel: 'Ana Yonetici',
 } as const;
 
 export const CUSTOMER_ACCESS_BARBER_PROFILES: CustomerAccessBarberProfile[] = [
@@ -79,17 +77,17 @@ export const CUSTOMER_ACCESS_BARBER_PROFILES: CustomerAccessBarberProfile[] = [
 ];
 
 export const CUSTOMER_REGISTRATION_COPY = {
-  footerNote: '(c) 2026 USTURA. ALL RIGHTS RESERVED.',
+  footerNote: '(c) 2026 USTURA. Tum haklari saklidir.',
   formTitle: 'Kayit Ol',
   formDescription: 'USTURA hesabini olustur',
   title: 'Dakikalar icinde hesabini ac ve uygun saatleri yakala.',
   description:
-    'Musteri kaydi, randevu gecmisi ve favori salonlar icin hazir. Alternatif roller secildiginde seni dogru auth akisina yonlendirecegiz.',
+    'Musteri kaydi, randevu gecmisi ve favori salonlar icin hazir. Alternatif roller secildiginde seni dogru giris akisina yonlendirecegiz.',
   fullNameLabel: 'Ad Soyad',
   fullNamePlaceholder: 'Mahir Demir',
   phoneLabel: 'Telefon',
   phonePlaceholder: '0555 000 00 00',
-  emailLabel: 'Email',
+  emailLabel: 'E-posta',
   emailPlaceholder: 'ornek@ustura.com',
   passwordLabel: 'Sifre',
   passwordPlaceholder: '********',
@@ -119,14 +117,14 @@ export const CUSTOMER_ROLE_OPTIONS: CustomerRoleOption[] = [
   {
     id: 'staff',
     label: 'Personel',
-    description: 'Salon ici ekip hesaplari self-service kayit yerine personel auth akisi ile yonetilir.',
+    description: 'Salon ici ekip hesaplari kendi kayit yerine personel giris akisi ile yonetilir.',
     availability: 'redirect',
     href: '/personel/giris',
   },
   {
     id: 'super-admin',
-    label: 'Super Admin',
-    description: 'Platform yonetimi icin self-service kayit kapali. Ayricalikli erisim gerektirir.',
+    label: 'Ana Yonetici',
+    description: 'Platform yonetimi icin kendi kayit kapali. Ayricalikli erisim gerektirir.',
     availability: 'redirect',
     href: '/super-admin/giris',
   },
@@ -138,44 +136,50 @@ export function getCustomerAccessNotice(state: CustomerAccessState): CustomerAut
       return {
         badge: 'Dogrulama',
         title: 'Form alanlarini kontrol et.',
-        description: 'Devam etmeden once email veya telefon ve sifre alanlarini gecerli bicimde doldur.',
+        description: 'Devam etmeden once e-posta veya telefon ve sifre alanlarini gecerli bicimde doldur.',
         tone: 'error',
       };
     case 'forgotPassword':
       return {
         badge: 'Kurtarma',
         title: 'Sifre sifirlama akisi sonraki API asamasinda baglanacak.',
-        description: 'Simdilik kayitli email veya telefon bilgilerini kullanarak test girisi yapabilirsin.',
+        description: 'Simdilik kayitli e-posta veya telefon bilgilerini kullanarak test girisi yapabilirsin.',
         tone: 'warning',
       };
     case 'invalidCredentials':
       return {
-        badge: 'Test Kullanici',
-        title: 'Sabit demo kullanici bilgileri gerekli.',
-        description:
-          'Asagidaki gecici test hesabi ile giris yap. Bu bilgi backend auth entegrasyonu tamamlandiginda kaldirilacak.',
+        badge: 'Kimlik Dogrulama',
+        title: 'E-posta veya sifre dogrulanamadi.',
+        description: 'Hesap bilgilerini kontrol edip tekrar dene.',
+        tone: 'warning',
+      };
+    case 'requestError':
+      return {
+        badge: 'API',
+        title: 'Giris islemi tamamlanamadi.',
+        description: 'Sunucu, Google saglayicisi veya ag baglantisi su anda cevap vermiyor olabilir.',
         tone: 'warning',
       };
     case 'providerPreview':
       return {
-        badge: 'SSO Preview',
+        badge: 'SSO Onizleme',
         title: 'Google ile giris yakinda baglanacak.',
-        description: 'Sosyal giris butonu yeni auth contract geldikten sonra provider entegrasyonuna baglanacak.',
+        description: 'Sosyal giris butonu yeni giris sozlesmesi geldikten sonra saglayici entegrasyonuna baglanacak.',
         tone: 'neutral',
       };
     case 'testReady':
       return {
         badge: 'Oturum',
         title: 'Musteri oturumu baslatildi.',
-        description: 'Giris bilgileri dogrulandi ve seni bir sonraki ekrana yonlendiriyoruz.',
+        description: 'Kimlik dogrulandi ve seni bir sonraki ekrana yonlendiriyoruz.',
         tone: 'success',
       };
     case 'idle':
     default:
       return {
-        badge: 'Preview',
-        title: 'Genel musteri auth giris noktasi aktif.',
-        description: 'Bu ekran artik placeholder yerine gercek form davranisi ve route yonlendirmeleri sunuyor.',
+        badge: 'Onizleme',
+        title: 'Genel musteri giris noktasi aktif.',
+        description: 'Bu ekran artik gecici gorunum yerine gercek form davranisi ve sayfa yonlendirmeleri sunuyor.',
         tone: 'neutral',
       };
   }
@@ -190,17 +194,24 @@ export function getCustomerRegistrationNotice(
       return {
         badge: 'Dogrulama',
         title: 'Kayit bilgilerini tamamla.',
-        description: 'Ad soyad, telefon, email, sifre ve hesap tipi alanlari gecerli olmadan devam edemezsin.',
+        description: 'Ad soyad, telefon, e-posta, sifre ve hesap tipi alanlari gecerli olmadan devam edemezsin.',
         tone: 'error',
       };
     case 'alternateRoute':
       return {
         badge: 'Yonlendirme',
-        title: `${selectedRole.label} icin farkli auth yolu kullaniliyor.`,
+        title: `${selectedRole.label} icin farkli giris yolu kullaniliyor.`,
         description:
           selectedRole.href != null
-            ? 'Bu secim self-service kaydi acmiyor. Ilgili giris ekranina giderek dogru akistan devam et.'
-            : 'Bu rol icin self-service kayit acik degil.',
+            ? 'Bu secim kendi kaydi acmiyor. Ilgili giris ekranina giderek dogru akistan devam et.'
+            : 'Bu rol icin kendi kayit acik degil.',
+        tone: 'warning',
+      };
+    case 'requestError':
+      return {
+        badge: 'API',
+        title: 'Kayit istegi tamamlanamadi.',
+        description: 'Girilen bilgiler sunucuda islenemedi. Birazdan tekrar dene.',
         tone: 'warning',
       };
     case 'testReady':
@@ -213,12 +224,12 @@ export function getCustomerRegistrationNotice(
     case 'idle':
     default:
       return {
-        badge: 'Onboarding',
+        badge: 'Kayit',
         title: 'Musteri kaydi aktif; diger roller yonlendirme ile ayriliyor.',
         description:
           selectedRole.id === 'customer'
-            ? 'Varsayilan kayit tipi musteri hesabi. Dilersen alternatif role gecip sistemin seni dogru auth yoluna tasimasini gorebilirsin.'
-            : `${selectedRole.label} secildi. Submit sonrasi seni uygun auth yonlendirmesine hazirlayacagiz.`,
+            ? 'Varsayilan kayit tipi musteri hesabi. Dilersen alternatif role gecip sistemin seni dogru giris yoluna tasimasini gorebilirsin.'
+            : `${selectedRole.label} secildi. Gonderim sonrasi seni uygun giris yonlendirmesine hazirlayacagiz.`,
         tone: 'neutral',
       };
   }

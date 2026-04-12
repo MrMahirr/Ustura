@@ -1,7 +1,32 @@
-// TODO: class-validator dekoratörleri eklenecek
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
+import { Role } from '../../../shared/auth/role.enum';
+
+const STAFF_ROLES = [Role.BARBER, Role.RECEPTIONIST] as const;
+
 export class UpdateStaffDto {
-  role?: string;
+  @IsOptional()
+  @IsIn(STAFF_ROLES)
+  role?: Role.BARBER | Role.RECEPTIONIST;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   bio?: string;
-  photo_url?: string;
-  is_active?: boolean;
+
+  @IsOptional()
+  @IsUrl({
+    require_protocol: true,
+  })
+  photoUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

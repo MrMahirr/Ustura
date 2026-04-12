@@ -21,6 +21,7 @@ export default function BarberSelectionCard({ member, selected, onPress }: Barbe
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');
   const outlineVariant = useThemeColor({}, 'outlineVariant');
+  const hasReviews = member.reviewCount > 0;
 
   return (
     <Pressable
@@ -92,15 +93,21 @@ export default function BarberSelectionCard({ member, selected, onPress }: Barbe
         {member.specialty}
       </Text>
 
-      <View className="flex-row items-center" style={{ gap: 4 }}>
-        <MaterialIcons name="star" size={14} color={primary} />
-        <Text className="font-body text-xs font-bold" style={{ color: onSurface }}>
-          {member.rating.toFixed(1)}
+      {hasReviews ? (
+        <View className="flex-row items-center" style={{ gap: 4 }}>
+          <MaterialIcons name="star" size={14} color={primary} />
+          <Text className="font-body text-xs font-bold" style={{ color: onSurface }}>
+            {member.rating.toFixed(1)}
+          </Text>
+          <Text className="font-body text-[10px]" style={{ color: onSurfaceVariant }}>
+            ({member.reviewCount})
+          </Text>
+        </View>
+      ) : (
+        <Text className="font-body text-xs font-bold uppercase tracking-[1.5px]" style={{ color: onSurfaceVariant }}>
+          Yeni Uzman
         </Text>
-        <Text className="font-body text-[10px]" style={{ color: onSurfaceVariant }}>
-          ({member.reviewCount})
-        </Text>
-      </View>
+      )}
 
       <View
         className="absolute inset-0 rounded-2xl border"

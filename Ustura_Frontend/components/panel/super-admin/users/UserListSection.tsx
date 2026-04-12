@@ -16,6 +16,8 @@ interface UserListSectionProps {
   groupedSalons: GroupedSalonRecord[];
   filteredUsersCount: number;
   viewMode: UserViewMode;
+  isLoading?: boolean;
+  error?: string | null;
   page: number;
   totalPages: number;
   startRow: number;
@@ -186,6 +188,8 @@ export default function UserListSection({
   groupedSalons,
   filteredUsersCount,
   viewMode,
+  isLoading,
+  error,
   page,
   totalPages,
   startRow,
@@ -198,8 +202,22 @@ export default function UserListSection({
 }: UserListSectionProps) {
   const adminTheme = useSuperAdminTheme();
 
+  if (error) {
+    return (
+      <EmptyState
+        title="Kullanici verileri yuklenemedi"
+        description={error}
+      />
+    );
+  }
+
   if (viewMode === 'salons') {
-    return groupedSalons.length === 0 ? (
+    return isLoading ? (
+      <EmptyState
+        title="Kullanici verileri yukleniyor"
+        description="Salon gruplari hazirlaniyor."
+      />
+    ) : groupedSalons.length === 0 ? (
       <EmptyState
         title="Salon eslesmesi bulunamadi"
         description="Filtrelere gore gosterilecek kullanici grubu olusmadi."
@@ -216,7 +234,12 @@ export default function UserListSection({
 
   return (
     <View className={userClassNames.tableShell} style={{ backgroundColor: adminTheme.cardBackground, borderColor: adminTheme.borderSubtle, ...getUserPanelShadow(adminTheme.theme) }}>
-      {users.length === 0 ? (
+      {isLoading ? (
+        <EmptyState
+          title="Kullanici verileri yukleniyor"
+          description="Super admin kullanici listesi getiriliyor."
+        />
+      ) : users.length === 0 ? (
         <EmptyState
           title="Filtrelere gore kullanici bulunamadi"
           description="Arama terimini veya secili filtreleri degistirerek listeyi genisletebilirsiniz."

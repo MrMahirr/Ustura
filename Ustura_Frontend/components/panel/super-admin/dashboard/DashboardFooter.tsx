@@ -13,7 +13,7 @@ export default function DashboardFooter() {
     <>
       <View className={dashboardClassNames.footerRule} style={{ borderTopColor: adminTheme.borderSubtle }} />
       <Text className={dashboardClassNames.footer} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.45) }}>
-        Copyright 2026 USTURA SaaS Enterprise Platform. All rights reserved.
+        (c) 2026 USTURA kurumsal platformu. Tum haklari saklidir.
       </Text>
     </>
   );

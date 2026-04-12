@@ -2,17 +2,16 @@ import React from 'react';
 import { Image } from 'expo-image';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import type { SalonRecord } from '@/components/panel/super-admin/salon-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
 import SalonActionIcon from './SalonActionIcon';
-import { formatCurrency, getPlanPalette, getRowActions, getStatusPalette } from './utils';
+import type { SalonListItem } from './types';
+import { getRowActions, getStatusPalette } from './utils';
 
-export default function SalonMobileCard({ salon, onPress }: { salon: SalonRecord; onPress?: () => void }) {
+export default function SalonMobileCard({ salon, onPress }: { salon: SalonListItem; onPress?: () => void }) {
   const adminTheme = useSuperAdminTheme();
   const statusPalette = getStatusPalette(salon.status, adminTheme);
-  const planPalette = getPlanPalette(salon.plan, adminTheme);
   const actions = getRowActions(salon.status, adminTheme);
 
   return (
@@ -78,27 +77,18 @@ export default function SalonMobileCard({ salon, onPress }: { salon: SalonRecord
         </View>
         <View className="min-w-[150px] flex-1 gap-1">
           <Text className="font-label text-[10px] uppercase tracking-widest" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72), fontFamily: 'Manrope-Bold' }}>
-            Paket
+            Kayit Tarihi
           </Text>
-          <View className="flex-row items-center gap-2">
-            <View
-              className="h-2 w-2 rounded-full"
-              style={[
-                { backgroundColor: planPalette.dot },
-                Platform.OS === 'web' && planPalette.glow !== 'transparent' ? ({ boxShadow: `0 0 12px ${planPalette.glow}` } as any) : null,
-              ]}
-            />
-            <Text className="font-body text-xs" style={{ color: planPalette.text, fontFamily: 'Manrope-Bold' }}>
-              {salon.plan}
-            </Text>
-          </View>
+          <Text className="font-body text-[13px]" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-SemiBold' }}>
+            {salon.joinedAtLabel}
+          </Text>
         </View>
         <View className="min-w-[150px] flex-1 gap-1">
           <Text className="font-label text-[10px] uppercase tracking-widest" style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72), fontFamily: 'Manrope-Bold' }}>
-            Aylik Ciro
+            Son Guncelleme
           </Text>
           <Text className="font-body text-[13px]" style={{ color: adminTheme.primary, fontFamily: 'Manrope-SemiBold' }}>
-            {formatCurrency(salon.monthlyRevenue)}
+            {salon.updatedAtLabel}
           </Text>
         </View>
       </View>

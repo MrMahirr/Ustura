@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { salonRecords } from '@/components/panel/super-admin/salon-management.data';
-import { userRecords, type UserRecord } from '@/components/panel/super-admin/user-management.data';
+import type { UserRecord } from '@/components/panel/super-admin/user-management.data';
 
 export interface UserProfileMetric {
   id: string;
@@ -66,16 +66,16 @@ export interface UserProfile {
   quickActions: UserProfileQuickAction[];
 }
 
-const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+const monthLabels = ['Oca', 'Sub', 'Mar', 'Nis', 'May', 'Haz'];
 const customerNames = ['Caner Yildiz', 'Arda Turan', 'Murat Ozdemir', 'Baris Koc', 'Eren Kaya'];
-const expertisePool = ['Cilt Bakimi', 'Modern Fade', 'Hot Towel Shave', 'Styling', 'Klasik Kesim', 'Bakim'];
+const expertisePool = ['Cilt Bakimi', 'Modern Gecis', 'Sicak Havlu Tirasi', 'Stil Verme', 'Klasik Kesim', 'Bakim'];
 
 function hashValue(input: string) {
   return input.split('').reduce((total, char, index) => total + char.charCodeAt(0) * (index + 5), 0);
 }
 
 function formatCompactCurrency(value: number) {
-  return `TRY ${(value / 1000).toFixed(1)}K`;
+  return `${(value / 1000).toFixed(1)} Bin TL`;
 }
 
 function buildPhoneNumber(hash: number) {
@@ -152,7 +152,7 @@ function createSchedule(hash: number): UserProfileScheduleItem[] {
     {
       id: 'sunday',
       label: 'Pazar',
-      hoursLabel: 'OFF',
+      hoursLabel: 'Kapali',
       tone: 'error',
     },
   ];
@@ -160,7 +160,7 @@ function createSchedule(hash: number): UserProfileScheduleItem[] {
 
 function createAppointments(user: UserRecord, hash: number): UserProfileAppointment[] {
   const services = [
-    `${user.specialties[0] ?? 'Sac Kesimi'} & ${user.specialties[1] ?? 'Bakim'}`,
+    `${user.specialties[0] ?? 'Sac Kesimi'} ve ${user.specialties[1] ?? 'Bakim'}`,
     user.specialties[1] ?? 'Cilt Bakimi',
     user.specialties[0] ?? 'Klasik Kesim',
   ];
@@ -237,7 +237,7 @@ function createQuickActions(): UserProfileQuickAction[] {
   ];
 }
 
-function buildProfile(user: UserRecord): UserProfile {
+export function buildUserProfile(user: UserRecord): UserProfile {
   const hash = hashValue(user.id);
   const salon = user.salonId ? salonRecords.find((record) => record.id === user.salonId) : undefined;
   const district = extractDistrict(salon?.location ?? user.salonLocation);
@@ -255,17 +255,4 @@ function buildProfile(user: UserRecord): UserProfile {
     activities: createActivities(user),
     quickActions: createQuickActions(),
   };
-}
-
-export function getUserProfileById(userId?: string) {
-  if (!userId) {
-    return null;
-  }
-
-  const user = userRecords.find((record) => record.id === userId);
-  if (!user) {
-    return null;
-  }
-
-  return buildProfile(user);
 }

@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import HowItWorks from '@/components/landing/HowItWorks';
+import SalonsSection from '@/components/landing/SalonsSection';
 import WhyUs from '@/components/landing/WhyUs';
 import RegistrationForm from '@/components/landing/RegistrationForm';
 import Footer from '@/components/landing/Footer';
@@ -54,6 +55,7 @@ export default function LandingPage() {
         showsVerticalScrollIndicator={false}>
         <HeroSection onRegisterPress={scrollToRegistration} />
         <HowItWorks />
+        <SalonsSection />
         <WhyUs />
         <RegistrationForm onLayout={(event) => setRegistrationOffset(event.nativeEvent.layout.y)} />
         <Footer />

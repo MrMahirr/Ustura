@@ -2,23 +2,27 @@ import React from 'react';
 
 import {
   createBookingDateOptions,
-  createBookingTimeSlots,
   type BookingDateOption,
+  type BookingTimeSlot,
 } from '@/components/wizard/time-selection-presentation';
+import { getAvailableSlots } from '@/services/slot.service';
 
 interface UseBookingTimeSelectionOptions {
+  salonId?: string | null;
   staffId?: string | null;
 }
 
 const DEFAULT_PREFERRED_SLOT = '11:30';
 
-export function useBookingTimeSelection(_options: UseBookingTimeSelectionOptions = {}) {
+export function useBookingTimeSelection(options: UseBookingTimeSelectionOptions = {}) {
   const [weekOffset, setWeekOffset] = React.useState(0);
   const [selectedDateId, setSelectedDateId] = React.useState<string | null>(null);
   const [selectedTimeId, setSelectedTimeId] = React.useState<string | null>(null);
+  const [timeSlots, setTimeSlots] = React.useState<BookingTimeSlot[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = React.useState(false);
+  const [slotLoadError, setSlotLoadError] = React.useState<string | null>(null);
 
   const dateOptions = React.useMemo(() => createBookingDateOptions(weekOffset), [weekOffset]);
-  const timeSlots = React.useMemo(() => createBookingTimeSlots(), []);
 
   React.useEffect(() => {
     if (dateOptions.length === 0) {
@@ -36,20 +40,83 @@ export function useBookingTimeSelection(_options: UseBookingTimeSelectionOptions
   }, [dateOptions, selectedDateId]);
 
   React.useEffect(() => {
+    let isActive = true;
+
+    if (!options.salonId || !selectedDateId) {
+      setTimeSlots([]);
+      setSelectedTimeId(null);
+      setSlotLoadError(null);
+      setIsLoadingSlots(false);
+      return;
+    }
+
+    const run = async () => {
+      setIsLoadingSlots(true);
+      setSlotLoadError(null);
+
+      try {
+        const slots = await getAvailableSlots(options.salonId!, {
+          date: selectedDateId,
+          staffId: options.staffId,
+        });
+
+        if (!isActive) {
+          return;
+        }
+
+        setTimeSlots(
+          slots.map((slot) => ({
+            id: slot.id,
+            label: slot.label,
+            startsAt: slot.startsAt,
+            endsAt: slot.endsAt,
+            status: slot.status,
+            availableStaffIds: slot.availableStaffIds,
+          })),
+        );
+      } catch (loadError) {
+        if (!isActive) {
+          return;
+        }
+
+        setTimeSlots([]);
+        setSlotLoadError(
+          loadError instanceof Error
+            ? loadError.message
+            : 'Slot bilgisi yuklenemedi.',
+        );
+      } finally {
+        if (isActive) {
+          setIsLoadingSlots(false);
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      isActive = false;
+    };
+  }, [options.salonId, options.staffId, selectedDateId]);
+
+  React.useEffect(() => {
     if (timeSlots.length === 0) {
       setSelectedTimeId(null);
       return;
     }
 
     const hasSelectedTime =
-      selectedTimeId != null && timeSlots.some((slot) => slot.id === selectedTimeId && slot.status === 'available');
+      selectedTimeId != null &&
+      timeSlots.some((slot) => slot.id === selectedTimeId && slot.status === 'available');
 
     if (hasSelectedTime) {
       return;
     }
 
     const preferredSlot =
-      timeSlots.find((slot) => slot.id === DEFAULT_PREFERRED_SLOT && slot.status === 'available') ??
+      timeSlots.find(
+        (slot) => slot.label === DEFAULT_PREFERRED_SLOT && slot.status === 'available',
+      ) ??
       timeSlots.find((slot) => slot.status === 'available') ??
       null;
 
@@ -62,7 +129,10 @@ export function useBookingTimeSelection(_options: UseBookingTimeSelectionOptions
   );
 
   const selectedTime = React.useMemo(
-    () => timeSlots.find((slot) => slot.id === selectedTimeId && slot.status === 'available') ?? null,
+    () =>
+      timeSlots.find(
+        (slot) => slot.id === selectedTimeId && slot.status === 'available',
+      ) ?? null,
     [selectedTimeId, timeSlots]
   );
 
@@ -90,6 +160,8 @@ export function useBookingTimeSelection(_options: UseBookingTimeSelectionOptions
     selectedDate,
     selectedTime,
     timeSlots,
+    isLoadingSlots,
+    slotLoadError,
     isSelectionComplete: selectedDate != null && selectedTime != null,
     handleSelectDate,
     handleSelectTime,

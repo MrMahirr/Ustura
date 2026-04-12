@@ -1,7 +1,6 @@
 import React from 'react';
 
 import {
-  STAFF_SALON_OPTIONS,
   getStaffAccessNotice,
   type StaffAccessState,
 } from '@/components/auth/staff-access/presentation';
@@ -17,11 +16,11 @@ function validateIdentifier(value: string): string | undefined {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    return 'Telefon veya email alani zorunludur.';
+    return 'Telefon veya e-posta alani zorunludur.';
   }
 
   if (trimmed.includes('@')) {
-    return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir email adresi gir.';
+    return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir e-posta adresi gir.';
   }
 
   const digits = trimmed.replace(/\D/g, '');
@@ -35,20 +34,32 @@ function validatePassword(value: string): string | undefined {
     return 'Sifre alani zorunludur.';
   }
 
-  return trimmed.length >= 8 ? undefined : 'Test akisi icin en az 8 karakter kullan.';
+  return trimmed.length >= 8 ? undefined : 'En az 8 karakter kullan.';
 }
 
-export function useStaffAccess() {
+function clearFieldError(errors: FieldErrors, field: keyof FieldErrors): FieldErrors {
+  if (!errors[field]) {
+    return errors;
+  }
+
+  return { ...errors, [field]: undefined };
+}
+
+interface UseStaffAccessOptions {
+  onSubmitSuccess?: (payload: {
+    identifier: string;
+    password: string;
+  }) => Promise<boolean>;
+}
+
+export function useStaffAccess(options: UseStaffAccessOptions = {}) {
   const [identifier, setIdentifier] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(false);
-  const [selectedSalonId, setSelectedSalonId] = React.useState(STAFF_SALON_OPTIONS[0]?.id ?? '');
-  const [isSalonModalOpen, setIsSalonModalOpen] = React.useState(false);
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({});
   const [state, setState] = React.useState<StaffAccessState>('idle');
-
-  const selectedSalon =
-    STAFF_SALON_OPTIONS.find((option) => option.id === selectedSalonId) ?? STAFF_SALON_OPTIONS[0];
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [requestErrorMessage, setRequestErrorMessage] = React.useState<string | null>(null);
 
   const resetToIdle = React.useCallback(() => {
     if (state !== 'idle') {
@@ -59,82 +70,103 @@ export function useStaffAccess() {
   const handleIdentifierChange = React.useCallback(
     (value: string) => {
       setIdentifier(value);
-      setFieldErrors((previous) => ({ ...previous, identifier: undefined }));
+      setFieldErrors((previous) => clearFieldError(previous, 'identifier'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
-    [resetToIdle]
+    [resetToIdle],
   );
 
   const handlePasswordChange = React.useCallback(
     (value: string) => {
       setPassword(value);
-      setFieldErrors((previous) => ({ ...previous, password: undefined }));
+      setFieldErrors((previous) => clearFieldError(previous, 'password'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
-    [resetToIdle]
+    [resetToIdle],
   );
 
   const toggleRememberMe = React.useCallback(() => {
     setRememberMe((previous) => !previous);
   }, []);
 
-  const openSalonModal = React.useCallback(() => {
-    setIsSalonModalOpen(true);
-  }, []);
-
-  const closeSalonModal = React.useCallback(() => {
-    setIsSalonModalOpen(false);
-  }, []);
-
-  const handleSalonSelect = React.useCallback(
-    (salonId: string) => {
-      setSelectedSalonId(salonId);
-      setIsSalonModalOpen(false);
-      resetToIdle();
-    },
-    [resetToIdle]
-  );
-
   const handleForgotPassword = React.useCallback(() => {
     setState('forgotPassword');
   }, []);
 
-  const handleSubmit = React.useCallback(() => {
+  const handleSubmit = React.useCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    const normalizedIdentifier = identifier.trim();
+    const normalizedPassword = password.trim();
     const nextErrors: FieldErrors = {
-      identifier: validateIdentifier(identifier),
-      password: validatePassword(password),
+      identifier: validateIdentifier(normalizedIdentifier),
+      password: validatePassword(normalizedPassword),
     };
 
     setFieldErrors(nextErrors);
 
-    if (nextErrors.identifier || nextErrors.password || !selectedSalonId) {
+    if (nextErrors.identifier || nextErrors.password) {
       setState('validationError');
       return;
     }
 
-    setState('testReady');
-  }, [identifier, password, selectedSalonId]);
+    setIsSubmitting(true);
+    setRequestErrorMessage(null);
+    setState('authorizing');
 
-  const notice = React.useMemo(
-    () => getStaffAccessNotice(state, selectedSalon?.label ?? 'Secili salon'),
-    [selectedSalon?.label, state]
-  );
+    try {
+      const didLogin = await options.onSubmitSuccess?.({
+        identifier: normalizedIdentifier,
+        password: normalizedPassword,
+      });
+
+      if (didLogin === false) {
+        setFieldErrors({
+          identifier: undefined,
+          password: 'E-posta veya sifre hatali.',
+        });
+        setState('invalidCredentials');
+        return;
+      }
+
+      setState('accessGranted');
+    } catch (submitError) {
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : 'Personel girisi tamamlanamadi.';
+      setRequestErrorMessage(message);
+      setState('requestError');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [identifier, isSubmitting, options, password]);
+
+  const notice = React.useMemo(() => {
+    if (state === 'requestError' && requestErrorMessage) {
+      return {
+        ...getStaffAccessNotice(state),
+        description: requestErrorMessage,
+      };
+    }
+
+    return getStaffAccessNotice(state);
+  }, [requestErrorMessage, state]);
 
   return {
     identifier,
     password,
     rememberMe,
-    selectedSalon,
-    salonOptions: STAFF_SALON_OPTIONS,
-    isSalonModalOpen,
     fieldErrors,
     notice,
+    isSubmitting,
     handleIdentifierChange,
     handlePasswordChange,
     toggleRememberMe,
-    openSalonModal,
-    closeSalonModal,
-    handleSalonSelect,
     handleForgotPassword,
     handleSubmit,
   };

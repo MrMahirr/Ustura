@@ -1,9 +1,30 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { Role } from '../../shared/auth/role.enum';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
-    // TODO: Rol bazlı yetkilendirme mantığı eklenecek
-    return true;
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest<{ user?: JwtPayload }>();
+    const userRole = request.user?.role;
+
+    if (!userRole) {
+      return false;
+    }
+
+    return requiredRoles.includes(userRole);
   }
 }

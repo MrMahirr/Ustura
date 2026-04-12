@@ -16,15 +16,10 @@ function validateIdentifier(value: string): string | undefined {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    return 'Email veya telefon alani zorunludur.';
+    return 'E-posta alani zorunludur.';
   }
 
-  if (trimmed.includes('@')) {
-    return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir email adresi gir.';
-  }
-
-  const digits = trimmed.replace(/\D/g, '');
-  return digits.length >= 10 ? undefined : 'Gecerli bir telefon numarasi gir.';
+  return EMAIL_PATTERN.test(trimmed) ? undefined : 'Gecerli bir e-posta adresi gir.';
 }
 
 function validatePassword(value: string): string | undefined {
@@ -34,7 +29,7 @@ function validatePassword(value: string): string | undefined {
     return 'Sifre alani zorunludur.';
   }
 
-  return trimmed.length >= 8 ? undefined : 'Test akisi icin en az 8 karakter kullan.';
+  return trimmed.length >= 8 ? undefined : 'En az 8 karakter kullan.';
 }
 
 function clearFieldError(errors: FieldErrors, field: keyof FieldErrors): FieldErrors {
@@ -46,7 +41,11 @@ function clearFieldError(errors: FieldErrors, field: keyof FieldErrors): FieldEr
 }
 
 interface UseCustomerAccessOptions {
-  onSubmitSuccess?: (payload: { identifier: string; password: string }) => boolean;
+  onSubmitSuccess?: (payload: {
+    identifier: string;
+    password: string;
+  }) => Promise<boolean>;
+  onGoogleSubmitSuccess?: () => Promise<boolean>;
 }
 
 export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
@@ -55,6 +54,9 @@ export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
   const [rememberMe, setRememberMe] = React.useState(true);
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({});
   const [state, setState] = React.useState<CustomerAccessState>('idle');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = React.useState(false);
+  const [requestErrorMessage, setRequestErrorMessage] = React.useState<string | null>(null);
 
   const resetToIdle = React.useCallback(() => {
     if (state !== 'idle') {
@@ -66,6 +68,7 @@ export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
     (value: string) => {
       setIdentifier(value);
       setFieldErrors((previous) => clearFieldError(previous, 'identifier'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
     [resetToIdle]
@@ -75,6 +78,7 @@ export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
     (value: string) => {
       setPassword(value);
       setFieldErrors((previous) => clearFieldError(previous, 'password'));
+      setRequestErrorMessage(null);
       resetToIdle();
     },
     [resetToIdle]
@@ -88,11 +92,41 @@ export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
     setState('forgotPassword');
   }, []);
 
-  const handleGoogleAccess = React.useCallback(() => {
-    setState('providerPreview');
-  }, []);
+  const handleGoogleAccess = React.useCallback(async () => {
+    if (isSubmitting || isGoogleSubmitting) {
+      return;
+    }
 
-  const handleSubmit = React.useCallback(() => {
+    setIsGoogleSubmitting(true);
+    setRequestErrorMessage(null);
+
+    try {
+      if (!options.onGoogleSubmitSuccess) {
+        throw new Error('Google girisi henuz baglanmadi.');
+      }
+
+      const didLogin = await options.onGoogleSubmitSuccess();
+
+      if (didLogin === false) {
+        setRequestErrorMessage('Google hesabi ile giris tamamlanamadi.');
+        setState('requestError');
+        return;
+      }
+
+      setState('testReady');
+    } catch (submitError) {
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : 'Google ile giris tamamlanamadi.';
+      setRequestErrorMessage(message);
+      setState('requestError');
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
+  }, [isGoogleSubmitting, isSubmitting, options]);
+
+  const handleSubmit = React.useCallback(async () => {
     const normalizedIdentifier = identifier.trim();
     const normalizedPassword = password.trim();
     const nextErrors: FieldErrors = {
@@ -107,27 +141,52 @@ export function useCustomerAccess(options: UseCustomerAccessOptions = {}) {
       return;
     }
 
-    const didLogin = options.onSubmitSuccess?.({
-      identifier: normalizedIdentifier,
-      password: normalizedPassword,
-    });
+    setIsSubmitting(true);
+    setRequestErrorMessage(null);
 
-    if (didLogin === false) {
-      setFieldErrors({
-        identifier: undefined,
-        password: 'Gecici test hesabi sifresini kullan.',
+    try {
+      const didLogin = await options.onSubmitSuccess?.({
+        identifier: normalizedIdentifier,
+        password: normalizedPassword,
       });
-      setState('invalidCredentials');
-      return;
-    }
 
-    setState('testReady');
+      if (didLogin === false) {
+        setFieldErrors({
+          identifier: undefined,
+          password: 'E-posta veya sifre hatali.',
+        });
+        setState('invalidCredentials');
+        return;
+      }
+
+      setState('testReady');
+    } catch (submitError) {
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : 'Giris istegi tamamlanamadi.';
+      setRequestErrorMessage(message);
+      setState('requestError');
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [identifier, options, password]);
 
-  const notice = React.useMemo(() => getCustomerAccessNotice(state), [state]);
+  const notice = React.useMemo(() => {
+    if (state !== 'requestError' || !requestErrorMessage) {
+      return getCustomerAccessNotice(state);
+    }
+
+    return {
+      ...getCustomerAccessNotice(state),
+      description: requestErrorMessage,
+    };
+  }, [requestErrorMessage, state]);
 
   return {
     state,
+    isSubmitting,
+    isGoogleSubmitting,
     identifier,
     password,
     rememberMe,
