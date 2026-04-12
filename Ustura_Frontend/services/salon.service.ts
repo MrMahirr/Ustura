@@ -123,3 +123,20 @@ export async function getSalonById(salonId: string) {
     path: `/salons/${salonId}`,
   });
 }
+
+export interface OwnedSalonSummary {
+  id: string;
+  name: string;
+  city: string;
+  district: string | null;
+  photoUrl: string | null;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export async function getOwnedSalons() {
+  return apiRequest<OwnedSalonSummary[]>({
+    path: '/salons/owned',
+    auth: true,
+  });
+}

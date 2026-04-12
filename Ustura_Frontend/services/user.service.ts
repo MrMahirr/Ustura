@@ -55,6 +55,24 @@ export interface AdminUsersQuery extends Record<string, string | undefined> {
   city?: string;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getMyProfile() {
+  return apiRequest<UserProfile>({
+    path: '/users/me',
+    auth: true,
+  });
+}
+
 export class UserService {
   static async getAdminUsers(query: AdminUsersQuery = {}): Promise<AdminUsersListResponse> {
     return apiRequest<AdminUsersListResponse>({

@@ -40,7 +40,6 @@ export const SUPER_ADMIN_ACCESS_COPY = {
   emailPlaceholder: 'admin@ustura.com',
   passwordLabel: 'Sifre',
   passwordPlaceholder: '********',
-  forgotPasswordLabel: 'Sifremi Unuttum',
   trustedDeviceLabel: 'Bu cihazi guvenilir olarak isaretle',
   submitLabel: 'Giris Yap',
   restrictedAreaLabel: 'Bu alan yalnizca yetkili yoneticiler icindir',

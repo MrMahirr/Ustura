@@ -74,18 +74,32 @@ export default function BarberAppointmentRow({
         </View>
 
         <View className="min-w-0 flex-1 flex-row items-center gap-4">
-          <Image
-            source={{ uri: appointment.imageUrl }}
-            contentFit="cover"
-            style={[
-              {
+          {appointment.imageUrl ? (
+            <Image
+              source={{ uri: appointment.imageUrl }}
+              contentFit="cover"
+              style={[
+                {
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                },
+                Platform.OS === 'web' ? ({ filter: 'grayscale(1)' } as any) : null,
+              ]}
+            />
+          ) : (
+            <View
+              style={{
                 width: 48,
                 height: 48,
                 borderRadius: 10,
-              },
-              Platform.OS === 'web' ? ({ filter: 'grayscale(1)' } as any) : null,
-            ]}
-          />
+                backgroundColor: theme.surfaceContainerHighest,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <MaterialIcons name="person" size={24} color={theme.onSurfaceVariant} />
+            </View>
+          )}
           <View className="min-w-0 flex-1">
             <Text
               numberOfLines={1}

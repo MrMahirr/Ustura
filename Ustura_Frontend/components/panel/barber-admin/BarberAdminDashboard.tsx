@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 
 import { barberAdminClassNames } from './presentation';
 import { useBarberDashboard } from './use-barber-dashboard';
@@ -20,6 +20,36 @@ export default function BarberAdminDashboard() {
   const paddingHorizontal = width < 768 ? 16 : width < 1280 ? 24 : 32;
   const isWide = width >= 980;
   const metricColumns = width >= 1320 ? 4 : width >= 760 ? 2 : 1;
+
+  if (dashboard.loading && dashboard.metrics.length === 0) {
+    return (
+      <View
+        className={barberAdminClassNames.page}
+        style={{ backgroundColor: theme.pageBackground }}>
+        <BarberTopBar query={query} onQueryChange={setQuery} />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (dashboard.error && dashboard.metrics.length === 0) {
+    return (
+      <View
+        className={barberAdminClassNames.page}
+        style={{ backgroundColor: theme.pageBackground }}>
+        <BarberTopBar query={query} onQueryChange={setQuery} />
+        <View className="flex-1 items-center justify-center gap-2">
+          <Text
+            className="font-headline text-base font-bold"
+            style={{ color: theme.error }}>
+            {dashboard.error}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View className={barberAdminClassNames.page} style={{ backgroundColor: theme.pageBackground }}>
