@@ -8,11 +8,15 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -20,6 +24,8 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../shared/auth/role.enum';
@@ -38,6 +44,7 @@ import { PaginatedPublicSalonResponseDto } from './dto/paginated-public-salon-re
 import { PublicSalonDetailDto } from './dto/public-salon-detail.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { SalonManagementService } from './salon-management.service';
+import { SalonMediaService } from './salon-media.service';
 import { SalonQueryService } from './salon-query.service';
 
 @ApiTags('salons')
@@ -46,6 +53,7 @@ export class SalonController {
   constructor(
     private readonly salonQueryService: SalonQueryService,
     private readonly salonManagementService: SalonManagementService,
+    private readonly salonMediaService: SalonMediaService,
   ) {}
 
   @Get()
@@ -195,6 +203,64 @@ export class SalonController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OWNER)
+  @Post(':salonId/storefront-photo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload and assign a local storefront photo for an owned salon' })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ type: OwnedSalonResponseDto })
+  async uploadStorefrontPhoto(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+    @UploadedFile() file: unknown,
+    @Req() request: Request,
+  ) {
+    return this.salonMediaService.uploadOwnedStorefrontPhoto(
+      currentUser,
+      salonId,
+      file as never,
+      this.resolveRequestBaseUrl(request),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER)
+  @Delete(':salonId/storefront-photo')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Remove the storefront photo for an owned salon' })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  @ApiOkResponse({ type: OwnedSalonResponseDto })
+  async removeStorefrontPhoto(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+  ) {
+    return this.salonMediaService.removeOwnedStorefrontPhoto(
+      currentUser,
+      salonId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER)
   @Delete(':salonId')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Soft delete a salon owned by the authenticated owner' })
@@ -205,5 +271,15 @@ export class SalonController {
     @Param('salonId', new ParseUUIDPipe()) salonId: string,
   ) {
     return this.salonManagementService.remove(currentUser, salonId);
+  }
+
+  private resolveRequestBaseUrl(request: Request): string {
+    const forwardedProtoHeader = request.headers['x-forwarded-proto'];
+    const forwardedProto = Array.isArray(forwardedProtoHeader)
+      ? forwardedProtoHeader[0]
+      : forwardedProtoHeader;
+    const protocol = forwardedProto?.split(',')[0]?.trim() || request.protocol;
+    const host = request.get('host');
+    return `${protocol}://${host}`;
   }
 }

@@ -125,6 +125,8 @@ export default function BarberAdminSettings() {
                 saveSuccess={state.saveSuccess}
                 saveError={state.saveError}
                 onSavePhoto={state.updatePhotoUrl}
+                onUploadPhoto={state.uploadPhotoFile}
+                onRemovePhoto={state.removePhoto}
               />
             )}
             {state.activeTab === 'working-hours' && (

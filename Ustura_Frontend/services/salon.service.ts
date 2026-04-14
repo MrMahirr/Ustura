@@ -207,3 +207,23 @@ export async function updateOwnedSalon(salonId: string, body: OwnedSalonUpdatePa
     body,
   });
 }
+
+export async function uploadOwnedSalonPhoto(salonId: string, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiRequest<SalonRecord, FormData>({
+    path: `/salons/${salonId}/storefront-photo`,
+    method: 'POST',
+    auth: true,
+    body: formData,
+  });
+}
+
+export async function removeOwnedSalonPhoto(salonId: string) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}/storefront-photo`,
+    method: 'DELETE',
+    auth: true,
+  });
+}

@@ -11,12 +11,13 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import { hexToRgba } from '@/utils/color';
 import type { SalonRecord } from '@/services/salon.service';
+import { hexToRgba } from '@/utils/color';
 
 import { useBarberAdminTheme } from '../../theme';
 import SettingsSection from '../SettingsSection';
 import { getBarberInputStyle, getBarberInputWebStyle, getBarberWebTransition } from '../presentation';
+import StorefrontUploadDropzone from './StorefrontUploadDropzone';
 
 interface StorefrontTabProps {
   salon: SalonRecord;
@@ -24,6 +25,55 @@ interface StorefrontTabProps {
   saveSuccess: boolean;
   saveError: string | null;
   onSavePhoto: (url: string | null) => Promise<void>;
+  onUploadPhoto: (file: File) => Promise<void>;
+  onRemovePhoto: () => Promise<void>;
+}
+
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
+function getPhotoFileName(photoUrl: string | null): string | null {
+  if (!photoUrl) {
+    return null;
+  }
+
+  try {
+    const pathname = new URL(photoUrl).pathname;
+    const segments = pathname.split('/');
+    return segments.at(-1) || null;
+  } catch {
+    const segments = photoUrl.split('/');
+    return segments.at(-1) || null;
+  }
+}
+
+function validateImageFile(file: File): string | null {
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    return 'Sadece PNG, JPEG ve WEBP dosyalari yuklenebilir.';
+  }
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return 'Dosya boyutu 5 MB veya daha kucuk olmali.';
+  }
+
+  return null;
+}
+
+async function selectImageFileFromBrowser(): Promise<File | null> {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/webp';
+    input.onchange = () => {
+      resolve(input.files?.[0] ?? null);
+      input.remove();
+    };
+    input.click();
+  });
 }
 
 export default function StorefrontTab({
@@ -32,6 +82,8 @@ export default function StorefrontTab({
   saveSuccess,
   saveError,
   onSavePhoto,
+  onUploadPhoto,
+  onRemovePhoto,
 }: StorefrontTabProps) {
   const { width } = useWindowDimensions();
   const theme = useBarberAdminTheme();
@@ -39,37 +91,85 @@ export default function StorefrontTab({
 
   const [photoUrl, setPhotoUrl] = React.useState(salon.photoUrl ?? '');
   const [previewError, setPreviewError] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [lastUploadedFileName, setLastUploadedFileName] = React.useState<string | null>(
+    getPhotoFileName(salon.photoUrl),
+  );
 
   React.useEffect(() => {
     setPhotoUrl(salon.photoUrl ?? '');
     setPreviewError(false);
+    setUploadError(null);
+    setLastUploadedFileName(getPhotoFileName(salon.photoUrl));
   }, [salon.photoUrl]);
 
   const inputStyle = getBarberInputStyle(theme);
   const webStyle = getBarberInputWebStyle();
   const hasChanges = (photoUrl || '') !== (salon.photoUrl || '');
 
-  const handleSave = () => {
+  const handleSave = React.useCallback(() => {
+    setUploadError(null);
     void onSavePhoto(photoUrl.trim() || null);
-  };
+  }, [onSavePhoto, photoUrl]);
 
-  const handleRemove = () => {
+  const handleRemove = React.useCallback(() => {
     setPhotoUrl('');
-    void onSavePhoto(null);
-  };
+    setUploadError(null);
+    setLastUploadedFileName(null);
+    void onRemovePhoto();
+  }, [onRemovePhoto]);
+
+  const handleUploadFile = React.useCallback(
+    async (file: File) => {
+      const validationMessage = validateImageFile(file);
+
+      if (validationMessage) {
+        setUploadError(validationMessage);
+        return;
+      }
+
+      setUploadError(null);
+      setPreviewError(false);
+      setLastUploadedFileName(file.name);
+      await onUploadPhoto(file);
+    },
+    [onUploadPhoto],
+  );
+
+  const handleLocalUpload = React.useCallback(() => {
+    void (async () => {
+      const file = await selectImageFileFromBrowser();
+
+      if (!file) {
+        return;
+      }
+
+      await handleUploadFile(file);
+    })();
+  }, [handleUploadFile]);
 
   return (
     <View className="gap-5">
       <SettingsSection
-        title="Kapak Fotoğrafı"
+        title="Kapak Fotografi"
         icon="photo-camera"
-        description="Salon vitrin sayfanızda görünecek ana kapak fotoğrafı.">
+        description="Salon vitrin sayfanizda gorunecek ana kapak fotografi.">
         <CoverPreview
           url={photoUrl}
           hasError={previewError}
           onError={() => setPreviewError(true)}
           theme={theme}
           isMobile={isMobile}
+        />
+
+        <StorefrontUploadDropzone
+          disabled={saving}
+          isWeb={Platform.OS === 'web'}
+          fileName={lastUploadedFileName}
+          helperText="Web panelde dosyayi surukleyip birakabilir veya butonla secerek yukleyebilirsin."
+          errorText={uploadError}
+          onPickFile={handleLocalUpload}
+          onDropFile={handleUploadFile}
         />
 
         <View className="gap-2">
@@ -79,15 +179,16 @@ export default function StorefrontTab({
               fontFamily: 'Manrope-Bold',
               fontSize: 12,
               letterSpacing: 0.4,
-              textTransform: 'uppercase' as const,
+              textTransform: 'uppercase',
             }}>
-            Fotoğraf URL
+            Fotograf URL
           </Text>
           <TextInput
             value={photoUrl}
             onChangeText={(text) => {
               setPhotoUrl(text);
               setPreviewError(false);
+              setUploadError(null);
             }}
             placeholder="https://ornek.com/kapak-foto.jpg"
             placeholderTextColor={hexToRgba(theme.onSurfaceVariant, 0.4)}
@@ -95,7 +196,7 @@ export default function StorefrontTab({
             style={[inputStyle, webStyle]}
           />
           <Text style={{ color: hexToRgba(theme.onSurfaceVariant, 0.5), fontSize: 11 }}>
-            Önerilen boyut: 1200×600 piksel. JPEG veya PNG formatı.
+            URL ile kaydetme secenegi korunuyor. Yerel yukleme kullanirsan backend URL&apos;yi otomatik olusturur.
           </Text>
         </View>
 
@@ -105,21 +206,21 @@ export default function StorefrontTab({
             disabled={saving}
             className="flex-row items-center gap-2 self-start rounded-md border px-4 py-2"
             style={[
-              { borderColor: hexToRgba(theme.error, 0.3) },
+              { borderColor: hexToRgba(theme.error, 0.3), opacity: saving ? 0.6 : 1 },
               getBarberWebTransition(),
             ]}>
             <MaterialIcons name="delete-outline" size={16} color={theme.error} />
             <Text style={{ color: theme.error, fontFamily: 'Manrope-Bold', fontSize: 12 }}>
-              Fotoğrafı Kaldır
+              Fotografi Kaldir
             </Text>
           </Pressable>
         )}
       </SettingsSection>
 
       <SettingsSection
-        title="Galeri Fotoğrafları"
+        title="Galeri Fotograflari"
         icon="collections"
-        description="Salonunuzun iç mekan ve hizmet fotoğraflarını sergileyebilirsiniz.">
+        description="Salonunuzun ic mekan ve hizmet fotograflarini sergileyebilirsiniz.">
         <View
           className="items-center justify-center rounded-lg border-2 border-dashed py-10"
           style={{ borderColor: hexToRgba(theme.onSurfaceVariant, 0.15) }}>
@@ -135,27 +236,27 @@ export default function StorefrontTab({
               marginTop: 8,
               fontFamily: 'Manrope-Bold',
             }}>
-            Yakında kullanılabilir olacak
+            Yakinda kullanilabilir olacak
           </Text>
           <Text style={{ color: hexToRgba(theme.onSurfaceVariant, 0.3), fontSize: 11, marginTop: 4 }}>
-            Birden fazla fotoğraf yükleme özelliği geliştirme aşamasında.
+            Birden fazla fotograf yukleme ozelligi gelistirme asamasinda.
           </Text>
         </View>
       </SettingsSection>
 
-      {(hasChanges || saveError || saveSuccess) && (
+      {(hasChanges || saveError || saveSuccess || uploadError) && (
         <View className="flex-row items-center justify-between gap-3">
           <View className="flex-1">
-            {saveError && (
+            {(saveError || uploadError) && (
               <Text style={{ color: theme.error, fontSize: 12, fontFamily: 'Manrope-Bold' }}>
-                {saveError}
+                {uploadError ?? saveError}
               </Text>
             )}
             {saveSuccess && (
               <View className="flex-row items-center gap-2">
                 <MaterialIcons name="check-circle" size={16} color={theme.success} />
                 <Text style={{ color: theme.success, fontSize: 12, fontFamily: 'Manrope-Bold' }}>
-                  Fotoğraf güncellendi.
+                  Fotograf guncellendi.
                 </Text>
               </View>
             )}
@@ -206,7 +307,7 @@ function CoverPreview({
           height,
           backgroundColor: hexToRgba(theme.onSurfaceVariant, 0.04),
           borderWidth: 2,
-          borderStyle: 'dashed' as any,
+          borderStyle: 'dashed',
           borderColor: hexToRgba(theme.onSurfaceVariant, 0.12),
         }}>
         <MaterialIcons
@@ -221,7 +322,7 @@ function CoverPreview({
             marginTop: 8,
             fontFamily: 'Manrope-Bold',
           }}>
-          {hasError ? 'Fotoğraf yüklenemedi' : 'Kapak fotoğrafı yok'}
+          {hasError ? 'Fotograf yuklenemedi' : 'Kapak fotografi yok'}
         </Text>
       </View>
     );

@@ -10,6 +10,7 @@ import { useMyBookings } from '@/hooks/use-my-bookings';
 
 export function useCustomerBookings() {
   const [activeTab, setActiveTab] = React.useState<CustomerBookingsTabId>('upcoming');
+  const [selectedBookingId, setSelectedBookingId] = React.useState<string | null>(null);
   const { bookings, isLoading, error, reload, cancelBooking } = useMyBookings();
 
   const bookingsByTab = React.useMemo(
@@ -27,6 +28,10 @@ export function useCustomerBookings() {
   );
 
   const visibleBookings = bookingsByTab[activeTab];
+  const selectedBooking = React.useMemo(
+    () => bookings.find((booking) => booking.id === selectedBookingId) ?? null,
+    [bookings, selectedBookingId]
+  );
 
   const tabCounts = React.useMemo(
     () => ({
@@ -37,16 +42,27 @@ export function useCustomerBookings() {
     [bookingsByTab]
   );
 
+  const openBookingDetails = React.useCallback((bookingId: string) => {
+    setSelectedBookingId(bookingId);
+  }, []);
+
+  const closeBookingDetails = React.useCallback(() => {
+    setSelectedBookingId(null);
+  }, []);
+
   return {
     tabs: CUSTOMER_BOOKINGS_TABS,
     activeTab,
     visibleBookings,
     highlightedBooking,
+    selectedBooking,
     tabCounts,
     isLoading,
     error,
     reload,
     setActiveTab,
+    openBookingDetails,
+    closeBookingDetails,
     cancelBooking,
   };
 }

@@ -43,9 +43,13 @@ function mapReservationToBooking(
     id: reservation.id,
     salonName: salon?.name ?? 'USTURA Salonu',
     address: salon?.address ?? 'Salon adresi su anda goruntulenemiyor.',
+    city: salon?.city ?? 'Istanbul',
+    district: salon?.district ?? null,
     barberName: resolveBarberName(reservation.staffId, staffMap),
     serviceName: reservation.notes?.trim() || 'Standart Randevu',
     startsAt: reservation.slotStart,
+    endsAt: reservation.slotEnd,
+    bookedAt: reservation.createdAt,
     status: BACKEND_STATUS_MAP[reservation.status],
     imageUri: salon?.photoUrl ?? DEFAULT_BOOKING_IMAGE_URI,
   };

@@ -12,6 +12,10 @@ export function salonInvalidFieldError(fieldName: string) {
   );
 }
 
+export function salonInvalidMediaFileError(message: string) {
+  return badRequestError(message, ERROR_CODES.SALON.INVALID_MEDIA_FILE);
+}
+
 export function salonInactiveUpdateForbiddenError() {
   return badRequestError(
     'Inactive salons can only be reactivated before other fields are updated.',
