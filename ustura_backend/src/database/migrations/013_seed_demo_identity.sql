@@ -10,7 +10,7 @@
 -- 1) Platform super admin
 INSERT INTO platform_admins (id, name, email, phone, password_hash, is_active)
 SELECT
-    'f0000000-0000-0000-0000-000000000001'::uuid,
+    'f0000000-0000-4000-a000-000000000001'::uuid,
     'Super Admin',
     'admin@ustura.com',
     '+900000000000',
@@ -23,7 +23,7 @@ WHERE NOT EXISTS (
 -- 2) Personnel — owner
 INSERT INTO personnel (id, name, email, phone, password_hash, role, is_active)
 SELECT
-    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'a0000000-0000-4000-a000-000000000001'::uuid,
     'Ahmet Yilmaz',
     'owner@ustura.com',
     '+905001112233',
@@ -37,7 +37,7 @@ WHERE NOT EXISTS (
 -- 3) Personnel — barbers
 INSERT INTO personnel (id, name, email, phone, password_hash, role, is_active)
 SELECT
-    'b0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-4000-a000-000000000001'::uuid,
     'Mehmet Kaya',
     'berber@ustura.com',
     '+905002223344',
@@ -50,7 +50,7 @@ WHERE NOT EXISTS (
 
 INSERT INTO personnel (id, name, email, phone, password_hash, role, is_active)
 SELECT
-    'b0000000-0000-0000-0000-000000000002'::uuid,
+    'b0000000-0000-4000-a000-000000000002'::uuid,
     'Can Demir',
     'berber2@ustura.com',
     '+905003334455',
@@ -64,7 +64,7 @@ WHERE NOT EXISTS (
 -- 4) Personnel — receptionist
 INSERT INTO personnel (id, name, email, phone, password_hash, role, is_active)
 SELECT
-    'c0000000-0000-0000-0000-000000000001'::uuid,
+    'c0000000-0000-4000-a000-000000000001'::uuid,
     'Elif Ozturk',
     'resepsiyon@ustura.com',
     '+905004445566',
@@ -78,8 +78,8 @@ WHERE NOT EXISTS (
 -- 5) Test salonu (sahip satırı bu id ile mevcut olmalı)
 INSERT INTO salons (id, owner_id, name, address, city, district, working_hours)
 SELECT
-    'd0000000-0000-0000-0000-000000000001'::uuid,
-    'a0000000-0000-0000-0000-000000000001'::uuid,
+    'd0000000-0000-4000-a000-000000000001'::uuid,
+    'a0000000-0000-4000-a000-000000000001'::uuid,
     'Ustura Test Salonu',
     'Abdi Ipekci Caddesi No:42',
     'Istanbul',
@@ -94,45 +94,45 @@ SELECT
       "sunday":    null
     }'::jsonb
 WHERE NOT EXISTS (
-    SELECT 1 FROM salons WHERE id = 'd0000000-0000-0000-0000-000000000001'::uuid
+    SELECT 1 FROM salons WHERE id = 'd0000000-0000-4000-a000-000000000001'::uuid
 )
 AND EXISTS (
-    SELECT 1 FROM personnel WHERE id = 'a0000000-0000-0000-0000-000000000001'::uuid
+    SELECT 1 FROM personnel WHERE id = 'a0000000-0000-4000-a000-000000000001'::uuid
 );
 
 -- 6) Staff atamalari
 INSERT INTO staff (user_id, salon_id, role, bio)
 SELECT
-    'b0000000-0000-0000-0000-000000000001'::uuid,
-    'd0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-4000-a000-000000000001'::uuid,
+    'd0000000-0000-4000-a000-000000000001'::uuid,
     'barber',
     'Erkek sac kesimi ve sakal bakimi konusunda 8 yillik deneyim.'
 WHERE NOT EXISTS (
     SELECT 1 FROM staff
-    WHERE user_id = 'b0000000-0000-0000-0000-000000000001'::uuid
-      AND salon_id = 'd0000000-0000-0000-0000-000000000001'::uuid
+    WHERE user_id = 'b0000000-0000-4000-a000-000000000001'::uuid
+      AND salon_id = 'd0000000-0000-4000-a000-000000000001'::uuid
 );
 
 INSERT INTO staff (user_id, salon_id, role, bio)
 SELECT
-    'b0000000-0000-0000-0000-000000000002'::uuid,
-    'd0000000-0000-0000-0000-000000000001'::uuid,
+    'b0000000-0000-4000-a000-000000000002'::uuid,
+    'd0000000-0000-4000-a000-000000000001'::uuid,
     'barber',
     'Cilt bakimi ve modern sac modelleri uzmani.'
 WHERE NOT EXISTS (
     SELECT 1 FROM staff
-    WHERE user_id = 'b0000000-0000-0000-0000-000000000002'::uuid
-      AND salon_id = 'd0000000-0000-0000-0000-000000000001'::uuid
+    WHERE user_id = 'b0000000-0000-4000-a000-000000000002'::uuid
+      AND salon_id = 'd0000000-0000-4000-a000-000000000001'::uuid
 );
 
 INSERT INTO staff (user_id, salon_id, role, bio)
 SELECT
-    'c0000000-0000-0000-0000-000000000001'::uuid,
-    'd0000000-0000-0000-0000-000000000001'::uuid,
+    'c0000000-0000-4000-a000-000000000001'::uuid,
+    'd0000000-0000-4000-a000-000000000001'::uuid,
     'receptionist',
     'Randevu yonetimi ve musteri iliskileri.'
 WHERE NOT EXISTS (
     SELECT 1 FROM staff
-    WHERE user_id = 'c0000000-0000-0000-0000-000000000001'::uuid
-      AND salon_id = 'd0000000-0000-0000-0000-000000000001'::uuid
+    WHERE user_id = 'c0000000-0000-4000-a000-000000000001'::uuid
+      AND salon_id = 'd0000000-0000-4000-a000-000000000001'::uuid
 );

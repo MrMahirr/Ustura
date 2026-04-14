@@ -57,7 +57,6 @@ export class SalonRepository {
     const offset = (page - 1) * pageSize;
 
     const countResult = await this.databaseService.query<TotalCountRow>({
-      name: 'salon.find-public-page-count',
       text: `
         SELECT COUNT(*)::int AS total_count
         FROM salons
@@ -85,7 +84,6 @@ export class SalonRepository {
 
     const paginatedValues = [...values, pageSize, offset];
     const result = await this.databaseService.query<SalonRow>({
-      name: 'salon.find-public-page',
       text: `
         SELECT
           id,
@@ -129,7 +127,6 @@ export class SalonRepository {
     const offset = (page - 1) * pageSize;
 
     const countResult = await this.databaseService.query<TotalCountRow>({
-      name: 'salon.find-admin-page-count',
       text: `
         SELECT COUNT(*)::int AS total_count
         FROM salons s
@@ -158,7 +155,6 @@ export class SalonRepository {
 
     const paginatedValues = [...values, pageSize, offset];
     const result = await this.databaseService.query<AdminSalonRow>({
-      name: 'salon.find-admin-page',
       text: `
         SELECT
           s.id,

@@ -34,8 +34,8 @@ export default function CustomerBookingsListItem({
   const outlineVariant = useThemeColor({}, 'outlineVariant');
   const error = useThemeColor({}, 'error');
 
-  const isUpcoming = booking.status === 'upcoming';
-  const isCompleted = booking.status === 'completed';
+  const isUpcoming = booking.status === 'pending' || booking.status === 'confirmed';
+  const isCompleted = booking.status === 'completed' || booking.status === 'no_show';
 
   return (
     <View
@@ -64,6 +64,15 @@ export default function CustomerBookingsListItem({
             </Text>
             <Text className="font-body text-xs" style={{ color: hexToRgba(onSurfaceVariant, 0.78) }}>
               {booking.address}
+            </Text>
+          </View>
+
+          <View style={{ minWidth: 100, gap: 2 }}>
+            <Text className="font-label text-[9px] font-bold uppercase tracking-[2px]" style={{ color: onSurfaceVariant }}>
+              Berber
+            </Text>
+            <Text className="font-body text-sm font-semibold" style={{ color: onSurface }}>
+              {booking.barberName}
             </Text>
           </View>
 

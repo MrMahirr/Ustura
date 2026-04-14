@@ -2,6 +2,7 @@ import React from 'react';
 
 import {
   CUSTOMER_BOOKINGS_TABS,
+  getBookingTabId,
   getNextUpcomingBooking,
   type CustomerBookingsTabId,
 } from '@/components/customer-bookings/presentation';
@@ -13,9 +14,9 @@ export function useCustomerBookings() {
 
   const bookingsByTab = React.useMemo(
     () => ({
-      upcoming: bookings.filter((booking) => booking.status === 'upcoming'),
-      completed: bookings.filter((booking) => booking.status === 'completed'),
-      cancelled: bookings.filter((booking) => booking.status === 'cancelled'),
+      upcoming: bookings.filter((b) => getBookingTabId(b.status) === 'upcoming'),
+      completed: bookings.filter((b) => getBookingTabId(b.status) === 'completed'),
+      cancelled: bookings.filter((b) => getBookingTabId(b.status) === 'cancelled'),
     }),
     [bookings]
   );

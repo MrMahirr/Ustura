@@ -10,7 +10,7 @@
 
 INSERT INTO users (id, name, email, phone, password_hash, role)
 VALUES (
-    'f0000000-0000-0000-0000-000000000001',
+    'f0000000-0000-4000-a000-000000000001',
     'Super Admin',
     'admin@ustura.com',
     '+900000000000',

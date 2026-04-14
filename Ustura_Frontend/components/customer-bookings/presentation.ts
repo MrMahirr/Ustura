@@ -1,5 +1,5 @@
-export type CustomerBookingStatus = 'upcoming' | 'completed' | 'cancelled';
-export type CustomerBookingsTabId = CustomerBookingStatus;
+export type CustomerBookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+export type CustomerBookingsTabId = 'upcoming' | 'completed' | 'cancelled';
 
 export interface CustomerBookingRecord {
   id: string;
@@ -49,7 +49,7 @@ export const MOCK_CUSTOMER_BOOKINGS: CustomerBookingRecord[] = [
     barberName: 'Selim Erkan',
     serviceName: 'Sac & Sakal',
     startsAt: '2026-04-10T14:30:00+03:00',
-    status: 'upcoming',
+    status: 'confirmed',
     imageUri:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuBhVIsfBkXvSAvKVjiXYr55PZHud5_BRspDtt5DYv1fS_2yK2xFgqr8TxvetbaTmFc91JpeOc_0wZskqzZzSEv2ZaGat947w8QJeiubqvqGFIiVaNqbl4z94x4Qw6oBcw9Zlo5u0mBFoD4Nh7G7OR2MRwM8zcNnygykBF1AKUiF7O4swVZP4QIPjfXtcpYRYyDkckgn1FUU40SviTRPnYM-l0fsgbK8g9ONCGSv3i_5w5Beuqr40_rFnT-zntDjOkz7KWdRWRiplpc',
   },
@@ -60,7 +60,7 @@ export const MOCK_CUSTOMER_BOOKINGS: CustomerBookingRecord[] = [
     barberName: 'Melih Can',
     serviceName: 'Modern Kesim',
     startsAt: '2026-04-18T11:00:00+03:00',
-    status: 'upcoming',
+    status: 'pending',
     imageUri:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuDbCcDL9ClvUTlxURQkh_tdoHL5LahAajl2oTf7AI27_8x2NMx9XY1TZPjfoalIJuugLykfjzZHNkpBm12mAsoJXka8KS5KiuXXPw1lPtLiu9_I-zBtKMmX1mqLCccL7AJxkB7fVNpySKgrfBSCIuN6SfNUTaGWSv29i4YmjIoqCWcydnchIi16Z5tQQ5MX4R7QTs_sOK5c6s4eejJtFSkkCa2rYNn5l-7Y6LJPdYJPTap0U8JqNB0lC1KwEb8TFBfWaUJ2DoGdmSM',
   },
@@ -113,15 +113,29 @@ export function formatCustomerBookingDateTime(startsAt: string) {
 
 export function getCustomerBookingStatusLabel(status: CustomerBookingStatus) {
   switch (status) {
-    case 'upcoming':
-      return 'Yaklasiyor';
+    case 'pending':
+      return 'Onay Bekliyor';
+    case 'confirmed':
+      return 'Onaylandi';
     case 'completed':
       return 'Tamamlandi';
     case 'cancelled':
       return 'Iptal Edildi';
+    case 'no_show':
+      return 'Gidilmedi';
     default:
       return status;
   }
+}
+
+export function getBookingTabId(status: CustomerBookingStatus): CustomerBookingsTabId {
+  if (status === 'pending' || status === 'confirmed') return 'upcoming';
+  if (status === 'cancelled') return 'cancelled';
+  return 'completed';
+}
+
+function isUpcomingStatus(status: CustomerBookingStatus): boolean {
+  return status === 'pending' || status === 'confirmed';
 }
 
 export function sortBookingsByDate(bookings: CustomerBookingRecord[]) {
@@ -129,7 +143,7 @@ export function sortBookingsByDate(bookings: CustomerBookingRecord[]) {
     const leftTime = new Date(left.startsAt).getTime();
     const rightTime = new Date(right.startsAt).getTime();
 
-    if (left.status === 'upcoming' && right.status === 'upcoming') {
+    if (isUpcomingStatus(left.status) && isUpcomingStatus(right.status)) {
       return leftTime - rightTime;
     }
 
@@ -138,5 +152,5 @@ export function sortBookingsByDate(bookings: CustomerBookingRecord[]) {
 }
 
 export function getNextUpcomingBooking(bookings: CustomerBookingRecord[]) {
-  return sortBookingsByDate(bookings).find((booking) => booking.status === 'upcoming') ?? null;
+  return sortBookingsByDate(bookings).find((booking) => isUpcomingStatus(booking.status)) ?? null;
 }

@@ -47,7 +47,6 @@ export class UserRepository {
         : 'NULL::varchar(128) AS firebase_uid';
 
     const result = await this.databaseService.query<UserRow>({
-      name: 'user.find-by-principal',
       text: `
         SELECT
           p.id,
@@ -96,7 +95,6 @@ export class UserRepository {
         : 'NULL::varchar(128) AS firebase_uid';
 
     const result = await executor.query<UserRow>({
-      name: 'user.find-by-email-principal',
       text: `
         SELECT
           p.id,
@@ -171,7 +169,6 @@ export class UserRepository {
         : 'NULL::varchar(128) AS firebase_uid';
 
     const result = await executor.query<UserRow>({
-      name: 'user.find-by-phone-principal',
       text: `
         SELECT
           p.id,
@@ -838,7 +835,6 @@ export class UserRepository {
         : 'NULL::varchar(128) AS firebase_uid';
 
     const result = await executor.query<UserRow>({
-      name: 'user.deactivate',
       text: `
         UPDATE ${table} p
         SET is_active = FALSE
@@ -925,7 +921,6 @@ export class UserRepository {
         : 'password_hash = $2';
 
     const result = await executor.query<UserRow>({
-      name: 'user.update-password-hash',
       text: `
         UPDATE ${table} p
         SET ${setClause}

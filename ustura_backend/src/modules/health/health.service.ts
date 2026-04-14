@@ -25,6 +25,7 @@ const REQUIRED_MIGRATIONS = [
   '015_ensure_salons_is_active.sql',
   '016_owner_applications_review_state_allow_null_salon.sql',
   '017_personnel_must_change_password.sql',
+  '018_fix_seed_uuid_format.sql',
 ] as const;
 
 const REQUIRED_IDENTITY_TABLES = [

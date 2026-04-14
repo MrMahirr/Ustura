@@ -1,7 +1,7 @@
 import React from 'react';
 
-import BarberSchedulePage from '@/components/panel/barber-admin/schedule/BarberSchedulePage';
+import BarberAdminReservations from '@/components/panel/barber-admin/reservations/BarberAdminReservations';
 
 export default function BarberRandevularScreen() {
-  return <BarberSchedulePage />;
+  return <BarberAdminReservations />;
 }
