@@ -10,13 +10,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { Role } from '../../shared/auth/role.enum';
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
+import { RequestSubscriptionDto } from './dto/request-subscription.dto';
 import { UpdateSubscriptionStatusDto } from './dto/update-subscription-status.dto';
 
 @ApiTags('packages')
@@ -28,6 +31,27 @@ export class PackageController {
   @ApiOperation({ summary: 'List all active packages' })
   async getAllPackages() {
     return this.packageService.getAllPackages();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.BARBER, Role.RECEPTIONIST)
+  @Get('my-subscription')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get current salon subscription and usage for the logged-in staff' })
+  async getMySalonSubscription(@CurrentUser() user: JwtPayload) {
+    return this.packageService.getMySalonSubscription(user.sub, user.role);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.BARBER, Role.RECEPTIONIST)
+  @Post('request-subscription')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Request a package subscription (creates pending subscription for admin approval)' })
+  async requestSubscription(
+    @CurrentUser() user: JwtPayload,
+    @Body() input: RequestSubscriptionDto,
+  ) {
+    return this.packageService.requestSubscription(user.sub, user.role, input.packageId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -1,6 +1,6 @@
 import React from 'react';
 import { router } from 'expo-router';
-import { Alert, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 
 import ActionButton from '@/components/panel/super-admin/ActionButton';
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
@@ -17,14 +17,7 @@ import { panelRoutes } from '@/constants/routes';
 import { PackageService, type Subscription } from '@/services/package.service';
 import { cn } from '@/utils/cn';
 import { hexToRgba } from '@/utils/color';
-
-function showErrorAlert(message: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.alert(message);
-    return;
-  }
-  Alert.alert('Hata', message);
-}
+import { confirmDestructive, showErrorFlash } from '@/utils/flash';
 
 export default function SuperAdminPackageProfile({ packageId }: { packageId?: string }) {
   const { width } = useWindowDimensions();
@@ -69,21 +62,7 @@ export default function SuperAdminPackageProfile({ packageId }: { packageId?: st
       }
 
       const msg = `"${sub.salonName}" salonunun bu paket aboneligini iptal etmek istiyor musunuz?`;
-      let ok = false;
-      if (
-        Platform.OS === 'web' &&
-        typeof window !== 'undefined' &&
-        typeof window.confirm === 'function'
-      ) {
-        ok = window.confirm(msg);
-      } else {
-        ok = await new Promise<boolean>((resolve) => {
-          Alert.alert('Aboneligi iptal et', msg, [
-            { text: 'Vazgec', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Iptal et', style: 'destructive', onPress: () => resolve(true) },
-          ]);
-        });
-      }
+      const ok = await confirmDestructive('Aboneligi iptal et', msg);
 
       if (!ok) {
         return;
@@ -94,7 +73,8 @@ export default function SuperAdminPackageProfile({ packageId }: { packageId?: st
         await PackageService.updateSubscriptionStatus(sub.id, 'cancelled');
         await refresh();
       } catch (err: any) {
-        showErrorAlert(
+        showErrorFlash(
+          'Hata',
           typeof err?.message === 'string' && err.message.trim()
             ? err.message
             : 'Abonelik iptal edilemedi.',

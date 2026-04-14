@@ -121,3 +121,42 @@ export interface FindAdminUsersFilters {
   salonId?: string;
   city?: string;
 }
+
+export interface AdminUserReservation {
+  id: string;
+  customerName: string;
+  slotStart: Date;
+  slotEnd: Date;
+  status: string;
+  notes: string | null;
+}
+
+export interface AdminUserActivityEntry {
+  id: string;
+  action: string;
+  entityType: string;
+  detail: string | null;
+  createdAt: Date;
+}
+
+export interface AdminUserStats {
+  totalReservations: number;
+  completedReservations: number;
+  cancelledReservations: number;
+  last30DaysReservations: number;
+  averagePerDay: number;
+}
+
+export interface AdminUserWorkingDay {
+  day: string;
+  open: string | null;
+  close: string | null;
+}
+
+export interface AdminUserDetailResponse {
+  user: AdminUserSummary;
+  stats: AdminUserStats;
+  recentReservations: AdminUserReservation[];
+  recentActivity: AdminUserActivityEntry[];
+  workingHours: AdminUserWorkingDay[];
+}

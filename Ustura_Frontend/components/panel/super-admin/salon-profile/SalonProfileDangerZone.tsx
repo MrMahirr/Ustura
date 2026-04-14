@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   SALON_PROFILE_COPY,
@@ -7,24 +7,13 @@ import {
 } from '@/components/panel/super-admin/salon-profile/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
+import { confirmDestructive } from '@/utils/flash';
 
 import type { SalonProfileMutationResult } from './use-salon-profile';
 
 function confirmSalonDelete(salonName: string): Promise<boolean> {
   const msg = `"${salonName}" salonu kalici olarak silinecek; bagli randevu ve personel kayitlari da silinir. Devam edilsin mi?`;
-  if (
-    Platform.OS === 'web' &&
-    typeof window !== 'undefined' &&
-    typeof window.confirm === 'function'
-  ) {
-    return Promise.resolve(window.confirm(msg));
-  }
-  return new Promise((resolve) => {
-    Alert.alert('Salonu sil', msg, [
-      { text: 'Iptal', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Sil', style: 'destructive', onPress: () => resolve(true) },
-    ]);
-  });
+  return confirmDestructive('Salonu sil', msg);
 }
 
 interface SalonProfileDangerZoneProps {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import Footer from '@/components/landing/Footer';
@@ -17,6 +17,7 @@ import { useCustomerBookings } from '@/components/customer-bookings/use-customer
 import { getLandingLayout } from '@/components/landing/layout';
 import Button from '@/components/ui/Button';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { showErrorFlash, showFlash, showSuccessFlash } from '@/utils/flash';
 
 function buildBookingDetailsMessage(booking: CustomerBookingRecord) {
   return [
@@ -54,13 +55,7 @@ export default function CustomerBookingsPage() {
 
   const handleViewDetails = React.useCallback((booking: CustomerBookingRecord) => {
     const message = buildBookingDetailsMessage(booking);
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert(`${CUSTOMER_BOOKINGS_COPY.detailsPreviewTitle}\n\n${message}`);
-      return;
-    }
-
-    Alert.alert(CUSTOMER_BOOKINGS_COPY.detailsPreviewTitle, message);
+    showFlash(CUSTOMER_BOOKINGS_COPY.detailsPreviewTitle, message, 'info');
   }, []);
 
   const handleCancel = React.useCallback(
@@ -69,25 +64,13 @@ export default function CustomerBookingsPage() {
         await cancelBooking(booking.id);
 
         const cancelMessage = `${booking.salonName} icin ${formatCustomerBookingDateTime(booking.startsAt)} tarihli randevu iptal edildi.`;
-
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.alert(`${CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle}\n\n${cancelMessage}`);
-          return;
-        }
-
-        Alert.alert(CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle, cancelMessage);
+        showSuccessFlash(CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle, cancelMessage);
       } catch (cancelError) {
         const message =
           cancelError instanceof Error
             ? cancelError.message
             : 'Randevu iptal edilemedi.';
-
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.alert(`Iptal Hatasi\n\n${message}`);
-          return;
-        }
-
-        Alert.alert('Iptal Hatasi', message);
+        showErrorFlash('Iptal Hatasi', message);
       }
     },
     [cancelBooking]

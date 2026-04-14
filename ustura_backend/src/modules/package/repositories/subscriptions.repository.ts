@@ -121,6 +121,68 @@ export class SubscriptionsRepository {
     return result.rows.map((row) => this.mapApprovalRow(row));
   }
 
+  async findActiveBySalonId(salonId: string): Promise<Subscription | null> {
+    const result = await this.databaseService.query<SubscriptionRow>({
+      name: 'subscription.find-active-by-salon-id',
+      text: `
+        SELECT
+          s.*,
+          sl.name  AS salon_name,
+          p.name   AS package_name,
+          p.tier   AS package_tier
+        FROM subscriptions s
+        JOIN salons   sl ON s.salon_id   = sl.id
+        JOIN packages p  ON s.package_id = p.id
+        WHERE s.salon_id = $1
+          AND s.status IN ('active', 'pending')
+        ORDER BY s.created_at DESC
+        LIMIT 1
+      `,
+      values: [salonId],
+    });
+
+    return result.rows[0] ? this.mapRow(result.rows[0]) : null;
+  }
+
+  async hasPendingForSalon(salonId: string): Promise<boolean> {
+    const result = await this.databaseService.query<{ count: string }>({
+      text: `
+        SELECT COUNT(*)::text AS count
+        FROM subscriptions
+        WHERE salon_id = $1
+          AND status = 'pending'
+      `,
+      values: [salonId],
+    });
+    return Number(result.rows[0]?.count ?? 0) > 0;
+  }
+
+  async cancelAllActiveForSalon(salonId: string): Promise<void> {
+    await this.databaseService.query({
+      text: `
+        UPDATE subscriptions
+        SET status = 'cancelled', updated_at = NOW()
+        WHERE salon_id = $1
+          AND status IN ('active', 'pending')
+      `,
+      values: [salonId],
+    });
+  }
+
+  async createPending(salonId: string, packageId: string): Promise<Subscription> {
+    const result = await this.databaseService.query<SubscriptionRow>({
+      text: `
+        INSERT INTO subscriptions (salon_id, package_id, status, start_date)
+        VALUES ($1, $2, 'pending', NOW())
+        RETURNING
+          id, salon_id, package_id, start_date, end_date,
+          status, created_at, updated_at
+      `,
+      values: [salonId, packageId],
+    });
+    return this.mapRow(result.rows[0]);
+  }
+
   async updateStatus(
     id: string,
     status: SubscriptionStatus,

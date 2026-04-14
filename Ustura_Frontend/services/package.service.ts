@@ -80,7 +80,48 @@ export interface UpdatePackageInput
   isActive?: boolean;
 }
 
+export interface MySalonSubscription {
+  packageId: string | null;
+  packageName: string | null;
+  packageTier: string | null;
+  pricePerMonth: number | null;
+  status: 'active' | 'expired' | 'pending' | 'cancelled' | null;
+  startDate: string | null;
+  endDate: string | null;
+  reservationCount: number;
+  reservationLimit: number | null;
+  staffCount: number;
+  staffLimit: number | null;
+  salonCount: number;
+  salonLimit: number | null;
+}
+
+export interface SubscriptionRequestResponse {
+  subscriptionId: string;
+  packageId: string;
+  packageName: string;
+  status: 'pending';
+}
+
 export class PackageService {
+  static async requestSubscription(packageId: string): Promise<SubscriptionRequestResponse> {
+    return apiRequest<SubscriptionRequestResponse, { packageId: string }>({
+      path: '/packages/request-subscription',
+      method: 'POST',
+      body: { packageId },
+      auth: true,
+    });
+  }
+
+  /** Get current salon subscription and usage for the logged-in staff */
+  static async getMySalonSubscription(): Promise<MySalonSubscription> {
+    return apiRequest<MySalonSubscription>({
+      path: '/packages/my-subscription',
+      method: 'GET',
+      auth: true,
+    });
+  }
+
   /** List all active packages for public or admin view */
   static async getAllPackages(): Promise<Package[]> {
     return apiRequest<Package[]>({

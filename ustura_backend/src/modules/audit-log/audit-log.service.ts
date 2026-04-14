@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 import {
+  AuditLogListResult,
   AuditLogRecord,
   CreateAuditLogInput,
 } from './interfaces/audit-log.types';
@@ -31,7 +32,7 @@ export class AuditLogService {
   async list(
     currentUser: JwtPayload,
     query: ListAuditLogsQueryDto,
-  ): Promise<AuditLogRecord[]> {
+  ): Promise<AuditLogListResult> {
     this.auditLogPolicy.assertCanList(currentUser);
 
     return this.auditLogRepository.findAll({
@@ -40,6 +41,7 @@ export class AuditLogService {
       entityType: query.entityType,
       entityId: query.entityId,
       limit: query.limit,
+      page: query.page,
     });
   }
 }

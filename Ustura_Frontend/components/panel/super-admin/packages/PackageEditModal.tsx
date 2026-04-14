@@ -1,7 +1,7 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 
 import { usePackageProfile } from '@/components/panel/super-admin/package-profile/use-package-profile';
 import SubscriptionListSection from '@/components/panel/super-admin/packages/SubscriptionListSection';
@@ -12,12 +12,10 @@ import Modal from '@/components/ui/Modal';
 import { hexToRgba } from '@/utils/color';
 import { PackageService, type Subscription } from '@/services/package.service';
 
+import { confirmDestructive, showErrorFlash } from '@/utils/flash';
+
 function showErrorAlert(message: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.alert(message);
-    return;
-  }
-  Alert.alert('Hata', message);
+  showErrorFlash('Hata', message);
 }
 
 interface PackageEditModalProps {
@@ -73,21 +71,7 @@ export default function PackageEditModal({
       }
 
       const msg = `"${sub.salonName}" salonunun bu paket aboneligini iptal etmek istiyor musunuz?`;
-      let ok = false;
-      if (
-        Platform.OS === 'web' &&
-        typeof window !== 'undefined' &&
-        typeof window.confirm === 'function'
-      ) {
-        ok = window.confirm(msg);
-      } else {
-        ok = await new Promise<boolean>((resolve) => {
-          Alert.alert('Aboneligi iptal et', msg, [
-            { text: 'Vazgec', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Iptal et', style: 'destructive', onPress: () => resolve(true) },
-          ]);
-        });
-      }
+      const ok = await confirmDestructive('Aboneligi iptal et', msg);
 
       if (!ok) {
         return;

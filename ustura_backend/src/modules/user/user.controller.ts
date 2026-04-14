@@ -19,6 +19,7 @@ import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { roleToPrincipalKind } from '../../shared/auth/principal-kind.mapper';
 import { Role } from '../../shared/auth/role.enum';
 import { AdminPatchUserStatusDto } from './dto/admin-patch-user-status.dto';
+import { AdminUpdateUserProfileDto } from './dto/admin-update-user-profile.dto';
 import { FindAdminUsersQueryDto } from './dto/find-admin-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserAdminManagementService } from './user-admin-management.service';
@@ -60,6 +61,15 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN)
+  @Get('admin/:id/detail')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get enriched admin user detail with stats, reservations, activity, schedule' })
+  async findAdminUserDetail(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.userAdminQueryService.findAdminUserDetail(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
   @Patch('admin/:id/status')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Activate or suspend a personnel or platform admin account' })
@@ -74,6 +84,18 @@ export class UserController {
       id,
       body.isActive,
     );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Patch('admin/:id/profile')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update name/phone of a personnel or platform admin account' })
+  async patchAdminUserProfile(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: AdminUpdateUserProfileDto,
+  ) {
+    return this.userAdminManagementService.updateManagedUserProfile(id, body);
   }
 
   @Get('me')

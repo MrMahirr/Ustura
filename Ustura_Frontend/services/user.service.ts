@@ -66,6 +66,45 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+export interface AdminUserReservationResponse {
+  id: string;
+  customerName: string;
+  slotStart: string;
+  slotEnd: string;
+  status: string;
+  notes: string | null;
+}
+
+export interface AdminUserActivityResponse {
+  id: string;
+  action: string;
+  entityType: string;
+  detail: string | null;
+  createdAt: string;
+}
+
+export interface AdminUserStatsResponse {
+  totalReservations: number;
+  completedReservations: number;
+  cancelledReservations: number;
+  last30DaysReservations: number;
+  averagePerDay: number;
+}
+
+export interface AdminUserWorkingDayResponse {
+  day: string;
+  open: string | null;
+  close: string | null;
+}
+
+export interface AdminUserDetailResponse {
+  user: AdminUserRecord;
+  stats: AdminUserStatsResponse;
+  recentReservations: AdminUserReservationResponse[];
+  recentActivity: AdminUserActivityResponse[];
+  workingHours: AdminUserWorkingDayResponse[];
+}
+
 export async function getMyProfile() {
   return apiRequest<UserProfile>({
     path: '/users/me',
@@ -91,11 +130,40 @@ export class UserService {
     });
   }
 
+  static async getAdminUserDetail(userId: string): Promise<AdminUserDetailResponse> {
+    return apiRequest<AdminUserDetailResponse>({
+      path: `/users/admin/${userId}/detail`,
+      method: 'GET',
+      auth: true,
+    });
+  }
+
   static async patchAdminUserStatus(userId: string, isActive: boolean): Promise<AdminUserRecord> {
     return apiRequest<AdminUserRecord>({
       path: `/users/admin/${userId}/status`,
       method: 'PATCH',
       body: { isActive },
+      auth: true,
+    });
+  }
+
+  static async patchAdminUserProfile(
+    userId: string,
+    data: { name?: string; phone?: string },
+  ): Promise<AdminUserRecord> {
+    return apiRequest<AdminUserRecord>({
+      path: `/users/admin/${userId}/profile`,
+      method: 'PATCH',
+      body: data,
+      auth: true,
+    });
+  }
+
+  static async deleteAdminUser(userId: string): Promise<AdminUserRecord> {
+    return apiRequest<AdminUserRecord>({
+      path: `/users/admin/${userId}/status`,
+      method: 'PATCH',
+      body: { isActive: false },
       auth: true,
     });
   }

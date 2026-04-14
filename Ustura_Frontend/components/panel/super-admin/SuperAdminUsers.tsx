@@ -1,6 +1,6 @@
 import React from 'react';
 import { router } from 'expo-router';
-import { Alert, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
@@ -15,6 +15,7 @@ import type { UserActionIconName } from '@/components/panel/super-admin/users/ut
 import { buildPanelSalonDetailRoute, buildPanelUserDetailRoute } from '@/constants/routes';
 import { useAuth } from '@/hooks/use-auth';
 import { UserService } from '@/services/user.service';
+import { showErrorFlash, showWarningFlash } from '@/utils/flash';
 
 export default function SuperAdminUsers() {
   const { width } = useWindowDimensions();
@@ -25,7 +26,7 @@ export default function SuperAdminUsers() {
   const handleUserRowAction = async (userId: string, icon: UserActionIconName) => {
     if (icon === 'block') {
       if (authUser?.id === userId) {
-        Alert.alert('Islem yapilamadi', 'Kendi hesabinizi bu ekrandan durduramazsiniz.');
+        showWarningFlash('Islem yapilamadi', 'Kendi hesabinizi bu ekrandan durduramazsiniz.');
         return;
       }
 
@@ -34,7 +35,7 @@ export default function SuperAdminUsers() {
         userManagement.refreshUsers();
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Kullanici durdurulamadi.';
-        Alert.alert('Hata', message);
+        showErrorFlash('Hata', message);
       }
 
       return;
@@ -46,7 +47,7 @@ export default function SuperAdminUsers() {
         userManagement.refreshUsers();
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Kullanici yeniden acilamadi.';
-        Alert.alert('Hata', message);
+        showErrorFlash('Hata', message);
       }
 
       return;
@@ -93,13 +94,21 @@ export default function SuperAdminUsers() {
 
           <UserFilters
             selectedRole={userManagement.selectedRole}
+            selectedRoleValue={userManagement.selectedRoleValue}
+            roleOptions={userManagement.roleOptions}
+            onSelectRole={userManagement.selectRole}
             selectedStatus={userManagement.selectedStatus}
+            selectedStatusValue={userManagement.selectedStatusValue}
+            statusOptions={userManagement.statusOptions}
+            onSelectStatus={userManagement.selectStatus}
             selectedSalon={userManagement.selectedSalon}
+            selectedSalonValue={userManagement.selectedSalonValue}
+            salonOptions={userManagement.salonOptions}
+            onSelectSalon={userManagement.selectSalon}
             selectedCity={userManagement.selectedCity}
-            onCycleRole={userManagement.cycleRole}
-            onCycleStatus={userManagement.cycleStatus}
-            onCycleSalon={userManagement.cycleSalon}
-            onCycleCity={userManagement.cycleCity}
+            selectedCityValue={userManagement.selectedCityValue}
+            cityOptions={userManagement.cityOptions}
+            onSelectCity={userManagement.selectCity}
             onReset={userManagement.resetFilters}
           />
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { cannotSelfDeactivateAdminUserError, userNotFoundError } from './errors/user.errors';
-import type { AdminUserSummary } from './interfaces/user.types';
+import type { AdminUserSummary, UpdateUserProfileInput } from './interfaces/user.types';
 import { UserRepository } from './repositories/user.repository';
 import { UserAdminQueryService } from './user-admin-query.service';
 
@@ -24,6 +24,22 @@ export class UserAdminManagementService {
     const updated = await this.userRepository.adminSetManagedUserActive(
       targetUserId,
       isActive,
+    );
+
+    if (!updated) {
+      throw userNotFoundError();
+    }
+
+    return this.userAdminQueryService.findAdminUserById(targetUserId);
+  }
+
+  async updateManagedUserProfile(
+    targetUserId: string,
+    input: UpdateUserProfileInput,
+  ): Promise<AdminUserSummary> {
+    const updated = await this.userRepository.adminUpdateUserProfile(
+      targetUserId,
+      input,
     );
 
     if (!updated) {

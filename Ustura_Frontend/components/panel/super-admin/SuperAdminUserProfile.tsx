@@ -7,6 +7,8 @@ import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
 import UserActivityLogCard from '@/components/panel/super-admin/user-profile/UserActivityLogCard';
 import UserAppointmentsSection from '@/components/panel/super-admin/user-profile/UserAppointmentsSection';
 import UserEarningsSection from '@/components/panel/super-admin/user-profile/UserEarningsSection';
+import UserEditModal from '@/components/panel/super-admin/user-profile/UserEditModal';
+import type { UserEditFormData } from '@/components/panel/super-admin/user-profile/UserEditModal';
 import UserExpertiseCard from '@/components/panel/super-admin/user-profile/UserExpertiseCard';
 import UserMetricsSection from '@/components/panel/super-admin/user-profile/UserMetricsSection';
 import UserProfileHero from '@/components/panel/super-admin/user-profile/UserProfileHero';
@@ -16,18 +18,26 @@ import { userProfileClassNames } from '@/components/panel/super-admin/user-profi
 import { useUserProfile } from '@/components/panel/super-admin/user-profile/use-user-profile';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { buildPanelSalonDetailRoute, panelRoutes } from '@/constants/routes';
+import { useAuth } from '@/hooks/use-auth';
+import { UserService } from '@/services/user.service';
 import { cn } from '@/utils/cn';
+import { confirmDestructive, showErrorFlash, showSuccessFlash, showWarningFlash } from '@/utils/flash';
 
 export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
   const { width } = useWindowDimensions();
   const adminTheme = useSuperAdminTheme();
-  const { profile, isLoading, error } = useUserProfile(userId);
+  const { profile, rawUser, isLoading, error, refresh } = useUserProfile(userId);
+  const { user: authUser } = useAuth();
   const [query, setQuery] = React.useState('');
+  const [editModalVisible, setEditModalVisible] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const isWide = width >= 1160;
   const useDesktopAppointments = width >= 960;
   const paddingH = width < 768 ? 16 : 32;
   const metricBasis = width >= 1420 ? '24%' : width >= 880 ? '48.7%' : '100%';
+
+  const isUserDisabled = rawUser?.status === 'inactive' || rawUser?.status === 'suspended';
 
   const overlayStyle =
     Platform.OS === 'web'
@@ -41,6 +51,86 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
           opacity: 0,
           pointerEvents: 'none',
         } as const);
+
+  const handleEdit = () => {
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async (data: UserEditFormData) => {
+    if (!userId) return;
+
+    setIsSaving(true);
+    try {
+      await UserService.patchAdminUserProfile(userId, {
+        name: data.name,
+        phone: data.phone,
+      });
+      showSuccessFlash('Basarili', 'Kullanici bilgileri guncellendi.');
+      setEditModalVisible(false);
+      refresh();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Guncelleme basarisiz oldu.';
+      showErrorFlash('Hata', message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDisable = async () => {
+    if (!userId) return;
+
+    if (!isUserDisabled && authUser?.id === userId) {
+      showWarningFlash('Islem yapilamadi', 'Kendi hesabinizi bu ekrandan durduramazsiniz.');
+      return;
+    }
+
+    const nextActive = isUserDisabled;
+    const actionLabel = nextActive ? 'aktif hale getirmek' : 'durdurmak';
+
+    confirmDestructive(
+      nextActive ? 'Kullaniciyi Aktif Et' : 'Kullaniciyi Durdur',
+      `Bu kullaniciyi ${actionLabel} istediginize emin misiniz?`,
+      nextActive ? 'Aktif Et' : 'Durdur',
+      async () => {
+        try {
+          await UserService.patchAdminUserStatus(userId, nextActive);
+          showSuccessFlash(
+            'Basarili',
+            nextActive ? 'Kullanici yeniden aktif edildi.' : 'Kullanici durduruldu.',
+          );
+          refresh();
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Islem basarisiz oldu.';
+          showErrorFlash('Hata', message);
+        }
+      },
+    );
+  };
+
+  const handleDelete = () => {
+    if (!userId) return;
+
+    if (authUser?.id === userId) {
+      showWarningFlash('Islem yapilamadi', 'Kendi hesabinizi silemezsiniz.');
+      return;
+    }
+
+    confirmDestructive(
+      'Kullaniciyi Sil',
+      'Bu kullanici kalici olarak devre disi birakilacak. Devam etmek istiyor musunuz?',
+      'Sil',
+      async () => {
+        try {
+          await UserService.deleteAdminUser(userId);
+          showSuccessFlash('Basarili', 'Kullanici silindi.');
+          router.push(panelRoutes.kullanicilar);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Silme islemi basarisiz oldu.';
+          showErrorFlash('Hata', message);
+        }
+      },
+    );
+  };
 
   if (!profile) {
     return (
@@ -78,9 +168,13 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
           <UserProfileHero
             profile={profile}
             isWide={isWide}
+            isDisabled={isUserDisabled}
             onOpenSalon={
               profile.user.salonId ? () => router.push(buildPanelSalonDetailRoute(profile.user.salonId as string)) : undefined
             }
+            onEdit={handleEdit}
+            onDisable={handleDisable}
+            onDelete={handleDelete}
           />
 
           <UserMetricsSection metrics={profile.metrics} metricBasis={metricBasis} />
@@ -88,8 +182,12 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
           <View className={cn('gap-6', isWide ? 'flex-row' : 'flex-col')}>
             <View className={cn(userProfileClassNames.column, isWide ? 'flex-[1.8]' : undefined)}>
               <UserWorkInfoCard profile={profile} />
-              <UserAppointmentsSection appointments={profile.recentAppointments} useDesktopTable={useDesktopAppointments} />
-              <UserEarningsSection series={profile.earningsSeries} />
+              {profile.recentAppointments.length > 0 && (
+                <UserAppointmentsSection appointments={profile.recentAppointments} useDesktopTable={useDesktopAppointments} />
+              )}
+              {profile.earningsSeries.length > 0 && (
+                <UserEarningsSection series={profile.earningsSeries} />
+              )}
             </View>
 
             <View className={cn(userProfileClassNames.column, isWide ? 'flex-1' : undefined)}>
@@ -100,6 +198,18 @@ export default function SuperAdminUserProfile({ userId }: { userId?: string }) {
           </View>
         </View>
       </ScrollView>
+
+      <UserEditModal
+        visible={editModalVisible}
+        userName={profile.user.name}
+        initialData={{
+          name: rawUser?.name ?? profile.user.name,
+          phone: rawUser?.phone ?? '',
+        }}
+        isSaving={isSaving}
+        onSave={handleSaveEdit}
+        onClose={() => setEditModalVisible(false)}
+      />
     </View>
   );
 }

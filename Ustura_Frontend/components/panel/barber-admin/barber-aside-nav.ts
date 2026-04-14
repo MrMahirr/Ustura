@@ -17,5 +17,6 @@ export const barberAsideItems: BarberAsideItem[] = [
   { label: 'Randevular', icon: 'calendar-today', href: staffRoutes.randevular },
   { label: 'Bildirimler', icon: 'notifications', href: staffRoutes.bildirimler },
   { label: 'Personel', icon: 'badge', href: staffRoutes.personel },
+  { label: 'Abonelik', icon: 'workspace-premium', href: staffRoutes.paketler },
   { label: 'Ayarlar', icon: 'settings', href: staffRoutes.ayarlar },
 ];

@@ -5,10 +5,14 @@ import { SqlQueryExecutor } from '../../../database/database.types';
 import { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
 import { Role } from '../../../shared/auth/role.enum';
 import {
+  AdminUserActivityEntry,
   AdminUserFilterOption,
   AdminUserFilterOptions,
   AdminUserOverview,
+  AdminUserReservation,
+  AdminUserStats,
   AdminUserSummary,
+  AdminUserWorkingDay,
   FindAdminUsersFilters,
   CreateUserRecordInput,
   UpdateUserProfileInput,
@@ -335,6 +339,226 @@ export class UserRepository {
       );
 
       return true;
+    });
+  }
+
+  async findReservationsForUser(userId: string, limit = 10): Promise<AdminUserReservation[]> {
+    const result = await this.databaseService.query<{
+      id: string;
+      customer_name: string;
+      slot_start: Date;
+      slot_end: Date;
+      status: string;
+      notes: string | null;
+    }>({
+      text: `
+        SELECT
+          r.id,
+          COALESCE(c.name, 'Misafir') AS customer_name,
+          r.slot_start,
+          r.slot_end,
+          r.status,
+          r.notes
+        FROM reservations r
+        INNER JOIN staff st ON st.id = r.staff_id
+        LEFT JOIN customers c ON c.id = r.customer_id
+        WHERE st.user_id = $1
+        ORDER BY r.slot_start DESC
+        LIMIT $2
+      `,
+      values: [userId, limit],
+    });
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      customerName: row.customer_name,
+      slotStart: row.slot_start,
+      slotEnd: row.slot_end,
+      status: row.status,
+      notes: row.notes,
+    }));
+  }
+
+  async findStatsForUser(userId: string): Promise<AdminUserStats> {
+    const result = await this.databaseService.query<{
+      total: number;
+      completed: number;
+      cancelled: number;
+      last_30: number;
+      avg_per_day: number;
+    }>({
+      text: `
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE r.status = 'completed')::int AS completed,
+          COUNT(*) FILTER (WHERE r.status = 'cancelled')::int AS cancelled,
+          COUNT(*) FILTER (WHERE r.slot_start >= NOW() - INTERVAL '30 days')::int AS last_30,
+          COALESCE(
+            ROUND(
+              COUNT(*) FILTER (WHERE r.slot_start >= NOW() - INTERVAL '30 days')::numeric
+              / NULLIF(30, 0),
+              1
+            ),
+            0
+          )::float8 AS avg_per_day
+        FROM reservations r
+        INNER JOIN staff st ON st.id = r.staff_id
+        WHERE st.user_id = $1
+      `,
+      values: [userId],
+    });
+
+    const row = result.rows[0];
+    return {
+      totalReservations: row?.total ?? 0,
+      completedReservations: row?.completed ?? 0,
+      cancelledReservations: row?.cancelled ?? 0,
+      last30DaysReservations: row?.last_30 ?? 0,
+      averagePerDay: Number(row?.avg_per_day ?? 0),
+    };
+  }
+
+  async findActivityForUser(userId: string, limit = 10): Promise<AdminUserActivityEntry[]> {
+    const result = await this.databaseService.query<{
+      id: string;
+      action: string;
+      entity_type: string;
+      metadata: Record<string, unknown> | null;
+      created_at: Date;
+    }>({
+      text: `
+        SELECT
+          id,
+          action,
+          entity_type,
+          metadata,
+          created_at
+        FROM audit_logs
+        WHERE actor_user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+      `,
+      values: [userId, limit],
+    });
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      action: row.action,
+      entityType: row.entity_type,
+      detail: this.formatAuditDetail(row.action, row.metadata),
+      createdAt: row.created_at,
+    }));
+  }
+
+  async findWorkingHoursForUser(userId: string): Promise<AdminUserWorkingDay[]> {
+    const result = await this.databaseService.query<{
+      working_hours: Record<string, { open: string; close: string } | null> | null;
+    }>({
+      text: `
+        SELECT s.working_hours
+        FROM salons s
+        LEFT JOIN staff st ON st.salon_id = s.id AND st.user_id = $1 AND st.is_active = TRUE
+        LEFT JOIN salons os ON os.owner_id = $1
+        WHERE st.id IS NOT NULL OR os.id IS NOT NULL
+        ORDER BY st.id IS NOT NULL DESC
+        LIMIT 1
+      `,
+      values: [userId],
+    });
+
+    const wh = result.rows[0]?.working_hours;
+    if (!wh) {
+      return [];
+    }
+
+    const dayLabels: Record<string, string> = {
+      monday: 'Pazartesi',
+      tuesday: 'Sali',
+      wednesday: 'Carsamba',
+      thursday: 'Persembe',
+      friday: 'Cuma',
+      saturday: 'Cumartesi',
+      sunday: 'Pazar',
+    };
+
+    return Object.entries(dayLabels).map(([key, label]) => {
+      const entry = wh[key];
+      return {
+        day: label,
+        open: entry?.open ?? null,
+        close: entry?.close ?? null,
+      };
+    });
+  }
+
+  private formatAuditDetail(action: string, metadata: Record<string, unknown> | null): string | null {
+    if (!metadata) return null;
+
+    switch (action) {
+      case 'auth.logged_in':
+        return 'Sisteme giris yapildi';
+      case 'auth.logged_out':
+        return 'Oturum kapatildi';
+      case 'auth.registered':
+        return 'Hesap olusturuldu';
+      case 'staff.created':
+        return `Personel olarak atandi${metadata.salonId ? '' : ''}`;
+      case 'staff.updated':
+        return 'Personel bilgileri guncellendi';
+      case 'staff.deactivated':
+        return 'Personel kaydi devre disi birakildi';
+      case 'reservation.created':
+        return 'Yeni randevu olusturuldu';
+      case 'reservation.cancelled':
+        return 'Randevu iptal edildi';
+      case 'reservation.status_updated':
+        return `Randevu durumu guncellendi`;
+      default:
+        return action.replace(/\./g, ' ');
+    }
+  }
+
+  async adminUpdateUserProfile(
+    userId: string,
+    input: UpdateUserProfileInput,
+  ): Promise<boolean> {
+    return this.databaseService.transaction(async (tx) => {
+      const updates: string[] = [];
+      const values: unknown[] = [];
+
+      if (input.name !== undefined) {
+        values.push(input.name);
+        updates.push(`name = $${values.length}`);
+      }
+
+      if (input.phone !== undefined) {
+        values.push(input.phone);
+        updates.push(`phone = $${values.length}`);
+      }
+
+      if (updates.length === 0) {
+        return true;
+      }
+
+      const setClause = updates.join(', ');
+      values.push(userId);
+      const idParam = `$${values.length}`;
+
+      const platformResult = await tx.query(
+        `UPDATE platform_admins SET ${setClause}, updated_at = NOW() WHERE id = ${idParam}`,
+        values,
+      );
+
+      if (platformResult.rowCount && platformResult.rowCount > 0) {
+        return true;
+      }
+
+      const personnelResult = await tx.query(
+        `UPDATE personnel SET ${setClause}, updated_at = NOW() WHERE id = ${idParam}`,
+        values,
+      );
+
+      return !!(personnelResult.rowCount && personnelResult.rowCount > 0);
     });
   }
 

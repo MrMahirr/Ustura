@@ -1,5 +1,4 @@
 import React from 'react';
-import { Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import AuthGuard from '@/components/layout/AuthGuard';
@@ -14,6 +13,7 @@ import { useSalonById } from '@/hooks/use-salons';
 import { useStaffBySalonId } from '@/hooks/use-staff';
 import { createReservation } from '@/services/reservation.service';
 import type { StaffRecord } from '@/services/staff.service';
+import { showErrorFlash, showSuccessFlash, showWarningFlash } from '@/utils/flash';
 
 const STAFF_IMAGE_FALLBACK =
   'https://images.unsplash.com/photo-1517832606299-7ae9b720a186?auto=format&fit=crop&w=400&q=80';
@@ -136,14 +136,7 @@ function BookingRouteScreen() {
     const resolvedStaffId = selectedStaffId ?? selectedTime.availableStaffIds[0];
 
     if (!resolvedStaffId) {
-      const message = 'Bu slot icin atanabilir berber bulunamadi.';
-
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(message);
-        return;
-      }
-
-      Alert.alert('Musait Personel Bulunamadi', message);
+      showWarningFlash('Musait Personel Bulunamadi', 'Bu slot icin atanabilir berber bulunamadi.');
       return;
     }
 
@@ -162,11 +155,7 @@ function BookingRouteScreen() {
         `Saat: ${selectedTime.label}`,
       ].join('\n');
 
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(`Randevu Olusturuldu\n\n${confirmationMessage}`);
-      } else {
-        Alert.alert('Randevu Olusturuldu', confirmationMessage);
-      }
+      showSuccessFlash('Randevu Olusturuldu', confirmationMessage);
 
       router.replace('/(public)/randevularim');
     } catch (bookingError) {
@@ -174,13 +163,7 @@ function BookingRouteScreen() {
         bookingError instanceof Error
           ? bookingError.message
           : 'Randevu olusturulamadi.';
-
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert(`Randevu Hatasi\n\n${message}`);
-        return;
-      }
-
-      Alert.alert('Randevu Hatasi', message);
+      showErrorFlash('Randevu Hatasi', message);
     } finally {
       setIsSubmittingReservation(false);
     }

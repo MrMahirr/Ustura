@@ -102,6 +102,32 @@ function DesktopTable({
   );
 }
 
+function buildVisiblePages(current: number, total: number): (number | 'ellipsis')[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | 'ellipsis')[] = [1];
+
+  if (current <= 3) {
+    pages.push(2, 3, 4, 'ellipsis', total);
+  } else if (current >= total - 2) {
+    pages.push('ellipsis', total - 3, total - 2, total - 1, total);
+  } else {
+    pages.push('ellipsis', current - 1, current, current + 1, 'ellipsis', total);
+  }
+
+  return pages;
+}
+
+const webTransition =
+  Platform.OS === 'web'
+    ? ({
+        transition: 'background-color 140ms ease, opacity 140ms ease, transform 140ms ease',
+        cursor: 'pointer',
+      } as any)
+    : null;
+
 function Pagination({
   filteredUsersCount,
   page,
@@ -111,13 +137,14 @@ function Pagination({
   onPageChange,
 }: Omit<UserListSectionProps, 'users' | 'groupedSalons' | 'viewMode' | 'useDesktopTable'>) {
   const adminTheme = useSuperAdminTheme();
+  const visiblePages = buildVisiblePages(page, totalPages);
 
   return (
     <View className={userClassNames.paginationBar} style={{ backgroundColor: hexToRgba(adminTheme.tableHeaderBackground, 0.6), borderTopColor: adminTheme.borderSubtle }}>
       <Text className={userClassNames.paginationText} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.78) }}>
         {filteredUsersCount === 0
           ? 'Kayit bulunamadi'
-          : `${filteredUsersCount} kayittan ${startRow}-${endRow} arasi gosteriliyor`}
+          : `${filteredUsersCount} kayittan ${startRow}-${endRow} arasi`}
       </Text>
 
       <View className={userClassNames.paginationControls}>
@@ -127,42 +154,40 @@ function Pagination({
           className={userClassNames.paginationButton}
           style={({ hovered }) => [
             {
-              opacity: page === 1 ? 0.38 : 1,
+              opacity: page === 1 ? 0.32 : 1,
               backgroundColor: hovered && page !== 1 ? adminTheme.cardBackgroundStrong : 'transparent',
             },
-            Platform.OS === 'web'
-              ? ({
-                  transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
-                  cursor: 'pointer',
-                } as any)
-              : null,
+            webTransition,
           ]}>
-          <MaterialIcons name="chevron-left" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
+          <MaterialIcons name="chevron-left" size={16} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
         </Pressable>
 
-        {Array.from({ length: totalPages }).map((_, index) => {
-          const targetPage = index + 1;
-          const isActive = targetPage === page;
+        {visiblePages.map((entry, index) => {
+          if (entry === 'ellipsis') {
+            return (
+              <View key={`ellipsis-${index}`} className={userClassNames.pageEllipsis}>
+                <Text className={userClassNames.pageEllipsisText} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.5) }}>
+                  ...
+                </Text>
+              </View>
+            );
+          }
+
+          const isActive = entry === page;
 
           return (
             <Pressable
-              key={`user-page-${targetPage}`}
-              onPress={() => onPageChange(targetPage)}
+              key={`user-page-${entry}`}
+              onPress={() => onPageChange(entry)}
               className={userClassNames.pageButton}
               style={({ hovered }) => [
                 {
-                  backgroundColor: isActive ? adminTheme.primary : hovered ? adminTheme.cardBackgroundStrong : 'transparent',
-                  borderColor: isActive ? adminTheme.primary : adminTheme.borderSubtle,
+                  backgroundColor: isActive ? adminTheme.primary : hovered ? hexToRgba(adminTheme.primary, 0.1) : 'transparent',
                 },
-                Platform.OS === 'web'
-                  ? ({
-                      transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
-                      cursor: 'pointer',
-                    } as any)
-                  : null,
+                webTransition,
               ]}>
               <Text className={userClassNames.pageButtonText} style={{ color: isActive ? adminTheme.onPrimary : adminTheme.onSurface }}>
-                {targetPage}
+                {entry}
               </Text>
             </Pressable>
           );
@@ -174,17 +199,12 @@ function Pagination({
           className={userClassNames.paginationButton}
           style={({ hovered }) => [
             {
-              opacity: page === totalPages ? 0.38 : 1,
+              opacity: page === totalPages ? 0.32 : 1,
               backgroundColor: hovered && page !== totalPages ? adminTheme.cardBackgroundStrong : 'transparent',
             },
-            Platform.OS === 'web'
-              ? ({
-                  transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 160ms ease',
-                  cursor: 'pointer',
-                } as any)
-              : null,
+            webTransition,
           ]}>
-          <MaterialIcons name="chevron-right" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
+          <MaterialIcons name="chevron-right" size={16} color={hexToRgba(adminTheme.onSurfaceVariant, 0.88)} />
         </Pressable>
       </View>
     </View>

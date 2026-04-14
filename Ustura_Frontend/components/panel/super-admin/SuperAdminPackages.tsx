@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
 import PackageApprovalsSection from '@/components/panel/super-admin/package-approvals/PackageApprovalsSection';
@@ -14,14 +14,7 @@ import { packageClassNames } from '@/components/panel/super-admin/packages/prese
 import { usePackageManagement } from '@/components/panel/super-admin/packages/use-package-management';
 import type { SubscriptionRecord } from '@/components/panel/super-admin/packages/types';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
-
-function showErrorAlert(message: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.alert(message);
-    return;
-  }
-  Alert.alert('Hata', message);
-}
+import { confirmDestructive, showErrorFlash } from '@/utils/flash';
 
 export default function SuperAdminPackages() {
   const { width } = useWindowDimensions();
@@ -38,21 +31,7 @@ export default function SuperAdminPackages() {
       }
 
       const msg = `"${sub.salonName}" salonunun "${sub.packageName}" aboneligini iptal etmek istiyor musunuz?`;
-      let ok = false;
-      if (
-        Platform.OS === 'web' &&
-        typeof window !== 'undefined' &&
-        typeof window.confirm === 'function'
-      ) {
-        ok = window.confirm(msg);
-      } else {
-        ok = await new Promise<boolean>((resolve) => {
-          Alert.alert('Aboneligi iptal et', msg, [
-            { text: 'Vazgec', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Iptal et', style: 'destructive', onPress: () => resolve(true) },
-          ]);
-        });
-      }
+      const ok = await confirmDestructive('Aboneligi iptal et', msg);
 
       if (!ok) {
         return;
@@ -60,7 +39,7 @@ export default function SuperAdminPackages() {
 
       const result = await packageManagement.cancelSubscription(sub.id);
       if (!result.ok) {
-        showErrorAlert(result.message);
+        showErrorFlash('Hata', result.message);
       }
     },
     [packageManagement],
@@ -70,7 +49,8 @@ export default function SuperAdminPackages() {
     async (packageId: string) => {
       const pkg = packageManagement.packages.find((p) => p.id === packageId);
       if (pkg && pkg.linkedSubscriptionCount > 0) {
-        showErrorAlert(
+        showErrorFlash(
+          'Hata',
           'Bu pakete aktif veya beklemede abonelik var. Paket silinemez; once aboneligi sonlandirin veya baska pakete alin.',
         );
         return;
@@ -78,21 +58,7 @@ export default function SuperAdminPackages() {
 
       const name = pkg?.name ?? 'Bu paket';
       const msg = `"${name}" paketi kalici olarak silinecek. Bu islem geri alinamaz. Devam edilsin mi?`;
-      let ok = false;
-      if (
-        Platform.OS === 'web' &&
-        typeof window !== 'undefined' &&
-        typeof window.confirm === 'function'
-      ) {
-        ok = window.confirm(msg);
-      } else {
-        ok = await new Promise<boolean>((resolve) => {
-          Alert.alert('Paketi sil', msg, [
-            { text: 'Iptal', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Sil', style: 'destructive', onPress: () => resolve(true) },
-          ]);
-        });
-      }
+      const ok = await confirmDestructive('Paketi sil', msg);
 
       if (!ok) {
         return;
@@ -100,7 +66,7 @@ export default function SuperAdminPackages() {
 
       const result = await packageManagement.deletePackage(packageId);
       if (!result.ok) {
-        showErrorAlert(result.message);
+        showErrorFlash('Hata', result.message);
         return;
       }
 

@@ -13,6 +13,7 @@ export const panelRoutes = {
   basvurular: route('/panel/basvurular'),
   bildirimler: route('/panel/bildirimler'),
   raporlar: route('/panel/raporlar'),
+  loglar: route('/panel/loglar'),
   personel: route('/panel/personel'),
   ayarlar: route('/panel/ayarlar'),
 } as const satisfies Record<string, Href>;
@@ -23,6 +24,7 @@ export const staffRoutes = {
   randevular: route('/berber/randevular'),
   bildirimler: route('/berber/bildirimler'),
   personel: route('/berber/personel'),
+  paketler: route('/berber/paketler'),
   ayarlar: route('/berber/ayarlar'),
 } as const satisfies Record<string, Href>;
 

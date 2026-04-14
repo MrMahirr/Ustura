@@ -3,7 +3,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   Text,
@@ -32,11 +31,8 @@ export interface UserAccountMenuProps {
 }
 
 function showMessage(title: string, message: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.alert(`${title}\n\n${message}`);
-    return;
-  }
-  Alert.alert(title, message);
+  const { showInfoFlash } = require('@/utils/flash');
+  showInfoFlash(title, message);
 }
 
 type MenuIconName = React.ComponentProps<typeof MaterialIcons>['name'];

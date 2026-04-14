@@ -1,6 +1,6 @@
 import React from 'react';
 import { router } from 'expo-router';
-import { Alert, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
 import SalonFilters from '@/components/panel/super-admin/salons/SalonFilters';
@@ -14,30 +14,11 @@ import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { buildPanelSalonDetailRoute } from '@/constants/routes';
 import { ApiError } from '@/services/api';
 import { deleteAdminSalon, patchAdminSalonStatus } from '@/services/salon.service';
+import { confirmDestructive, showErrorFlash } from '@/utils/flash';
 
-function showErrorAlert(message: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.alert(message);
-    return;
-  }
-  Alert.alert('Hata', message);
-}
-
-/**
- * Web ortaminda bazi yapilandirmalarda `window.confirm` olmayabiliyor; o zaman Alert ile devam edilir.
- * Iki ayri dal (sync web / async native) kullanmak yerine tek async akis: unutulan onay = silme hic calismamis gibi hissedilir.
- */
 function confirmSalonDelete(salonName: string): Promise<boolean> {
   const msg = `"${salonName}" salonu kalici olarak silinecek; bagli randevu ve personel kayitlari da silinir. Devam edilsin mi?`;
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.confirm === 'function') {
-    return Promise.resolve(window.confirm(msg));
-  }
-  return new Promise((resolve) => {
-    Alert.alert('Salonu sil', msg, [
-      { text: 'Iptal', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Sil', style: 'destructive', onPress: () => resolve(true) },
-    ]);
-  });
+  return confirmDestructive('Salonu sil', msg);
 }
 
 export default function SuperAdminSalons() {
@@ -72,7 +53,7 @@ export default function SuperAdminSalons() {
         await salonManagement.reload();
       } catch (error) {
         const msg = error instanceof ApiError ? error.message : 'Islem tamamlanamadi.';
-        showErrorAlert(msg);
+        showErrorFlash('Hata', msg);
       }
     },
     [salonManagement.reload],

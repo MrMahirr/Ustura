@@ -32,5 +32,11 @@ export class ListAuditLogsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit = 50;
+  limit = 30;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
 }

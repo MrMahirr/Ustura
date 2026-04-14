@@ -1,18 +1,15 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Alert, Platform, Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
+import { showErrorFlash } from '@/utils/flash';
 import { getPackagePanelShadow } from './presentation';
 
 function showSaveError(message: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.alert(message);
-    return;
-  }
-  Alert.alert('Kayit', message);
+  showErrorFlash('Kayit', message);
 }
 
 export default function PackageProfileFooter({

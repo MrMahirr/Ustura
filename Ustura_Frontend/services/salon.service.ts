@@ -182,3 +182,28 @@ export async function getOwnedSalons() {
     auth: true,
   });
 }
+
+export type OwnedSalonUpdatePayload = {
+  name?: string;
+  address?: string;
+  city?: string;
+  district?: string | null;
+  photoUrl?: string | null;
+  workingHours?: Record<string, WorkingHoursEntry | null>;
+};
+
+export async function getOwnedSalonDetail(salonId: string) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}`,
+    auth: true,
+  });
+}
+
+export async function updateOwnedSalon(salonId: string, body: OwnedSalonUpdatePayload) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}`,
+    method: 'PATCH',
+    auth: true,
+    body,
+  });
+}

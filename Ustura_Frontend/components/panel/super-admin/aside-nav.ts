@@ -21,6 +21,7 @@ export const superAdminAsideItems: SuperAdminAsideItem[] = [
   { label: 'Kullanicilar', icon: 'group', href: panelRoutes.kullanicilar, matchSubroutes: true },
   { label: 'Paketler', icon: 'inventory-2', href: panelRoutes.paketler },
   { label: 'Raporlar', icon: 'analytics', href: panelRoutes.raporlar },
+  { label: 'Loglar', icon: 'receipt-long', href: panelRoutes.loglar },
   { label: 'Bildirimler', icon: 'notifications', href: panelRoutes.bildirimler },
   { label: 'Sistem Ayarlari', icon: 'settings', href: panelRoutes.ayarlar },
 ];

@@ -2,6 +2,7 @@ import '../global.css';
 
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
+import FlashMessage from 'react-native-flash-message';
 import { vars } from 'nativewind';
 
 import { getNativeWindThemeVariables } from '@/constants/nativewind-theme';
@@ -14,6 +15,7 @@ function RootNavigator() {
   return (
     <View style={vars(getNativeWindThemeVariables(theme))} className="flex-1 bg-[--color-surface]">
       <Stack screenOptions={{ headerShown: false }} />
+      <FlashMessage position="top" />
     </View>
   );
 }
