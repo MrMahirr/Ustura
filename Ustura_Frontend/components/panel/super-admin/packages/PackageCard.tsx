@@ -12,12 +12,19 @@ interface PackageCardProps {
   pkg: PackageDefinition;
   onEdit: () => void;
   onToggleActive: (nextIsActive: boolean) => void;
+  onDelete: () => void;
 }
 
-export default function PackageCard({ pkg, onEdit, onToggleActive }: PackageCardProps) {
+export default function PackageCard({
+  pkg,
+  onEdit,
+  onToggleActive,
+  onDelete,
+}: PackageCardProps) {
   const adminTheme = useSuperAdminTheme();
   const isFeatured = pkg.isFeatured;
   const isActive = pkg.isActive;
+  const canHardDelete = pkg.linkedSubscriptionCount === 0;
 
   return (
     <View
@@ -229,6 +236,42 @@ export default function PackageCard({ pkg, onEdit, onToggleActive }: PackageCard
                     : isFeatured
                       ? adminTheme.primary
                       : hexToRgba(adminTheme.onSurfaceVariant, 0.6)
+                }
+              />
+            )}
+          </Pressable>
+
+          <Pressable
+            disabled={!canHardDelete}
+            onPress={onDelete}
+            accessibilityLabel="Paketi sil"
+            className="min-h-[44px] w-[44px] items-center justify-center rounded-md border"
+            style={({ hovered, pressed }) => [
+              {
+                opacity: canHardDelete ? 1 : 0.35,
+                borderColor: hexToRgba(
+                  canHardDelete && hovered
+                    ? adminTheme.error
+                    : adminTheme.outlineVariant,
+                  canHardDelete && (hovered || pressed) ? 0.45 : 0.3,
+                ),
+              },
+              Platform.OS === 'web'
+                ? ({ transition: 'border-color 180ms ease, color 180ms ease' } as any)
+                : null,
+            ]}>
+            {({ hovered }) => (
+              <MaterialIcons
+                name="delete-outline"
+                size={18}
+                color={
+                  !canHardDelete
+                    ? hexToRgba(adminTheme.onSurfaceVariant, 0.25)
+                    : hovered
+                      ? adminTheme.error
+                      : isFeatured
+                        ? adminTheme.primary
+                        : hexToRgba(adminTheme.onSurfaceVariant, 0.6)
                 }
               />
             )}

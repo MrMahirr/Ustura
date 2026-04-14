@@ -3,6 +3,7 @@ import { QueryResultRow } from 'pg';
 import { DatabaseService } from '../../../database/database.service';
 import { SqlQueryExecutor } from '../../../database/database.types';
 import {
+  AdminSalonDetail,
   AdminSalonOverview,
   AdminSalonSummary,
   CreateSalonInput,
@@ -193,6 +194,120 @@ export class SalonRepository {
         hasPreviousPage: page > 1,
       },
     };
+  }
+
+  async findAdminSummaryById(id: string): Promise<AdminSalonSummary | null> {
+    const result = await this.databaseService.query<AdminSalonRow>({
+      name: 'salon.find-admin-summary-by-id',
+      text: `
+        SELECT
+          s.id,
+          s.owner_id,
+          u.name AS owner_name,
+          u.email AS owner_email,
+          s.name,
+          s.address,
+          s.city,
+          s.district,
+          s.photo_url,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM salons s
+        INNER JOIN personnel u ON u.id = s.owner_id
+        WHERE s.id = $1
+        LIMIT 1
+      `,
+      values: [id],
+    });
+
+    return this.mapAdminRow(result.rows[0]);
+  }
+
+  async findAdminDetailById(id: string): Promise<AdminSalonDetail | null> {
+    const result = await this.databaseService.query<AdminSalonDetailRow>({
+      name: 'salon.find-admin-detail-by-id',
+      text: `
+        SELECT
+          s.id,
+          s.owner_id,
+          u.name AS owner_name,
+          u.email AS owner_email,
+          s.name,
+          s.address,
+          s.city,
+          s.district,
+          s.photo_url,
+          s.working_hours,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM salons s
+        INNER JOIN personnel u ON u.id = s.owner_id
+        WHERE s.id = $1
+        LIMIT 1
+      `,
+      values: [id],
+    });
+
+    return this.mapAdminDetailRow(result.rows[0]);
+  }
+
+  async deleteById(
+    id: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<boolean> {
+    const result = await executor.query<{ id: string }>({
+      name: 'salon.delete-by-id',
+      text: `
+        DELETE FROM salons
+        WHERE id = $1
+        RETURNING id
+      `,
+      values: [id],
+    });
+
+    return (result.rows?.length ?? 0) > 0;
+  }
+
+  /**
+   * Super-admin salon silme: once rezervasyonlar (staff FK), sonra personel,
+   * abonelikler, owner_applications referansi, en son salon.
+   * Tek DELETE salons ... CASCADE bazen staff/rezervasyon sirasinda 23503 uretebilir.
+   */
+  async deleteSalonWithDependents(
+    id: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<boolean> {
+    await executor.query({
+      name: 'salon.delete-reservations-for-salon',
+      text: `DELETE FROM reservations WHERE salon_id = $1`,
+      values: [id],
+    });
+
+    await executor.query({
+      name: 'salon.delete-staff-for-salon',
+      text: `DELETE FROM staff WHERE salon_id = $1`,
+      values: [id],
+    });
+
+    await executor.query({
+      name: 'salon.delete-subscriptions-for-salon',
+      text: `DELETE FROM subscriptions WHERE salon_id = $1`,
+      values: [id],
+    });
+
+    await executor.query({
+      name: 'salon.clear-approved-salon-on-applications',
+      text: `
+        UPDATE owner_applications
+        SET approved_salon_id = NULL
+        WHERE approved_salon_id = $1
+      `,
+      values: [id],
+    });
+
+    return this.deleteById(id, executor);
   }
 
   async findAdminDistinctCities(): Promise<string[]> {
@@ -454,6 +569,22 @@ export class SalonRepository {
     };
   }
 
+  private mapAdminDetailRow(row?: AdminSalonDetailRow): AdminSalonDetail | null {
+    if (!row) {
+      return null;
+    }
+
+    const base = this.mapAdminRow(row);
+    if (!base) {
+      return null;
+    }
+
+    return {
+      ...base,
+      workingHours: row.working_hours,
+    };
+  }
+
   private buildFilters(filters: FindSalonsFilters) {
     const clauses: string[] = [];
     const values: unknown[] = [];
@@ -572,6 +703,10 @@ interface AdminSalonRow extends QueryResultRow {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+interface AdminSalonDetailRow extends AdminSalonRow {
+  working_hours: WorkingHours;
 }
 
 interface AdminSalonOverviewRow extends QueryResultRow {

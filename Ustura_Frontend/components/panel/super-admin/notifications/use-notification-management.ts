@@ -12,6 +12,7 @@ const EMPTY_RESPONSE: NotificationListResponse = {
   page: 1,
   pageSize: 20,
   totalPages: 0,
+  unreadTotal: 0,
 };
 
 export function useNotificationManagement() {
@@ -23,33 +24,43 @@ export function useNotificationManagement() {
 
   const [data, setData] = React.useState<NotificationListResponse>(EMPTY_RESPONSE);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isMarkingAllRead, setIsMarkingAllRead] = React.useState(false);
+  const markAllInFlightRef = React.useRef(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const fetchNotifications = React.useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const fetchNotifications = React.useCallback(
+    async (options?: { showLoading?: boolean }) => {
+      const showLoading = options?.showLoading !== false;
+      if (showLoading) {
+        setIsLoading(true);
+      }
+      setError(null);
 
-    try {
-      const isRead =
-        readFilter === 'unread' ? false : readFilter === 'read' ? true : undefined;
-      const key = toneFilter === 'all' ? undefined : undefined;
+      try {
+        const isRead =
+          readFilter === 'unread' ? false : readFilter === 'read' ? true : undefined;
+        const key = toneFilter === 'all' ? undefined : undefined;
 
-      const response = await NotificationService.list({
-        page,
-        pageSize,
-        isRead,
-        key,
-      });
+        const response = await NotificationService.list({
+          page,
+          pageSize,
+          isRead,
+          key,
+        });
 
-      setData(response);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Bildirimler yuklenemedi.';
-      setError(message);
-      setData(EMPTY_RESPONSE);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, pageSize, readFilter, toneFilter]);
+        setData(response);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Bildirimler yuklenemedi.';
+        setError(message);
+        setData(EMPTY_RESPONSE);
+      } finally {
+        if (showLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [page, pageSize, readFilter, toneFilter],
+  );
 
   React.useEffect(() => {
     fetchNotifications();
@@ -77,9 +88,10 @@ export function useNotificationManagement() {
 
   const overview: NotificationOverview = React.useMemo(() => {
     const all = data.items;
+    const unreadFromPage = all.filter((n) => !n.isRead).length;
     return {
       total: data.total,
-      unread: all.filter((n) => !n.isRead).length,
+      unread: data.unreadTotal ?? unreadFromPage,
       critical: all.filter((n) => n.tone === 'error').length,
       today: all.filter((n) => {
         const created = new Date(n.createdAt);
@@ -107,16 +119,23 @@ export function useNotificationManagement() {
   );
 
   const handleMarkAllAsRead = React.useCallback(async () => {
+    if (markAllInFlightRef.current) return;
+    markAllInFlightRef.current = true;
+    setIsMarkingAllRead(true);
     try {
       await NotificationService.markAllAsRead();
       setData((prev) => ({
         ...prev,
         items: prev.items.map((item) => ({ ...item, isRead: true })),
       }));
+      await fetchNotifications({ showLoading: false });
     } catch {
       // best-effort
+    } finally {
+      markAllInFlightRef.current = false;
+      setIsMarkingAllRead(false);
     }
-  }, []);
+  }, [fetchNotifications]);
 
   const resetFilters = React.useCallback(() => {
     setToneFilter('all');
@@ -141,6 +160,7 @@ export function useNotificationManagement() {
     error,
     markAsRead: handleMarkAsRead,
     markAllAsRead: handleMarkAllAsRead,
+    isMarkingAllRead,
     resetFilters,
     refresh: fetchNotifications,
   };

@@ -8,9 +8,11 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { SkipMustChangePassword } from '../../common/decorators/skip-must-change-password.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import type { Request } from 'express';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthSessionResponseDto } from './dto/auth-session-response.dto';
 import { GoogleCustomerAuthDto } from './dto/google-customer-auth.dto';
 import { GoogleWebCustomerAuthDto } from './dto/google-web-customer-auth.dto';
@@ -135,6 +137,32 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @SkipMustChangePassword()
+  @Post('password/change')
+  @Throttle({
+    default: {
+      ttl: 60_000,
+      limit: 8,
+    },
+  })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Change password for the authenticated user' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiOkResponse({ type: AuthSessionResponseDto })
+  async changePassword(
+    @CurrentUser() currentUser: JwtPayload,
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.changePassword(
+      currentUser,
+      changePasswordDto,
+      this.buildSessionClientContext(request),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @SkipMustChangePassword()
   @Post('logout')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Revoke the supplied refresh token' })
@@ -161,6 +189,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @SkipMustChangePassword()
   @Post('logout-all')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Revoke all active refresh tokens for the current user' })

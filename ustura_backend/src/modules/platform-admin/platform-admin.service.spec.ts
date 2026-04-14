@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../../database/database.service';
 import type { DatabaseTransaction } from '../../database/database.types';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
@@ -14,6 +15,7 @@ import type { Salon } from '../salon/interfaces/salon.types';
 import { SalonService } from '../salon/salon.service';
 import type { User } from '../user/interfaces/user.types';
 import { UserService } from '../user/user.service';
+import { UpdateOwnerApplicationDto } from './dto/update-owner-application.dto';
 import { OwnerApplicationStatus } from './enums/owner-application-status.enum';
 import type { OwnerApplicationRecord } from './interfaces/platform-admin.types';
 import { PlatformAdminPolicy } from './policies/platform-admin.policy';
@@ -73,6 +75,7 @@ function createOwner(overrides: Partial<User> = {}): User {
     firebaseUid: null,
     role: Role.OWNER,
     isActive: true,
+    mustChangePassword: false,
     createdAt: new Date('2026-04-09T00:00:00.000Z'),
     updatedAt: new Date('2026-04-09T00:00:00.000Z'),
     ...overrides,
@@ -117,6 +120,7 @@ describe('PlatformAdminService', () => {
   let service: PlatformAdminService;
   let repository: jest.Mocked<PlatformAdminRepository>;
   let databaseService: jest.Mocked<Pick<DatabaseService, 'transaction'>>;
+  let userQueryService: jest.Mocked<Pick<UserService, 'findByEmailForPrincipal'>>;
   let userService: jest.Mocked<Pick<UserService, 'createOwner'>>;
   let salonService: jest.Mocked<
     Pick<SalonService, 'prepareOwnedSalonInput' | 'createOwnedSalon'>
@@ -131,9 +135,13 @@ describe('PlatformAdminService', () => {
       findByIdForUpdate: jest.fn(),
       markApproved: jest.fn(),
       markRejected: jest.fn(),
+      updatePendingById: jest.fn(),
     } as unknown as jest.Mocked<PlatformAdminRepository>;
     databaseService = {
       transaction: jest.fn(),
+    };
+    userQueryService = {
+      findByEmailForPrincipal: jest.fn().mockResolvedValue(null),
     };
     userService = {
       createOwner: jest.fn(),
@@ -155,11 +163,13 @@ describe('PlatformAdminService', () => {
 
     const mockEmailService = {
       sendOwnerApprovalEmail: jest.fn().mockResolvedValue({ success: true }),
+      sendStaffWelcomeEmail: jest.fn().mockResolvedValue({ success: true }),
     };
     const mockAppConfig = {
       emailJs: {
         serviceId: '',
         templateApproval: '',
+        templateStaffWelcome: '',
         publicKey: '',
         privateKey: '',
       },
@@ -170,6 +180,7 @@ describe('PlatformAdminService', () => {
       repository,
       new PlatformAdminPolicy(),
       databaseService as DatabaseService,
+      userQueryService as UserService,
       userService as UserService,
       salonService as unknown as SalonService,
       domainEventBus as DomainEventBus,
@@ -237,6 +248,7 @@ describe('PlatformAdminService', () => {
   it('approves a pending owner application in a transaction and provisions owner plus salon', async () => {
     const pendingApplication = createOwnerApplication();
     repository.findByIdForUpdate.mockResolvedValue(pendingApplication);
+    userQueryService.findByEmailForPrincipal.mockResolvedValue(null);
     userService.createOwner.mockResolvedValue(createOwner());
     salonService.createOwnedSalon.mockResolvedValue(createSalon());
     repository.markApproved.mockResolvedValue(
@@ -254,6 +266,10 @@ describe('PlatformAdminService', () => {
       pendingApplication.id,
     );
 
+    expect(userQueryService.findByEmailForPrincipal).toHaveBeenCalledWith(
+      'owner@example.com',
+      PrincipalKind.PERSONNEL,
+    );
     expect(userService.createOwner).toHaveBeenCalled();
     expect(salonService.createOwnedSalon).toHaveBeenCalledWith(
       'owner-1',
@@ -293,6 +309,65 @@ describe('PlatformAdminService', () => {
     expect(result.status).toBe(OwnerApplicationStatus.APPROVED);
   });
 
+  it('approves by linking a new salon to an existing active owner with the same email', async () => {
+    const pendingApplication = createOwnerApplication();
+    const existingOwner = createOwner({
+      id: 'existing-owner-id',
+      email: 'owner@example.com',
+    });
+    repository.findByIdForUpdate.mockResolvedValue(pendingApplication);
+    userQueryService.findByEmailForPrincipal.mockResolvedValue(existingOwner);
+    salonService.createOwnedSalon.mockResolvedValue(createSalon());
+    repository.markApproved.mockResolvedValue(
+      createOwnerApplication({
+        status: OwnerApplicationStatus.APPROVED,
+        reviewedAt: new Date('2026-04-09T12:00:00.000Z'),
+        reviewedByUserId: 'super-admin-1',
+        approvedOwnerUserId: 'existing-owner-id',
+        approvedSalonId: 'salon-1',
+      }),
+    );
+
+    const result = await service.approveOwnerApplication(
+      createSuperAdminPayload(),
+      pendingApplication.id,
+    );
+
+    expect(userService.createOwner).not.toHaveBeenCalled();
+    expect(salonService.createOwnedSalon).toHaveBeenCalledWith(
+      'existing-owner-id',
+      expect.any(Object),
+      expect.any(Object),
+    );
+    expect(result.status).toBe(OwnerApplicationStatus.APPROVED);
+  });
+
+  it('rejects approval when the email belongs to non-owner personnel', async () => {
+    repository.findByIdForUpdate.mockResolvedValue(createOwnerApplication());
+    userQueryService.findByEmailForPrincipal.mockResolvedValue(
+      createOwner({
+        id: 'barber-1',
+        role: Role.BARBER,
+      }),
+    );
+
+    let capturedError: unknown;
+    try {
+      await service.approveOwnerApplication(
+        createSuperAdminPayload(),
+        '11111111-1111-1111-1111-111111111111',
+      );
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(ConflictException);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.PLATFORM_ADMIN.OWNER_APPLICATION_APPLICANT_EMAIL_USED_BY_STAFF,
+    );
+    expect(userService.createOwner).not.toHaveBeenCalled();
+  });
+
   it('rejects non-super-admin access at service level', async () => {
     let capturedError: unknown;
 
@@ -313,6 +388,7 @@ describe('PlatformAdminService', () => {
   });
 
   it('rejects approving an already reviewed application', async () => {
+    userQueryService.findByEmailForPrincipal.mockResolvedValue(null);
     repository.findByIdForUpdate.mockResolvedValue(
       createOwnerApplication({
         status: OwnerApplicationStatus.REJECTED,
@@ -334,5 +410,54 @@ describe('PlatformAdminService', () => {
     expect(getExceptionCode(capturedError)).toBe(
       ERROR_CODES.PLATFORM_ADMIN.OWNER_APPLICATION_ALREADY_REVIEWED,
     );
+  });
+
+  it('updates a pending owner application and normalizes salon fields', async () => {
+    const pendingApplication = createOwnerApplication();
+    repository.findByIdForUpdate.mockResolvedValue(pendingApplication);
+    repository.findPendingByApplicantEmail.mockResolvedValue(null);
+    salonService.prepareOwnedSalonInput.mockReturnValue({
+      name: 'New Salon',
+      address: 'New Address',
+      city: 'Ankara',
+      district: null,
+      photoUrl: pendingApplication.salonPhotoUrl,
+      workingHours: pendingApplication.salonWorkingHours,
+    });
+    const updated = createOwnerApplication({
+      applicantName: 'New Name',
+      applicantEmail: 'new@example.com',
+      applicantPhone: '+905551112299',
+      salonName: 'New Salon',
+      salonAddress: 'New Address',
+      salonCity: 'Ankara',
+      salonDistrict: null,
+      notes: 'Updated',
+    });
+    repository.updatePendingById.mockResolvedValue(updated);
+
+    const dto: UpdateOwnerApplicationDto = {
+      applicantName: 'New Name',
+      applicantEmail: 'new@example.com',
+      applicantPhone: '+905551112299',
+      salonName: 'New Salon',
+      salonAddress: 'New Address',
+      salonCity: 'Ankara',
+      notes: 'Updated',
+    };
+
+    const result = await service.updateOwnerApplication(
+      createSuperAdminPayload(),
+      pendingApplication.id,
+      dto,
+    );
+
+    expect(repository.findPendingByApplicantEmail).toHaveBeenCalledWith(
+      'new@example.com',
+      expect.any(Object),
+    );
+    expect(repository.updatePendingById).toHaveBeenCalled();
+    expect(result.applicantName).toBe('New Name');
+    expect(result.salonCity).toBe('Ankara');
   });
 });

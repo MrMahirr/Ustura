@@ -157,9 +157,9 @@ export class PackageService {
     });
   }
 
-  /** Deactivate a package definition */
-  static async deactivatePackage(id: string): Promise<Package> {
-    return apiRequest<Package>({
+  /** Permanently delete a package (backend rejects when subscriptions exist). */
+  static async deletePackage(id: string): Promise<void> {
+    return apiRequest<void>({
       path: `/packages/${id}`,
       method: 'DELETE',
       auth: true,

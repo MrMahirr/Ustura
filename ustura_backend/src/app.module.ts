@@ -16,6 +16,8 @@ import { SalonModule } from './modules/salon/salon.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { ReservationModule } from './modules/reservation/reservation.module';
 import { PackageModule } from './modules/package/package.module';
+import { AdminReportsModule } from './modules/admin-reports/admin-reports.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { StartupValidationService } from './startup/startup-validation.service';
 
 @Module({
@@ -42,10 +44,12 @@ import { StartupValidationService } from './startup/startup-validation.service';
     StaffModule,
     ReservationModule,
     PackageModule,
+    AdminReportsModule,
   ],
   controllers: [],
   providers: [
     StartupValidationService,
+    JwtAuthGuard,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

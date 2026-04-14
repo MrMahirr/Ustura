@@ -86,6 +86,10 @@ export interface AdminSalonSummary {
   updatedAt: Date;
 }
 
+export interface AdminSalonDetail extends AdminSalonSummary {
+  workingHours: WorkingHours;
+}
+
 export interface AdminSalonOverview {
   total: number;
   active: number;

@@ -1,6 +1,5 @@
 import React from 'react';
-import { MaterialIcons } from '@expo/vector-icons';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
@@ -8,8 +7,17 @@ import { hexToRgba } from '@/utils/color';
 import { PackageBadge, StatusBadge } from './SubscriptionRow';
 import type { SubscriptionRecord } from './types';
 
-export default function SubscriptionMobileCard({ subscription }: { subscription: SubscriptionRecord }) {
+export default function SubscriptionMobileCard({
+  subscription,
+  onCancelSubscription,
+  cancelDisabled,
+}: {
+  subscription: SubscriptionRecord;
+  onCancelSubscription?: () => void;
+  cancelDisabled?: boolean;
+}) {
   const adminTheme = useSuperAdminTheme();
+  const showCancel = subscription.canCancel && onCancelSubscription;
 
   return (
     <View
@@ -32,9 +40,6 @@ export default function SubscriptionMobileCard({ subscription }: { subscription:
             {subscription.salonName}
           </Text>
         </View>
-        <Pressable className="h-8 w-8 items-center justify-center">
-          <MaterialIcons name="more-vert" size={18} color={hexToRgba(adminTheme.onSurfaceVariant, 0.6)} />
-        </Pressable>
       </View>
 
       {/* Details */}
@@ -66,6 +71,30 @@ export default function SubscriptionMobileCard({ subscription }: { subscription:
           </Text>
         </View>
       </View>
+
+      {showCancel ? (
+        <Pressable
+          disabled={cancelDisabled}
+          onPress={onCancelSubscription}
+          className="min-h-[44px] items-center justify-center rounded-md border"
+          style={({ hovered, pressed }) => [
+            {
+              opacity: cancelDisabled ? 0.45 : 1,
+              borderColor: hexToRgba(adminTheme.error, hovered || pressed ? 0.55 : 0.35),
+              backgroundColor:
+                hovered || pressed ? hexToRgba(adminTheme.error, 0.08) : 'transparent',
+            },
+            Platform.OS === 'web'
+              ? ({ transition: 'border-color 150ms ease, background-color 150ms ease' } as any)
+              : null,
+          ]}>
+          <Text
+            className="font-label text-[10px] uppercase tracking-widest"
+            style={{ color: adminTheme.error, fontFamily: 'Manrope-Bold' }}>
+            Aboneligi Iptal Et
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

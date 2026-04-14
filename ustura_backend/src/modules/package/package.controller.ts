@@ -112,8 +112,11 @@ export class PackageController {
   @Roles(Role.SUPER_ADMIN)
   @Delete(':id')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Deactivate a package' })
-  async deactivatePackage(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.packageService.updatePackage(id, { isActive: false });
+  @ApiOperation({
+    summary:
+      'Super admin: paketi kalici sil (abonelik yoksa; aksi halde 400)',
+  })
+  async deletePackage(@Param('id', new ParseUUIDPipe()) id: string) {
+    await this.packageService.deletePackage(id);
   }
 }

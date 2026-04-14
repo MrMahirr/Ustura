@@ -18,6 +18,7 @@ function createUser(overrides: Partial<User> = {}): User {
     firebaseUid: null,
     role: Role.CUSTOMER,
     isActive: true,
+    mustChangePassword: false,
     createdAt: new Date('2026-04-07T00:00:00.000Z'),
     updatedAt: new Date('2026-04-07T00:00:00.000Z'),
     ...overrides,

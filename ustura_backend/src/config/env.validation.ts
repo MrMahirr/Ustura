@@ -167,10 +167,16 @@ export function validateEnvironment(env: Env): EnvironmentVariables {
     GOOGLE_WEB_CLIENT_ID: readOptionalString(env, 'GOOGLE_WEB_CLIENT_ID'),
     CORS_ORIGINS: readCorsOrigins(env),
     CORS_CREDENTIALS: readBoolean(env, 'CORS_CREDENTIALS', true),
+    // EmailJS Node: Account > Security — enable "Allow EmailJS API for non-browser applications"
+    // and set Private Key from the same page (see https://dashboard.emailjs.com/admin/account/security).
     EMAILJS_SERVICE_ID: readOptionalString(env, 'EMAILJS_SERVICE_ID'),
     EMAILJS_TEMPLATE_APPROVAL: readOptionalString(
       env,
       'EMAILJS_TEMPLATE_APPROVAL',
+    ),
+    EMAILJS_TEMPLATE_STAFF_WELCOME: readOptionalString(
+      env,
+      'EMAILJS_TEMPLATE_STAFF_WELCOME',
     ),
     EMAILJS_PUBLIC_KEY: readOptionalString(env, 'EMAILJS_PUBLIC_KEY'),
     EMAILJS_PRIVATE_KEY: readOptionalString(env, 'EMAILJS_PRIVATE_KEY'),

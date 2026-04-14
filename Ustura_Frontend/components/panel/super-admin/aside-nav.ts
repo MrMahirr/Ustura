@@ -19,10 +19,8 @@ export const superAdminAsideItems: SuperAdminAsideItem[] = [
   { label: 'Salonlar', icon: 'storefront', href: panelRoutes.salonlar, matchSubroutes: true },
   { label: 'Basvurular', icon: 'assignment', href: panelRoutes.basvurular },
   { label: 'Kullanicilar', icon: 'group', href: panelRoutes.kullanicilar, matchSubroutes: true },
-  { label: 'Randevular', icon: 'event-available', href: panelRoutes.randevular },
-  { label: 'Odemeler', icon: 'payments', disabled: true },
   { label: 'Paketler', icon: 'inventory-2', href: panelRoutes.paketler },
-  { label: 'Raporlar', icon: 'analytics', disabled: true },
+  { label: 'Raporlar', icon: 'analytics', href: panelRoutes.raporlar },
   { label: 'Bildirimler', icon: 'notifications', href: panelRoutes.bildirimler },
   { label: 'Sistem Ayarlari', icon: 'settings', href: panelRoutes.ayarlar },
 ];

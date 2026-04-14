@@ -75,37 +75,81 @@ export function usePackageProfile(packageId?: string) {
     setFeatures((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = async () => {
-    if (!packageId) return false;
-    
+  const handleSave = async (): Promise<
+    { ok: true } | { ok: false; message: string }
+  > => {
+    if (!packageId) {
+      const message = 'Paket secilmedi.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    setError(null);
+
+    const trimmedName = name.trim();
+    const trimmedTierLabel = tierLabel.trim();
+    if (!trimmedName || !trimmedTierLabel) {
+      const message = 'Paket adi ve tier etiketi zorunludur.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    const normalizedPrice = String(pricePerMonth).trim().replace(',', '.');
+    const parsedPrice = parseFloat(normalizedPrice);
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      const message = 'Gecerli bir aylik fiyat girin.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    const sanitizedFeatures = features.map((f, index) => ({
+      label: (f.label ?? '').trim() || `Ozellik ${index + 1}`,
+      included: Boolean(f.included),
+    }));
+
     try {
-      const updatedData = {
-        name,
+      await PackageService.updatePackage(packageId, {
+        name: trimmedName,
         tier,
-        tierLabel,
-        pricePerMonth: parseFloat(pricePerMonth) || 0,
+        tierLabel: trimmedTierLabel,
+        pricePerMonth: parsedPrice,
         isFeatured,
-        features,
-      };
-      
-      await PackageService.updatePackage(packageId, updatedData);
-      await fetchProfile(); // Refresh
-      return true;
+        features: sanitizedFeatures,
+      });
+      await fetchProfile();
+      return { ok: true };
     } catch (err: any) {
-      setError(err.message);
-      return false;
+      const message =
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
+          : 'Kayit sirasinda bir hata olustu.';
+      setError(message);
+      return { ok: false, message };
     }
   };
 
-  const handleDeactivate = async () => {
-    if (!packageId) return false;
+  const handleDeactivate = async (): Promise<
+    { ok: true } | { ok: false; message: string }
+  > => {
+    if (!packageId) {
+      const message = 'Paket secilmedi.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    setError(null);
+
     try {
       await PackageService.updatePackage(packageId, { isActive: false });
       await fetchProfile();
-      return true;
+      return { ok: true };
     } catch (err: any) {
-      setError(err.message);
-      return false;
+      const message =
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
+          : 'Islem basarisiz.';
+      setError(message);
+      return { ok: false, message };
     }
   };
 

@@ -18,8 +18,10 @@ import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { roleToPrincipalKind } from '../../shared/auth/principal-kind.mapper';
 import { Role } from '../../shared/auth/role.enum';
+import { AdminPatchUserStatusDto } from './dto/admin-patch-user-status.dto';
 import { FindAdminUsersQueryDto } from './dto/find-admin-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserAdminManagementService } from './user-admin-management.service';
 import { UserAdminQueryService } from './user-admin-query.service';
 import { UserProfileService } from './user-profile.service';
 
@@ -30,6 +32,7 @@ export class UserController {
   constructor(
     private readonly userProfileService: UserProfileService,
     private readonly userAdminQueryService: UserAdminQueryService,
+    private readonly userAdminManagementService: UserAdminManagementService,
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -53,6 +56,24 @@ export class UserController {
   @ApiOperation({ summary: 'Get a single admin user detail record' })
   async findAdminUserById(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.userAdminQueryService.findAdminUserById(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Patch('admin/:id/status')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Activate or suspend a personnel or platform admin account' })
+  async patchAdminUserStatus(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: AdminPatchUserStatusDto,
+    @CurrentUser() currentUser?: JwtPayload,
+  ) {
+    const actor = this.requireAuthenticatedUser(currentUser);
+    return this.userAdminManagementService.setManagedUserActive(
+      actor.sub,
+      id,
+      body.isActive,
+    );
   }
 
   @Get('me')

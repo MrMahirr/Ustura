@@ -3,7 +3,9 @@ import * as bcrypt from 'bcrypt';
 import { AppConfigService } from '../../config/config.service';
 import { DatabaseService } from '../../database/database.service';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { Role } from '../../shared/auth/role.enum';
 import {
   EMAIL_SERVICE,
   type EmailServiceContract,
@@ -13,14 +15,20 @@ import {
   SALON_OWNER_PROVISIONING_SERVICE,
   type SalonOwnerProvisioningServiceContract,
 } from '../salon/interfaces/salon.contracts';
+import type { User } from '../user/interfaces/user.types';
 import {
   USER_PROVISIONING_SERVICE,
+  USER_QUERY_SERVICE,
   type UserProvisioningServiceContract,
+  type UserQueryServiceContract,
 } from '../user/interfaces/user.contracts';
 import { CreateOwnerApplicationDto } from './dto/create-owner-application.dto';
 import { RejectOwnerApplicationDto } from './dto/reject-owner-application.dto';
+import { UpdateOwnerApplicationDto } from './dto/update-owner-application.dto';
 import {
   ownerApplicationAlreadyExistsError,
+  ownerApplicationApplicantEmailUsedByStaffError,
+  ownerApplicationApplicantOwnerInactiveError,
   ownerApplicationNotFoundError,
 } from './errors/platform-admin.errors';
 import type {
@@ -39,6 +47,8 @@ export class PlatformAdminService {
     private readonly platformAdminRepository: PlatformAdminRepository,
     private readonly platformAdminPolicy: PlatformAdminPolicy,
     private readonly databaseService: DatabaseService,
+    @Inject(USER_QUERY_SERVICE)
+    private readonly userQueryService: UserQueryServiceContract,
     @Inject(USER_PROVISIONING_SERVICE)
     private readonly userProvisioningService: UserProvisioningServiceContract,
     @Inject(SALON_OWNER_PROVISIONING_SERVICE)
@@ -109,11 +119,7 @@ export class PlatformAdminService {
   ): Promise<OwnerApplication> {
     this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
 
-    const temporaryPassword = generateTemporaryPassword();
-    const temporaryPasswordHash = await bcrypt.hash(
-      temporaryPassword,
-      this.passwordCost,
-    );
+    let temporaryPassword: string | null = null;
 
     const approvedApplication = await this.databaseService.transaction(async (transaction) => {
       const application =
@@ -128,15 +134,39 @@ export class PlatformAdminService {
 
       this.platformAdminPolicy.assertPendingApplication(application);
 
-      const owner = await this.userProvisioningService.createOwner(
-        {
-          name: application.applicantName,
-          email: application.applicantEmail,
-          phone: application.applicantPhone,
-          passwordHash: temporaryPasswordHash,
-        },
-        transaction,
-      );
+      const normalizedEmail = application.applicantEmail.trim().toLowerCase();
+      const existingPersonnel =
+        await this.userQueryService.findByEmailForPrincipal(
+          normalizedEmail,
+          PrincipalKind.PERSONNEL,
+        );
+
+      let owner: User;
+
+      if (!existingPersonnel) {
+        temporaryPassword = generateTemporaryPassword();
+        const temporaryPasswordHash = await bcrypt.hash(
+          temporaryPassword,
+          this.passwordCost,
+        );
+        owner = await this.userProvisioningService.createOwner(
+          {
+            name: application.applicantName,
+            email: application.applicantEmail,
+            phone: application.applicantPhone,
+            passwordHash: temporaryPasswordHash,
+          },
+          transaction,
+        );
+      } else if (existingPersonnel.role === Role.OWNER) {
+        if (!existingPersonnel.isActive) {
+          throw ownerApplicationApplicantOwnerInactiveError();
+        }
+        owner = existingPersonnel;
+      } else {
+        throw ownerApplicationApplicantEmailUsedByStaffError();
+      }
+
       const salon = await this.salonOwnerProvisioningService.createOwnedSalon(
         owner.id,
         {
@@ -189,8 +219,10 @@ export class PlatformAdminService {
         recipientEmail: approvedApplication.applicantEmail,
         recipientName: approvedApplication.applicantName,
         salonName: approvedApplication.salonName,
-        temporaryPassword,
         loginUrl,
+        ...(temporaryPassword !== null
+          ? { temporaryPassword }
+          : { isExistingOwnerAccount: true }),
       })
       .catch((err) =>
         this.logger.error(
@@ -208,6 +240,83 @@ export class PlatformAdminService {
       JSON.stringify({ email, ts: Date.now() }),
     ).toString('base64url');
     return `${baseUrl}/personel/giris?token=${token}`;
+  }
+
+  async updateOwnerApplication(
+    currentUser: JwtPayload,
+    applicationId: string,
+    updateOwnerApplicationDto: UpdateOwnerApplicationDto,
+  ): Promise<OwnerApplication> {
+    this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
+
+    return this.databaseService.transaction(async (transaction) => {
+      const application =
+        await this.platformAdminRepository.findByIdForUpdate(
+          applicationId,
+          transaction,
+        );
+
+      if (!application) {
+        throw ownerApplicationNotFoundError();
+      }
+
+      this.platformAdminPolicy.assertPendingApplication(application);
+
+      const applicantEmail = this.normalizeEmail(
+        updateOwnerApplicationDto.applicantEmail,
+      );
+
+      if (applicantEmail !== application.applicantEmail) {
+        const existingWithEmail =
+          await this.platformAdminRepository.findPendingByApplicantEmail(
+            applicantEmail,
+            transaction,
+          );
+
+        if (existingWithEmail && existingWithEmail.id !== applicationId) {
+          throw ownerApplicationAlreadyExistsError();
+        }
+      }
+
+      const normalizedSalonInput =
+        this.salonOwnerProvisioningService.prepareOwnedSalonInput({
+          name: updateOwnerApplicationDto.salonName,
+          address: updateOwnerApplicationDto.salonAddress,
+          city: updateOwnerApplicationDto.salonCity,
+          district: updateOwnerApplicationDto.salonDistrict,
+          photoUrl: application.salonPhotoUrl ?? undefined,
+          workingHours: application.salonWorkingHours as Record<
+            string,
+            unknown
+          >,
+        });
+
+      const updatedApplication =
+        await this.platformAdminRepository.updatePendingById(
+          application.id,
+          {
+            applicantName: updateOwnerApplicationDto.applicantName.trim(),
+            applicantEmail,
+            applicantPhone: updateOwnerApplicationDto.applicantPhone.trim(),
+            salonName: normalizedSalonInput.name,
+            salonAddress: normalizedSalonInput.address,
+            salonCity: normalizedSalonInput.city,
+            salonDistrict: normalizedSalonInput.district ?? null,
+            salonPhotoUrl: normalizedSalonInput.photoUrl ?? null,
+            salonWorkingHours: normalizedSalonInput.workingHours,
+            notes:
+              this.normalizeOptionalString(updateOwnerApplicationDto.notes) ??
+              null,
+          },
+          transaction,
+        );
+
+      if (!updatedApplication) {
+        throw ownerApplicationNotFoundError();
+      }
+
+      return this.toOwnerApplication(updatedApplication);
+    });
   }
 
   async rejectOwnerApplication(

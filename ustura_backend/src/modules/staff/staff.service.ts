@@ -1,5 +1,6 @@
 import * as bcrypt from 'bcrypt';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { AppConfigService } from '../../config/config.service';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DatabaseService } from '../../database/database.service';
 import type { SqlQueryExecutor } from '../../database/database.types';
@@ -9,6 +10,11 @@ import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
+import {
+  EMAIL_SERVICE,
+  type EmailServiceContract,
+} from '../email/interfaces/email.types';
+import { generateTemporaryPassword } from '../email/utils/password-generator';
 import {
   SALON_CATALOG_SERVICE,
   type SalonCatalogServiceContract,
@@ -34,6 +40,7 @@ import { StaffRepository } from './repositories/staff.repository';
 @Injectable()
 export class StaffService {
   private readonly passwordCost = 12;
+  private readonly logger = new Logger(StaffService.name);
 
   constructor(
     private readonly staffRepository: StaffRepository,
@@ -47,6 +54,9 @@ export class StaffService {
     private readonly staffPolicy: StaffPolicy,
     private readonly auditLogService: AuditLogService,
     private readonly domainEventBus: DomainEventBus,
+    @Inject(EMAIL_SERVICE)
+    private readonly emailService: EmailServiceContract,
+    private readonly appConfig: AppConfigService,
   ) {}
 
   async findBySalonId(salonId: string): Promise<StaffMember[]> {
@@ -91,9 +101,17 @@ export class StaffService {
       );
     }
 
-    return this.databaseService.transaction(async (transaction) => {
-      const employee = createStaffDto.employee!;
-      const passwordHash = await bcrypt.hash(employee.password, this.passwordCost);
+    const employee = createStaffDto.employee!;
+    const explicitPassword = employee.password?.trim();
+    const provisionalPassword =
+      explicitPassword ?? generateTemporaryPassword();
+    const mustChangePassword = !explicitPassword;
+
+    const staffMember = await this.databaseService.transaction(async (transaction) => {
+      const passwordHash = await bcrypt.hash(
+        provisionalPassword,
+        this.passwordCost,
+      );
       const user = await this.userProvisioningService.createEmployee(
         {
           name: employee.name,
@@ -101,6 +119,7 @@ export class StaffService {
           phone: employee.phone,
           passwordHash,
           role: createStaffDto.role,
+          mustChangePassword,
         },
         transaction,
       );
@@ -114,6 +133,26 @@ export class StaffService {
         transaction,
       );
     });
+
+    if (mustChangePassword) {
+      const loginUrl = this.buildStaffLoginUrl(employee.email);
+      this.emailService
+        .sendStaffWelcomeEmail({
+          recipientEmail: employee.email,
+          recipientName: employee.name,
+          salonName: salon.name,
+          temporaryPassword: provisionalPassword,
+          loginUrl,
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Staff welcome email failed for ${employee.email}`,
+            err instanceof Error ? err.stack : String(err),
+          ),
+        );
+    }
+
+    return staffMember;
   }
 
   async update(
@@ -339,6 +378,14 @@ export class StaffService {
     }
 
     return normalizedInput;
+  }
+
+  private buildStaffLoginUrl(email: string): string {
+    const baseUrl = this.appConfig.frontend.baseUrl.replace(/\/+$/, '');
+    const token = Buffer.from(
+      JSON.stringify({ email, ts: Date.now() }),
+    ).toString('base64url');
+    return `${baseUrl}/personel/giris?token=${token}`;
   }
 
   private normalizeOptionalString(value?: string | null): string | undefined {

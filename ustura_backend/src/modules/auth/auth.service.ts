@@ -22,6 +22,7 @@ import {
 } from '../user/interfaces/user.contracts';
 import { GoogleCustomerAuthDto } from './dto/google-customer-auth.dto';
 import { GoogleWebCustomerAuthDto } from './dto/google-web-customer-auth.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -129,6 +130,30 @@ export class AuthService {
     });
 
     return session;
+  }
+
+  async changePassword(
+    currentUser: JwtPayload,
+    changePasswordDto: ChangePasswordDto,
+    clientContext?: SessionClientContext,
+  ): Promise<AuthSessionResponse> {
+    const principalKind =
+      currentUser.principalKind ?? roleToPrincipalKind(currentUser.role);
+    const updatedUser = await this.userProvisioningService.changeOwnPassword(
+      principalKind,
+      currentUser.sub,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
+    );
+
+    await this.authRepository.revokeAllPrincipalTokens(
+      updatedUser.id,
+      principalKind,
+    );
+
+    return this.createSession(updatedUser, {
+      clientContext,
+    });
   }
 
   async authenticateCustomerWithGoogle(
@@ -464,6 +489,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       principalKind,
+      mustChangePassword: user.mustChangePassword === true,
       tokenType: 'access',
     };
     const refreshPayload: JwtPayload = {
@@ -561,6 +587,7 @@ export class AuthService {
       phone: user.phone,
       role: user.role,
       isActive: user.isActive,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

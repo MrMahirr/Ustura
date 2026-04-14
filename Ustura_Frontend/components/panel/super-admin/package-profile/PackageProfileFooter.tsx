@@ -1,14 +1,47 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, Text, View } from 'react-native';
 
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 import { getPackagePanelShadow } from './presentation';
 
-export default function PackageProfileFooter({ onSave }: { onSave: () => void }) {
+function showSaveError(message: string) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.alert(message);
+    return;
+  }
+  Alert.alert('Kayit', message);
+}
+
+export default function PackageProfileFooter({
+  onSave,
+  saveDisabled,
+}: {
+  onSave: () => Promise<{ ok: true } | { ok: false; message: string }>;
+  saveDisabled?: boolean;
+}) {
   const adminTheme = useSuperAdminTheme();
+  const [isSaving, setIsSaving] = React.useState(false);
+  const saveBlocked = Boolean(saveDisabled) || isSaving;
+
+  const handleSavePress = () => {
+    void (async () => {
+      if (saveDisabled) {
+        return;
+      }
+      setIsSaving(true);
+      try {
+        const result = await onSave();
+        if (!result.ok) {
+          showSaveError(result.message);
+        }
+      } finally {
+        setIsSaving(false);
+      }
+    })();
+  };
 
   return (
     <View
@@ -51,10 +84,14 @@ export default function PackageProfileFooter({ onSave }: { onSave: () => void })
       </View>
 
       <Pressable
-        onPress={onSave}
+        onPress={handleSavePress}
+        disabled={saveBlocked}
         className="rounded-md"
         style={({ pressed, hovered }) => [
-          { transform: [{ scale: pressed ? 0.985 : hovered ? 1.015 : 1 }] },
+          {
+            opacity: saveBlocked ? 0.55 : 1,
+            transform: [{ scale: pressed ? 0.985 : hovered ? 1.015 : 1 }],
+          },
           Platform.OS === 'web'
             ? ({
                 transition: 'transform 180ms ease, box-shadow 220ms ease',
@@ -80,7 +117,7 @@ export default function PackageProfileFooter({ onSave }: { onSave: () => void })
           <Text
             className="font-label text-xs uppercase tracking-widest"
             style={{ color: adminTheme.onPrimary, fontFamily: 'Manrope-Bold' }}>
-            Degisiklikleri Kaydet
+            {isSaving ? 'Kaydediliyor...' : 'Degisiklikleri Kaydet'}
           </Text>
         </LinearGradient>
       </Pressable>

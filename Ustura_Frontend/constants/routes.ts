@@ -9,10 +9,10 @@ export const panelRoutes = {
   home: route('/panel'),
   salonlar: route('/panel/salonlar'),
   kullanicilar: route('/panel/kullanicilar'),
-  randevular: route('/panel/randevular'),
   paketler: route('/panel/paketler'),
   basvurular: route('/panel/basvurular'),
   bildirimler: route('/panel/bildirimler'),
+  raporlar: route('/panel/raporlar'),
   personel: route('/panel/personel'),
   ayarlar: route('/panel/ayarlar'),
 } as const satisfies Record<string, Href>;

@@ -31,7 +31,7 @@ export default function StaffAccessScreen() {
   const { width } = useWindowDimensions();
   const theme = useAuthAccessTheme();
   const router = useRouter();
-  const { isAuthenticated, role, loginStaff } = useAuth();
+  const { isAuthenticated, role, loginStaff, mustChangePassword } = useAuth();
   const params = useLocalSearchParams<{ token?: string }>();
 
   const emailFromToken = React.useMemo(
@@ -42,8 +42,10 @@ export default function StaffAccessScreen() {
   const access = useStaffAccess({
     initialIdentifier: emailFromToken,
     onSubmitSuccess: async ({ identifier, password }) => {
-      await loginStaff({ identifier, password });
-      router.replace('/berber');
+      const profile = await loginStaff({ identifier, password });
+      router.replace(
+        profile.mustChangePassword ? '/personel/sifre-degistir' : '/berber',
+      );
       return true;
     },
   });
@@ -51,6 +53,9 @@ export default function StaffAccessScreen() {
   const isCompact = width < 480;
 
   if (isAuthenticated && role && STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number])) {
+    if (mustChangePassword) {
+      return <Redirect href="/personel/sifre-degistir" />;
+    }
     return <Redirect href="/berber" />;
   }
 

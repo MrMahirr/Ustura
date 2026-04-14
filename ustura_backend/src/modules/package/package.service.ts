@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PackagesRepository } from './repositories/packages.repository';
 import { SubscriptionsRepository } from './repositories/subscriptions.repository';
 import { CreatePackageDto } from './dto/create-package.dto';
@@ -41,6 +45,26 @@ export class PackageService {
       throw new NotFoundException('Guncellenmek istenen paket bulunamadi.');
     }
     return pkg;
+  }
+
+  async deletePackage(id: string): Promise<void> {
+    const pkg = await this.packagesRepository.findById(id);
+    if (!pkg) {
+      throw new NotFoundException('Silinmek istenen paket bulunamadi.');
+    }
+
+    const blockingSubscriptions =
+      await this.subscriptionsRepository.countByPackageId(id);
+    if (blockingSubscriptions > 0) {
+      throw new BadRequestException(
+        'Bu pakete aktif veya beklemedeki abonelikler bagli oldugu icin paket silinemez. Once abonelikleri sonlandirin veya baska pakete tasiyin; yalnizca iptal veya suresi dolmus kayitlar silmeyi engellemez.',
+      );
+    }
+
+    const deleted = await this.packagesRepository.deleteById(id);
+    if (!deleted) {
+      throw new NotFoundException('Silinmek istenen paket bulunamadi.');
+    }
   }
 
   async getAllSubscriptions() {

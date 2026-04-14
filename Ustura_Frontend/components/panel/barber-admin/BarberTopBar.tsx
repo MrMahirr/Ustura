@@ -1,16 +1,14 @@
 import React from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { Platform, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Platform, TextInput, View, useWindowDimensions } from 'react-native';
 
 import BarberNotificationsMenu from '@/components/panel/barber-admin/BarberNotificationsMenu';
+import UserAccountMenu from '@/components/panel/shared/UserAccountMenu';
 import ThemeToggleButton from '@/components/ui/ThemeToggleButton';
+import { staffRoutes } from '@/constants/routes';
 import { hexToRgba } from '@/utils/color';
 
 import { useBarberAdminTheme } from './theme';
-
-const AVATAR_URI =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuD5TG1SCRsdanIRb29jkidKaCYRyWNOCPhs0Z83ZEdB9dog7982BcNVqcyEtQxmsgtZbq61oBZegP-cGFcGHX0ytY_xwvK_kl9fziX43ZK6_VZ46u9QogUpHG0U0LT2ymLfOsynMqL4bvrkpM2lxPVl7N_FT-B3BWSELFJsgveHIjzcubvx10MszyLIdHQIPMUqktpZQZkgHzdvd6_xJHMabI3klMyEQwEuVZ3GcWZ7SA98oio9SgLAU8yjqw8OCnLYwwhbXmRK3Co';
 
 export interface BarberTopBarProps {
   query: string;
@@ -65,19 +63,19 @@ export default function BarberTopBar({ query, onQueryChange }: BarberTopBarProps
       <View className="shrink-0 flex-row items-center gap-5">
         <ThemeToggleButton />
         <BarberNotificationsMenu />
-        <View className="ml-2 flex-row items-center gap-3">
-          <View className="items-end">
-            <Text className="font-body text-xs font-bold" style={{ color: theme.onSurface }}>
-              Kemal Yilmaz
-            </Text>
-            <Text className="mt-0.5 font-label text-[10px]" style={{ color: theme.onSurfaceVariant, opacity: 0.85 }}>
-              Salon Sahibi
-            </Text>
-          </View>
-          <Image
-            source={{ uri: AVATAR_URI }}
-            style={{ width: 40, height: 40, borderRadius: 4, borderWidth: 1, borderColor: hexToRgba(theme.primary, 0.2) }}
-            contentFit="cover"
+        <View className="ml-2">
+          <UserAccountMenu
+            profileHref={staffRoutes.ayarlar}
+            palette={{
+              theme: theme.theme,
+              cardBackground: theme.cardBackground,
+              cardBackgroundMuted: theme.cardBackgroundMuted,
+              borderSubtle: theme.borderSubtle,
+              onSurface: theme.onSurface,
+              onSurfaceVariant: theme.onSurfaceVariant,
+              primary: theme.primary,
+              error: theme.error,
+            }}
           />
         </View>
       </View>

@@ -21,6 +21,10 @@ const REQUIRED_MIGRATIONS = [
   '011_create_notifications.sql',
   '012_split_identity_tables.sql',
   '013_seed_demo_identity.sql',
+  '014_ensure_packages_tier_label.sql',
+  '015_ensure_salons_is_active.sql',
+  '016_owner_applications_review_state_allow_null_salon.sql',
+  '017_personnel_must_change_password.sql',
 ] as const;
 
 const REQUIRED_IDENTITY_TABLES = [
@@ -37,6 +41,7 @@ const REQUIRED_IDENTITY_TABLES = [
     columns: [
       { name: 'password_hash', isNullable: 'YES' as const },
       { name: 'role', isNullable: 'NO' as const },
+      { name: 'must_change_password', isNullable: 'NO' as const },
     ],
     indexes: ['uq_personnel_lower_email'],
   },

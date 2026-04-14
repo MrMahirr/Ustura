@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { roleToPrincipalKind } from '../../shared/auth/principal-kind.mapper';
 import { Role } from '../../shared/auth/role.enum';
 import {
   emailAlreadyExistsError,
+  invalidCurrentPasswordError,
   phoneAlreadyExistsError,
   userNotFoundError,
 } from './errors/user.errors';
@@ -28,6 +30,8 @@ import type {
 export class UserService
   implements UserQueryServiceContract, UserProvisioningServiceContract
 {
+  private readonly passwordCost = 12;
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly userAccountPolicy: UserAccountPolicy,
@@ -91,7 +95,51 @@ export class UserService
   ): Promise<User> {
     this.userAccountPolicy.assertValidEmployeeRole(input.role);
 
-    return this.createUser(input, executor);
+    return this.createUser(
+      {
+        ...input,
+        role: input.role,
+        mustChangePassword: input.mustChangePassword === true,
+      },
+      executor,
+    );
+  }
+
+  async changeOwnPassword(
+    kind: PrincipalKind,
+    id: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<User> {
+    const user = await this.userRepository.findByPrincipal(kind, id);
+
+    if (!user?.passwordHash) {
+      throw userNotFoundError();
+    }
+
+    const currentOk = await bcrypt.compare(
+      currentPassword.trim(),
+      user.passwordHash,
+    );
+
+    if (!currentOk) {
+      throw invalidCurrentPasswordError();
+    }
+
+    const newHash = await bcrypt.hash(newPassword.trim(), this.passwordCost);
+    const clearFlag = kind === PrincipalKind.PERSONNEL;
+    const updated = await this.userRepository.updatePasswordHashForPrincipal(
+      kind,
+      id,
+      newHash,
+      { clearMustChangePassword: clearFlag },
+    );
+
+    if (!updated) {
+      throw userNotFoundError();
+    }
+
+    return updated;
   }
 
   async createOwner(
@@ -256,6 +304,7 @@ export class UserService
       phone: user.phone,
       role: user.role,
       isActive: user.isActive,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

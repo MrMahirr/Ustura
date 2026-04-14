@@ -1,5 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { Role } from '../../shared/auth/role.enum';
 import { ListNotificationsQueryDto } from './dto/list-notifications-query.dto';
 import { NotificationListResponseDto } from './dto/notification-response.dto';
 import {
@@ -71,21 +72,27 @@ export class NotificationService {
   }
 
   async list(
-    _currentUser: JwtPayload,
+    currentUser: JwtPayload,
     query: ListNotificationsQueryDto,
   ): Promise<NotificationListResponseDto> {
     const limit = query.pageSize;
     const offset = (query.page - 1) * query.pageSize;
 
+    const isSuperAdmin = currentUser.role === Role.SUPER_ADMIN;
     const filters = {
-      recipientId: query.recipientId,
+      recipientId: isSuperAdmin ? query.recipientId : currentUser.sub,
       key: query.key,
       isRead: query.isRead,
     };
 
-    const [items, total] = await Promise.all([
+    const unreadScope = isSuperAdmin
+      ? { isRead: false as const }
+      : { recipientId: currentUser.sub, isRead: false as const };
+
+    const [items, total, unreadTotal] = await Promise.all([
       this.notificationRepository.findAll({ ...filters, limit, offset }),
       this.notificationRepository.countAll(filters),
+      this.notificationRepository.countAll(unreadScope),
     ]);
 
     return {
@@ -94,15 +101,34 @@ export class NotificationService {
       page: query.page,
       pageSize: query.pageSize,
       totalPages: Math.ceil(total / query.pageSize),
+      unreadTotal,
     };
   }
 
-  async markAsRead(id: string): Promise<NotificationRecord | null> {
-    return this.notificationRepository.markAsRead(id);
+  async markAsRead(
+    currentUser: JwtPayload,
+    id: string,
+  ): Promise<NotificationRecord> {
+    const isSuperAdmin = currentUser.role === Role.SUPER_ADMIN;
+    const updated = isSuperAdmin
+      ? await this.notificationRepository.markAsRead(id)
+      : await this.notificationRepository.markAsReadForRecipient(
+          id,
+          currentUser.sub,
+        );
+
+    if (!updated) {
+      throw new NotFoundException();
+    }
+
+    return updated;
   }
 
-  async markAllAsRead(recipientId?: string): Promise<number> {
-    return this.notificationRepository.markAllAsRead(recipientId);
+  async markAllAsRead(currentUser: JwtPayload): Promise<number> {
+    const isSuperAdmin = currentUser.role === Role.SUPER_ADMIN;
+    return this.notificationRepository.markAllAsRead(
+      isSuperAdmin ? undefined : currentUser.sub,
+    );
   }
 
   private runBestEffort(

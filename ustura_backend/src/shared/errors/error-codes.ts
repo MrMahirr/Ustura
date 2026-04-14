@@ -10,6 +10,7 @@ export const ERROR_CODES = {
     GOOGLE_VERIFICATION_UNAVAILABLE: 'auth.google_verification_unavailable',
     GOOGLE_WEB_NOT_CONFIGURED: 'auth.google_web_not_configured',
     INVALID_CREDENTIALS: 'auth.invalid_credentials',
+    PASSWORD_CHANGE_REQUIRED: 'auth.password_change_required',
     REFRESH_TOKEN_INVALID: 'auth.refresh_token_invalid',
     REFRESH_TOKEN_REUSE_DETECTED: 'auth.refresh_token_reuse_detected',
     FIREBASE_GOOGLE_NOT_CONFIGURED: 'auth.firebase_google_not_configured',
@@ -30,6 +31,8 @@ export const ERROR_CODES = {
     PHONE_ALREADY_EXISTS: 'user.phone_already_exists',
     PASSWORD_REQUIRED: 'user.password_required',
     PHONE_REQUIRED: 'user.phone_required',
+    INVALID_CURRENT_PASSWORD: 'user.invalid_current_password',
+    CANNOT_SELF_DEACTIVATE: 'user.cannot_self_deactivate',
   },
   PLATFORM_ADMIN: {
     ACCESS_FORBIDDEN: 'platform_admin.access_forbidden',
@@ -38,6 +41,10 @@ export const ERROR_CODES = {
     OWNER_APPLICATION_ALREADY_REVIEWED:
       'platform_admin.owner_application_already_reviewed',
     OWNER_APPLICATION_NOT_FOUND: 'platform_admin.owner_application_not_found',
+    OWNER_APPLICATION_APPLICANT_EMAIL_USED_BY_STAFF:
+      'platform_admin.owner_application_applicant_email_used_by_staff',
+    OWNER_APPLICATION_APPLICANT_OWNER_INACTIVE:
+      'platform_admin.owner_application_applicant_owner_inactive',
   },
   STAFF: {
     ALREADY_ASSIGNED: 'staff.already_assigned',

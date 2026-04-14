@@ -10,7 +10,10 @@ type SuperAdminTheme = ReturnType<typeof useSuperAdminTheme>;
 
 export type SalonActionIconName = ComponentProps<typeof MaterialIcons>['name'];
 
+export type SalonRowActionKind = 'view' | 'suspend' | 'restore' | 'delete';
+
 export interface SalonAction {
+  kind: SalonRowActionKind;
   icon: SalonActionIconName;
   label: string;
   color: string;
@@ -37,24 +40,19 @@ export function getStatusPalette(
 
 export function getRowActions(
   status: SalonStatus,
-  theme: Pick<
-    SuperAdminTheme,
-    'primary' | 'success' | 'error' | 'onSurfaceVariant'
-  >,
+  theme: Pick<SuperAdminTheme, 'primary' | 'success' | 'error'>,
 ): SalonAction[] {
-  const muted = hexToRgba(theme.onSurfaceVariant, 0.78);
-
   if (status === 'Askiya Alindi') {
     return [
-      { icon: 'restore', label: 'Yeniden aktiflestir', color: theme.success },
-      { icon: 'visibility', label: 'Detaylari gor', color: theme.primary },
-      { icon: 'more-vert', label: 'Diger islemler', color: muted },
+      { kind: 'restore', icon: 'restore', label: 'Yeniden aktiflestir', color: theme.success },
+      { kind: 'view', icon: 'visibility', label: 'Detaylari gor', color: theme.primary },
+      { kind: 'delete', icon: 'delete-outline', label: 'Salonu sil', color: theme.error },
     ];
   }
 
   return [
-    { icon: 'visibility', label: 'Detaylari gor', color: theme.primary },
-    { icon: 'block', label: 'Askiya al', color: theme.error },
-    { icon: 'more-vert', label: 'Diger islemler', color: muted },
+    { kind: 'view', icon: 'visibility', label: 'Detaylari gor', color: theme.primary },
+    { kind: 'suspend', icon: 'block', label: 'Askiya al', color: theme.error },
+    { kind: 'delete', icon: 'delete-outline', label: 'Salonu sil', color: theme.error },
   ];
 }

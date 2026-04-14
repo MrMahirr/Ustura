@@ -10,6 +10,8 @@ export interface User {
   firebaseUid: string | null;
   role: Role;
   isActive: boolean;
+  /** Personnel: true until user sets a new password (e.g. auto-provisioned staff). */
+  mustChangePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +34,8 @@ export interface CreateEmployeeInput {
   phone: string;
   passwordHash: string;
   role: Role.BARBER | Role.RECEPTIONIST;
+  /** When true, user must change password before other authenticated actions. */
+  mustChangePassword?: boolean;
 }
 
 export interface CreateOwnerInput {
@@ -50,6 +54,7 @@ export interface CreateUserRecordInput {
   allowPasswordless?: boolean;
   allowEmptyPhone?: boolean;
   role: Role;
+  mustChangePassword?: boolean;
 }
 
 export interface UpdateUserProfileInput {

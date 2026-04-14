@@ -48,6 +48,10 @@ export interface AdminSalonRecord {
   updatedAt: string;
 }
 
+export interface AdminSalonDetailRecord extends AdminSalonRecord {
+  workingHours: Record<string, WorkingHoursEntry | null>;
+}
+
 export interface AdminSalonOverview {
   total: number;
   active: number;
@@ -114,6 +118,44 @@ export async function getAdminSalons(filters: AdminSalonFilters = {}) {
 export async function getAdminSalonCities() {
   return apiRequest<string[]>({
     path: '/salons/admin/cities',
+    auth: true,
+  });
+}
+
+export type AdminSalonUpdatePayload = {
+  name?: string;
+  address?: string;
+  city?: string;
+  district?: string;
+  photoUrl?: string | null;
+  workingHours?: Record<string, unknown>;
+  isActive?: boolean;
+};
+
+export async function getAdminSalonById(salonId: string) {
+  return apiRequest<AdminSalonDetailRecord>({
+    path: `/salons/admin/${salonId}`,
+    auth: true,
+  });
+}
+
+export async function patchAdminSalon(salonId: string, body: AdminSalonUpdatePayload) {
+  return apiRequest<AdminSalonRecord>({
+    path: `/salons/admin/${salonId}`,
+    method: 'PATCH',
+    auth: true,
+    body,
+  });
+}
+
+export async function patchAdminSalonStatus(salonId: string, isActive: boolean) {
+  return patchAdminSalon(salonId, { isActive });
+}
+
+export async function deleteAdminSalon(salonId: string) {
+  return apiRequest<void>({
+    path: `/salons/admin/${salonId}`,
+    method: 'DELETE',
     auth: true,
   });
 }

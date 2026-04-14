@@ -160,6 +160,7 @@ export function useUserManagement() {
   const [cityOptions, setCityOptions] = React.useState<UserFilterOption[]>([{ label: 'Tum Sehirler' }]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [listRevision, setListRevision] = React.useState(0);
   const deferredQuery = React.useDeferredValue(query);
 
   const selectedRole = getSelectedOption(roleOptions, roleIndex);
@@ -228,7 +229,14 @@ export function useUserManagement() {
     return () => {
       isMounted = false;
     };
-  }, [deferredQuery, selectedCity.value, selectedRole.value, selectedSalon.value, selectedStatus.value]);
+  }, [
+    deferredQuery,
+    selectedCity.value,
+    selectedRole.value,
+    selectedSalon.value,
+    selectedStatus.value,
+    listRevision,
+  ]);
 
   React.useEffect(() => {
     if (roleIndex >= roleOptions.length) {
@@ -293,5 +301,6 @@ export function useUserManagement() {
       setSalonIndex(0);
       setCityIndex(0);
     },
+    refreshUsers: () => setListRevision((current) => current + 1),
   };
 }

@@ -30,6 +30,7 @@ export const STAFF_ACCESS_COPY = {
   identifierPlaceholder: 'ad@ustura.com',
   passwordLabel: 'Sifre',
   passwordPlaceholder: '********',
+  forgotPasswordLabel: 'Sifremi Unuttum',
   rememberLabel: 'Beni Hatirla',
   submitLabel: 'GIRIS YAP',
   submittingLabel: 'GIRIS YAPILIYOR',

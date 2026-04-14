@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -25,6 +26,7 @@ import { Role } from '../../shared/auth/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
+import { AdminSalonDetailDto } from './dto/admin-salon-detail.dto';
 import { AdminSalonSummaryDto } from './dto/admin-salon-summary.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { FindAdminSalonsQueryDto } from './dto/find-admin-salons-query.dto';
@@ -96,6 +98,53 @@ export class SalonController {
   @ApiOkResponse({ type: String, isArray: true })
   async findAdminCities() {
     return this.salonQueryService.findAdminCities();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Get('admin/:salonId')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Super admin: tek salon detayi (mesai dahil)' })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  @ApiOkResponse({ type: AdminSalonDetailDto })
+  async findAdminSalonById(
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+  ) {
+    return this.salonQueryService.findAdminSalonById(salonId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Patch('admin/:salonId')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary:
+      'Super admin: salon alanlarini guncelle (ad, adres, sehir, ilce, foto, mesai, aktiflik)',
+  })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  @ApiBody({ type: UpdateSalonDto })
+  @ApiOkResponse({ type: AdminSalonSummaryDto })
+  async adminUpdateSalon(
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+    @Body() dto: UpdateSalonDto,
+  ) {
+    return this.salonManagementService.adminUpdateSalon(salonId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Delete('admin/:salonId')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary:
+      'Super admin: salonu kalıcı sil (bağlı staff / rezervasyonlar cascade; abonelikler silinir)',
+  })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  async adminDeleteSalon(
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+  ) {
+    await this.salonManagementService.adminDeleteSalon(salonId);
+    return { deleted: true };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

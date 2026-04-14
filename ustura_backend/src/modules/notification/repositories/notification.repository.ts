@@ -140,6 +140,26 @@ export class NotificationRepository {
     return this.mapRow(result.rows[0]);
   }
 
+  async markAsReadForRecipient(
+    id: string,
+    recipientId: string,
+  ): Promise<NotificationRecord | null> {
+    const result = await this.databaseService.query<NotificationRow>({
+      name: 'notification.mark-read-for-recipient',
+      text: `
+        UPDATE notifications
+        SET is_read = TRUE
+        WHERE id = $1 AND recipient_id = $2
+        RETURNING
+          id, recipient_id, recipient_kind, key, title, body, tone,
+          metadata, is_read, created_at
+      `,
+      values: [id, recipientId],
+    });
+
+    return this.mapRow(result.rows[0]);
+  }
+
   async markAllAsRead(recipientId?: string): Promise<number> {
     const clauses: string[] = ['is_read = FALSE'];
     const values: unknown[] = [];

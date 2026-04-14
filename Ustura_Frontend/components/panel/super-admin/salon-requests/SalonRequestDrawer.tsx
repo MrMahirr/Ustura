@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
-import type { OwnerApplicationRecord } from '@/services/platform-admin.service';
 import { hexToRgba } from '@/utils/color';
 
 import { SALON_REQUEST_COPY, salonRequestClassNames } from './presentation';
@@ -19,10 +18,10 @@ import type { DrawerTab, SalonRequestListItem } from './types';
 
 interface SalonRequestDrawerProps {
   item: SalonRequestListItem;
-  raw: OwnerApplicationRecord;
   onClose: () => void;
   onApprove: (id: string) => void;
   onReject: (id: string, reason?: string) => void;
+  onOpenEditInfo: () => void;
   mutating: boolean;
 }
 
@@ -356,11 +355,13 @@ function DrawerFooter({
   item,
   onApprove,
   onReject,
+  onOpenEditInfo,
   mutating,
 }: {
   item: SalonRequestListItem;
   onApprove: () => void;
   onReject: (reason?: string) => void;
+  onOpenEditInfo: () => void;
   mutating: boolean;
 }) {
   const t = useSuperAdminTheme();
@@ -450,10 +451,13 @@ function DrawerFooter({
         borderTopColor: hexToRgba(t.onSurface, 0.1),
       }}>
       <Pressable
+        onPress={onOpenEditInfo}
+        disabled={mutating}
         style={{
           flex: 1,
           paddingVertical: 12,
           alignItems: 'center',
+          opacity: mutating ? 0.5 : 1,
         }}>
         <Text
           style={{
@@ -461,7 +465,7 @@ function DrawerFooter({
             fontFamily: 'Manrope-Bold',
             color: t.onSurfaceVariant,
           }}>
-          {SALON_REQUEST_COPY.requestInfo}
+          {SALON_REQUEST_COPY.editInfo}
         </Text>
       </Pressable>
       <Pressable
@@ -512,10 +516,10 @@ function DrawerFooter({
 
 export default function SalonRequestDrawer({
   item,
-  raw,
   onClose,
   onApprove,
   onReject,
+  onOpenEditInfo,
   mutating,
 }: SalonRequestDrawerProps) {
   const t = useSuperAdminTheme();
@@ -575,6 +579,7 @@ export default function SalonRequestDrawer({
         item={item}
         onApprove={() => onApprove(item.id)}
         onReject={(reason) => onReject(item.id, reason)}
+        onOpenEditInfo={onOpenEditInfo}
         mutating={mutating}
       />
     </View>

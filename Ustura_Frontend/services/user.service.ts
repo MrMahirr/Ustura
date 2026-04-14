@@ -90,4 +90,13 @@ export class UserService {
       auth: true,
     });
   }
+
+  static async patchAdminUserStatus(userId: string, isActive: boolean): Promise<AdminUserRecord> {
+    return apiRequest<AdminUserRecord>({
+      path: `/users/admin/${userId}/status`,
+      method: 'PATCH',
+      body: { isActive },
+      auth: true,
+    });
+  }
 }

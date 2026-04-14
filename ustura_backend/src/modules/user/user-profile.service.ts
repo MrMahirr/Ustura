@@ -93,6 +93,7 @@ export class UserProfileService {
       phone: user.phone,
       role: user.role,
       isActive: user.isActive,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

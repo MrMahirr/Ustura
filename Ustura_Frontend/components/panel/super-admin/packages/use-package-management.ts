@@ -143,6 +143,12 @@ function mapPackageDefinition(
       subscription.packageId === pkg.id && subscription.status === 'active',
   ).length;
 
+  const linkedSubscriptionCount = subscriptions.filter(
+    (subscription) =>
+      subscription.packageId === pkg.id &&
+      (subscription.status === 'active' || subscription.status === 'pending'),
+  ).length;
+
   return {
     id: pkg.id,
     tier: pkg.tier,
@@ -151,6 +157,7 @@ function mapPackageDefinition(
     pricePerMonth: pkg.pricePerMonth,
     features: pkg.features,
     activeSalonCount,
+    linkedSubscriptionCount,
     isFeatured: pkg.isFeatured,
     isActive: pkg.isActive,
   };
@@ -166,6 +173,8 @@ function mapSubscriptionRecord(subscription: ApiSubscription): SubscriptionRecor
     startDate: formatDateLabel(subscription.startDate) ?? '-',
     endDate: formatDateLabel(subscription.endDate),
     status: mapSubscriptionStatus(subscription.status),
+    canCancel:
+      subscription.status === 'active' || subscription.status === 'pending',
   };
 }
 
@@ -285,12 +294,25 @@ export function usePackageManagement() {
     [runMutation],
   );
 
-  const deactivatePackage = React.useCallback(
-    async (packageId: string) =>
-      runMutation(async () => {
-        await PackageService.deactivatePackage(packageId);
-      }),
-    [runMutation],
+  const deletePackage = React.useCallback(
+    async (
+      packageId: string,
+    ): Promise<{ ok: true } | { ok: false; message: string }> => {
+      setIsMutating(true);
+      setError(null);
+      try {
+        await PackageService.deletePackage(packageId);
+        await fetchData();
+        return { ok: true };
+      } catch (err: any) {
+        const message = err.message || 'Islem tamamlanamadi.';
+        setError(message);
+        return { ok: false, message };
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [fetchData],
   );
 
   const approvePackageSelection = React.useCallback(
@@ -307,6 +329,27 @@ export function usePackageManagement() {
         await PackageService.updateSubscriptionStatus(subscriptionId, 'cancelled');
       }),
     [runMutation],
+  );
+
+  const cancelSubscription = React.useCallback(
+    async (
+      subscriptionId: string,
+    ): Promise<{ ok: true } | { ok: false; message: string }> => {
+      setIsMutating(true);
+      setError(null);
+      try {
+        await PackageService.updateSubscriptionStatus(subscriptionId, 'cancelled');
+        await fetchData();
+        return { ok: true };
+      } catch (err: any) {
+        const message = err.message || 'Islem tamamlanamadi.';
+        setError(message);
+        return { ok: false, message };
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [fetchData],
   );
 
   return {
@@ -329,8 +372,9 @@ export function usePackageManagement() {
     refresh: fetchData,
     createPackage,
     updatePackage,
-    deactivatePackage,
+    deletePackage,
     approvePackageSelection,
     rejectPackageSelection,
+    cancelSubscription,
   };
 }

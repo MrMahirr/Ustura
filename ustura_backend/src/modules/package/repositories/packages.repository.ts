@@ -118,6 +118,16 @@ export class PackagesRepository {
     return result.rows[0] ? this.mapRow(result.rows[0]) : null;
   }
 
+  async deleteById(id: string): Promise<boolean> {
+    const result = await this.databaseService.query<{ id: string }>({
+      name: 'package.delete-by-id',
+      text: `DELETE FROM packages WHERE id = $1 RETURNING id`,
+      values: [id],
+    });
+
+    return result.rows.length > 0;
+  }
+
   private mapRow(row: PackageRow): Package {
     return {
       id: row.id,

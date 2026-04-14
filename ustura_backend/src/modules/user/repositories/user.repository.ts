@@ -53,6 +53,7 @@ export class UserRepository {
           p.password_hash,
           ${selectFirebase},
           ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -101,6 +102,7 @@ export class UserRepository {
           p.password_hash,
           ${selectFirebase},
           ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -126,6 +128,7 @@ export class UserRepository {
           p.password_hash,
           p.firebase_uid,
           '${Role.CUSTOMER}'::varchar(20) AS role,
+          FALSE::boolean AS must_change_password,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -174,6 +177,7 @@ export class UserRepository {
           p.password_hash,
           ${selectFirebase},
           ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -196,6 +200,12 @@ export class UserRepository {
       default:
         return 'personnel';
     }
+  }
+
+  private mustChangePasswordSelect(kind: PrincipalKind): string {
+    return kind === PrincipalKind.PERSONNEL
+      ? 'p.must_change_password'
+      : 'FALSE::boolean';
   }
 
   async findAdminUsers(filters: FindAdminUsersFilters): Promise<AdminUserSummary[]> {
@@ -275,6 +285,57 @@ export class UserRepository {
     });
 
     return this.mapAdminUserRow(result.rows[0]);
+  }
+
+  /**
+   * Super-admin: enable/disable salon personnel or platform admins.
+   * Staff rows for personnel are aligned so admin list status stays consistent.
+   */
+  async adminSetManagedUserActive(
+    userId: string,
+    isActive: boolean,
+  ): Promise<boolean> {
+    return this.databaseService.transaction(async (tx) => {
+      const platformResult = await tx.query(
+        `
+        UPDATE platform_admins
+        SET is_active = $2,
+            updated_at = NOW()
+        WHERE id = $1
+        `,
+        [userId, isActive],
+      );
+
+      if (platformResult.rowCount && platformResult.rowCount > 0) {
+        return true;
+      }
+
+      const personnelResult = await tx.query(
+        `
+        UPDATE personnel
+        SET is_active = $2,
+            updated_at = NOW()
+        WHERE id = $1
+        `,
+        [userId, isActive],
+      );
+
+      if (!personnelResult.rowCount || personnelResult.rowCount < 1) {
+        return false;
+      }
+
+      await tx.query(
+        `
+        UPDATE staff
+        SET is_active = $2,
+            updated_at = NOW()
+        WHERE user_id = $1
+        `,
+        [userId, isActive],
+      );
+
+      return true;
+    });
   }
 
   async getAdminOverview(): Promise<AdminUserOverview> {
@@ -379,6 +440,7 @@ export class UserRepository {
             password_hash,
             NULL::varchar(128) AS firebase_uid,
             '${Role.SUPER_ADMIN}'::varchar(20) AS role,
+            FALSE::boolean AS must_change_password,
             is_active,
             created_at,
             updated_at
@@ -414,6 +476,7 @@ export class UserRepository {
             password_hash,
             firebase_uid,
             '${Role.CUSTOMER}'::varchar(20) AS role,
+            FALSE::boolean AS must_change_password,
             is_active,
             created_at,
             updated_at
@@ -430,6 +493,8 @@ export class UserRepository {
       return this.mapRow(result.rows[0]) as User;
     }
 
+    const mustChangePassword = input.mustChangePassword === true;
+
     const result = await executor.query<UserRow>({
       name: 'user.create-personnel',
       text: `
@@ -438,9 +503,10 @@ export class UserRepository {
           email,
           phone,
           password_hash,
-          role
+          role,
+          must_change_password
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING
           id,
           name,
@@ -449,6 +515,7 @@ export class UserRepository {
           password_hash,
           NULL::varchar(128) AS firebase_uid,
           role,
+          must_change_password,
           is_active,
           created_at,
           updated_at
@@ -459,6 +526,7 @@ export class UserRepository {
         input.phone,
         input.passwordHash ?? null,
         input.role,
+        mustChangePassword,
       ],
     });
 
@@ -516,6 +584,7 @@ export class UserRepository {
           p.password_hash,
           ${selectFirebase},
           ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -558,6 +627,7 @@ export class UserRepository {
           p.password_hash,
           ${selectFirebase},
           ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -587,11 +657,69 @@ export class UserRepository {
           p.password_hash,
           p.firebase_uid,
           '${Role.CUSTOMER}'::varchar(20) AS role,
+          FALSE::boolean AS must_change_password,
           p.is_active,
           p.created_at,
           p.updated_at
       `,
       values: [firebaseUid, id],
+    });
+
+    return this.mapRow(result.rows[0]);
+  }
+
+  async updatePasswordHashForPrincipal(
+    kind: PrincipalKind,
+    id: string,
+    passwordHash: string,
+    options: { clearMustChangePassword: boolean },
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<User | null> {
+    const table = this.tableForPrincipalKind(kind);
+    const roleSql =
+      kind === PrincipalKind.PLATFORM_ADMIN
+        ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
+        : kind === PrincipalKind.CUSTOMER
+          ? `'${Role.CUSTOMER}'::varchar(20) AS role`
+          : 'p.role';
+
+    const selectFirebase =
+      kind === PrincipalKind.CUSTOMER
+        ? 'p.firebase_uid'
+        : 'NULL::varchar(128) AS firebase_uid';
+
+    const mustChangeSql =
+      kind === PrincipalKind.PERSONNEL && options.clearMustChangePassword
+        ? 'FALSE::boolean AS must_change_password'
+        : kind === PrincipalKind.PERSONNEL
+          ? 'p.must_change_password'
+          : 'FALSE::boolean AS must_change_password';
+
+    const setClause =
+      kind === PrincipalKind.PERSONNEL && options.clearMustChangePassword
+        ? 'password_hash = $2, must_change_password = FALSE'
+        : 'password_hash = $2';
+
+    const result = await executor.query<UserRow>({
+      name: 'user.update-password-hash',
+      text: `
+        UPDATE ${table} p
+        SET ${setClause}
+        WHERE p.id = $1
+        RETURNING
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          ${selectFirebase},
+          ${roleSql},
+          ${mustChangeSql},
+          p.is_active,
+          p.created_at,
+          p.updated_at
+      `,
+      values: [id, passwordHash],
     });
 
     return this.mapRow(result.rows[0]);
@@ -611,6 +739,7 @@ export class UserRepository {
       firebaseUid: row.firebase_uid,
       role: row.role,
       isActive: row.is_active,
+      mustChangePassword: Boolean(row.must_change_password),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -839,6 +968,7 @@ interface UserRow extends QueryResultRow {
   password_hash: string | null;
   firebase_uid: string | null;
   role: User['role'];
+  must_change_password?: boolean | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;

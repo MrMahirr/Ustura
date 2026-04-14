@@ -7,6 +7,7 @@ import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 
 import { getUserPanelShadow, userClassNames } from './presentation';
+import type { UserActionIconName } from './utils';
 import UserMobileCard from './UserMobileCard';
 import UserRow from './UserRow';
 import UserSalonGroupedView from './UserSalonGroupedView';
@@ -26,6 +27,7 @@ interface UserListSectionProps {
   onPageChange: (page: number) => void;
   onOpenSalon?: (salonId: string) => void;
   onOpenUser?: (userId: string) => void;
+  onUserRowAction?: (userId: string, icon: UserActionIconName) => void;
   onAddUser?: (salonId?: string) => void;
 }
 
@@ -54,9 +56,11 @@ function EmptyState({
 function DesktopTable({
   users,
   onOpenUser,
+  onUserRowAction,
 }: {
   users: UserRecord[];
   onOpenUser?: (userId: string) => void;
+  onUserRowAction?: (userId: string, icon: UserActionIconName) => void;
 }) {
   const adminTheme = useSuperAdminTheme();
 
@@ -86,7 +90,11 @@ function DesktopTable({
       <View>
         {users.map((user, index) => (
           <View key={user.id} style={index < users.length - 1 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 } : null}>
-            <UserRow user={user} onPress={() => onOpenUser?.(user.id)} />
+            <UserRow
+              user={user}
+              onPress={() => onOpenUser?.(user.id)}
+              onActionPress={onUserRowAction ? (icon) => onUserRowAction(user.id, icon) : undefined}
+            />
           </View>
         ))}
       </View>
@@ -198,6 +206,7 @@ export default function UserListSection({
   onPageChange,
   onOpenSalon,
   onOpenUser,
+  onUserRowAction,
   onAddUser,
 }: UserListSectionProps) {
   const adminTheme = useSuperAdminTheme();
@@ -245,11 +254,16 @@ export default function UserListSection({
           description="Arama terimini veya secili filtreleri degistirerek listeyi genisletebilirsiniz."
         />
       ) : useDesktopTable ? (
-        <DesktopTable users={users} onOpenUser={onOpenUser} />
+        <DesktopTable users={users} onOpenUser={onOpenUser} onUserRowAction={onUserRowAction} />
       ) : (
         <View className={userClassNames.mobileList}>
           {users.map((user) => (
-            <UserMobileCard key={user.id} user={user} onPress={() => onOpenUser?.(user.id)} />
+            <UserMobileCard
+              key={user.id}
+              user={user}
+              onPress={() => onOpenUser?.(user.id)}
+              onActionPress={onUserRowAction ? (icon) => onUserRowAction(user.id, icon) : undefined}
+            />
           ))}
         </View>
       )}

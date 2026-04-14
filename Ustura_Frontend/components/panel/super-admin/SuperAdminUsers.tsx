@@ -1,6 +1,6 @@
 import React from 'react';
 import { router } from 'expo-router';
-import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Alert, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
 import PanelTopBar from '@/components/panel/super-admin/PanelTopBar';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
@@ -11,12 +11,49 @@ import UserOverviewBar from '@/components/panel/super-admin/users/UserOverviewBa
 import UserPageHeader from '@/components/panel/super-admin/users/UserPageHeader';
 import { userClassNames } from '@/components/panel/super-admin/users/presentation';
 import { useUserManagement } from '@/components/panel/super-admin/users/use-user-management';
+import type { UserActionIconName } from '@/components/panel/super-admin/users/utils';
 import { buildPanelSalonDetailRoute, buildPanelUserDetailRoute } from '@/constants/routes';
+import { useAuth } from '@/hooks/use-auth';
+import { UserService } from '@/services/user.service';
 
 export default function SuperAdminUsers() {
   const { width } = useWindowDimensions();
   const adminTheme = useSuperAdminTheme();
   const userManagement = useUserManagement();
+  const { user: authUser } = useAuth();
+
+  const handleUserRowAction = async (userId: string, icon: UserActionIconName) => {
+    if (icon === 'block') {
+      if (authUser?.id === userId) {
+        Alert.alert('Islem yapilamadi', 'Kendi hesabinizi bu ekrandan durduramazsiniz.');
+        return;
+      }
+
+      try {
+        await UserService.patchAdminUserStatus(userId, false);
+        userManagement.refreshUsers();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Kullanici durdurulamadi.';
+        Alert.alert('Hata', message);
+      }
+
+      return;
+    }
+
+    if (icon === 'restore') {
+      try {
+        await UserService.patchAdminUserStatus(userId, true);
+        userManagement.refreshUsers();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Kullanici yeniden acilamadi.';
+        Alert.alert('Hata', message);
+      }
+
+      return;
+    }
+
+    router.push(buildPanelUserDetailRoute(userId));
+  };
 
   const isWide = width >= 1080;
   const useDesktopTable = width >= 1180;
@@ -81,6 +118,7 @@ export default function SuperAdminUsers() {
             onPageChange={userManagement.setPage}
             onOpenSalon={(salonId) => router.push(buildPanelSalonDetailRoute(salonId))}
             onOpenUser={(userId) => router.push(buildPanelUserDetailRoute(userId))}
+            onUserRowAction={handleUserRowAction}
             onAddUser={() => undefined}
           />
 

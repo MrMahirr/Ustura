@@ -50,6 +50,10 @@ const ALL_MIGRATION_ROWS = [
   '011_create_notifications.sql',
   '012_split_identity_tables.sql',
   '013_seed_demo_identity.sql',
+  '014_ensure_packages_tier_label.sql',
+  '015_ensure_salons_is_active.sql',
+  '016_owner_applications_review_state_allow_null_salon.sql',
+  '017_personnel_must_change_password.sql',
 ].map((filename) => ({ filename }));
 
 const IDENTITY_HEALTHY_SEQUENCE: unknown[] = [

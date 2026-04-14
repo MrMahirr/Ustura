@@ -26,3 +26,7 @@ export interface SalonRequestStats {
 }
 
 export type DrawerTab = 'general' | 'documents' | 'notes' | 'history';
+
+export type SaveOwnerApplicationResult =
+  | { ok: true }
+  | { ok: false; message: string };

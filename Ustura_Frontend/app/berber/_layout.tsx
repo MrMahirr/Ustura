@@ -11,7 +11,7 @@ const SIDEBAR_WIDTH = 256;
 const SIDEBAR_COLLAPSED_WIDTH = 88;
 
 export default function BarberLayout() {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, mustChangePassword } = useAuth();
   const theme = useBarberAdminTheme();
   const { width } = useWindowDimensions();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
@@ -27,6 +27,10 @@ export default function BarberLayout() {
 
   if (!isAuthenticated || !role || !STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number])) {
     return <Redirect href="/personel/giris" />;
+  }
+
+  if (mustChangePassword) {
+    return <Redirect href="/personel/sifre-degistir" />;
   }
 
   return (

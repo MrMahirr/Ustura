@@ -1,6 +1,7 @@
 import { ERROR_CODES } from '../../../shared/errors/error-codes';
 import {
   conflictError,
+  forbiddenError,
   serviceUnavailableError,
   unauthorizedError,
 } from '../../../shared/errors/http-exception.factory';
@@ -72,6 +73,13 @@ export function invalidCredentialsError() {
   return unauthorizedError(
     'Invalid email or password.',
     ERROR_CODES.AUTH.INVALID_CREDENTIALS,
+  );
+}
+
+export function passwordChangeRequiredError() {
+  return forbiddenError(
+    'You must change your password before using the application.',
+    ERROR_CODES.AUTH.PASSWORD_CHANGE_REQUIRED,
   );
 }
 

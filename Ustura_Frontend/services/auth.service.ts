@@ -19,6 +19,8 @@ export interface SessionUser {
   phone: string;
   role: SessionRole;
   isActive: boolean;
+  /** Backend: otomatik personel sifresi sonrasi true. */
+  mustChangePassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -118,6 +120,22 @@ export async function logoutSession(refreshToken: string) {
     path: '/auth/logout',
     method: 'POST',
     body: { refreshToken },
+    auth: true,
+  });
+}
+
+interface ChangeAuthenticatedPasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export async function changeAuthenticatedPassword(
+  payload: ChangeAuthenticatedPasswordPayload,
+) {
+  return apiRequest<AuthSession, ChangeAuthenticatedPasswordPayload>({
+    path: '/auth/password/change',
+    method: 'POST',
+    body: payload,
     auth: true,
   });
 }

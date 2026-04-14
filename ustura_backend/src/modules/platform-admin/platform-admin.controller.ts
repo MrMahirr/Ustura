@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -25,6 +26,7 @@ import { Role } from '../../shared/auth/role.enum';
 import { CreateOwnerApplicationDto } from './dto/create-owner-application.dto';
 import { OwnerApplicationResponseDto } from './dto/owner-application-response.dto';
 import { RejectOwnerApplicationDto } from './dto/reject-owner-application.dto';
+import { UpdateOwnerApplicationDto } from './dto/update-owner-application.dto';
 import { PlatformAdminService } from './platform-admin.service';
 
 @ApiTags('platform-admin')
@@ -68,6 +70,28 @@ export class PlatformAdminController {
     return this.platformAdminService.approveOwnerApplication(
       currentUser,
       applicationId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN)
+  @Patch('admin/owner-applications/:applicationId')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Update a pending owner application (super admin)',
+  })
+  @ApiParam({ name: 'applicationId', format: 'uuid' })
+  @ApiBody({ type: UpdateOwnerApplicationDto })
+  @ApiOkResponse({ type: OwnerApplicationResponseDto })
+  async updateOwnerApplication(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('applicationId', new ParseUUIDPipe()) applicationId: string,
+    @Body() updateOwnerApplicationDto: UpdateOwnerApplicationDto,
+  ) {
+    return this.platformAdminService.updateOwnerApplication(
+      currentUser,
+      applicationId,
+      updateOwnerApplicationDto,
     );
   }
 

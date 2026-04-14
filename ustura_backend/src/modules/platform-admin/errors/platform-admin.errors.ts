@@ -35,3 +35,17 @@ export function ownerApplicationNotFoundError() {
     ERROR_CODES.PLATFORM_ADMIN.OWNER_APPLICATION_NOT_FOUND,
   );
 }
+
+export function ownerApplicationApplicantEmailUsedByStaffError() {
+  return conflictError(
+    'This email is already registered as salon personnel (not as an owner). Use another email or remove the staff account first.',
+    ERROR_CODES.PLATFORM_ADMIN.OWNER_APPLICATION_APPLICANT_EMAIL_USED_BY_STAFF,
+  );
+}
+
+export function ownerApplicationApplicantOwnerInactiveError() {
+  return conflictError(
+    'This email belongs to an inactive owner account. Reactivate the account or use a different email.',
+    ERROR_CODES.PLATFORM_ADMIN.OWNER_APPLICATION_APPLICANT_OWNER_INACTIVE,
+  );
+}

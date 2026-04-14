@@ -31,6 +31,23 @@ export class SubscriptionsRepository {
     return result.rows.map((row) => this.mapRow(row));
   }
 
+  /** Active or pending subscriptions must be resolved before deleting a package. */
+  async countByPackageId(packageId: string): Promise<number> {
+    const result = await this.databaseService.query<{ count: string }>({
+      name: 'subscription.count-by-package-id',
+      text: `
+        SELECT COUNT(*)::text AS count
+        FROM subscriptions
+        WHERE package_id = $1
+          AND status IN ('active', 'pending')
+      `,
+      values: [packageId],
+    });
+
+    const raw = result.rows[0]?.count;
+    return raw != null ? Number(raw) : 0;
+  }
+
   async findByPackageId(packageId: string): Promise<Subscription[]> {
     const result = await this.databaseService.query<SubscriptionRow>({
       name: 'subscription.find-by-package-id',

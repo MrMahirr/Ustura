@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { OwnerApplicationRecord } from '@/services/platform-admin.service';
+import { ApiError } from '@/services/api';
+import type {
+  OwnerApplicationRecord,
+  UpdateOwnerApplicationInput,
+} from '@/services/platform-admin.service';
 import {
   approveOwnerApplication,
   getOwnerApplications,
   rejectOwnerApplication,
+  updateOwnerApplication,
 } from '@/services/platform-admin.service';
 
 import {
@@ -17,6 +22,7 @@ import type {
   ApplicationStatusFilter,
   SalonRequestListItem,
   SalonRequestStats,
+  SaveOwnerApplicationResult,
 } from './types';
 
 export function useSalonRequests() {
@@ -134,6 +140,33 @@ export function useSalonRequests() {
     [],
   );
 
+  const updateApplication = useCallback(
+    async (
+      applicationId: string,
+      body: UpdateOwnerApplicationInput,
+    ): Promise<SaveOwnerApplicationResult> => {
+      setMutating(true);
+      try {
+        const updated = await updateOwnerApplication(applicationId, body);
+        setRawApplications((prev) =>
+          prev.map((app) => (app.id === updated.id ? updated : app)),
+        );
+        return { ok: true };
+      } catch (err) {
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Kayit guncellenemedi.';
+        return { ok: false, message };
+      } finally {
+        setMutating(false);
+      }
+    },
+    [],
+  );
+
   return {
     query,
     setQuery,
@@ -154,5 +187,6 @@ export function useSalonRequests() {
     reload: load,
     handleApprove,
     handleReject,
+    updateApplication,
   };
 }

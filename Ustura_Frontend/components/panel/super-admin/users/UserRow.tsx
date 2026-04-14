@@ -9,127 +9,153 @@ import { cn } from '@/utils/cn';
 
 import { userClassNames } from './presentation';
 import UserActionIcon from './UserActionIcon';
+import type { UserActionIconName } from './utils';
 import { formatOccupancy, getOccupancyRatio, getRolePalette, getStatusPalette, getUserActions } from './utils';
 
-export default function UserRow({ user, onPress }: { user: UserRecord; onPress?: () => void }) {
+export default function UserRow({
+  user,
+  onPress,
+  onActionPress,
+}: {
+  user: UserRecord;
+  onPress?: () => void;
+  onActionPress?: (icon: UserActionIconName) => void;
+}) {
   const adminTheme = useSuperAdminTheme();
   const rolePalette = getRolePalette(user.role, adminTheme);
   const statusPalette = getStatusPalette(user.status, adminTheme);
   const actions = getUserActions(user.role, user.status, adminTheme);
   const occupancyRatio = getOccupancyRatio(user.dailyCapacity);
-  const handleActionPress = (event: GestureResponderEvent, isDetailAction: boolean) => {
+  const handleActionPress = (event: GestureResponderEvent, icon: UserActionIconName) => {
     event.stopPropagation();
 
-    if (isDetailAction) {
+    if (onActionPress) {
+      onActionPress(icon);
+      return;
+    }
+
+    if (icon === 'visibility') {
       onPress?.();
     }
   };
 
   return (
-    <Pressable
-      onPress={onPress}
-      className="min-h-24 flex-row items-center px-6"
-      style={({ hovered }) => [
-        { backgroundColor: hovered ? adminTheme.cardBackgroundStrong : 'transparent' },
-        Platform.OS === 'web'
-          ? ({
-              transition: 'background-color 180ms ease',
-              cursor: onPress ? 'pointer' : 'default',
-            } as any)
-          : null,
-      ]}>
-      {({ hovered }) => (
-        <>
-          <View className={userClassNames.cell} style={{ flex: 2.55 }}>
-            <View className={userClassNames.userInfo}>
-              <View
-                className={userClassNames.avatarFrame}
-                style={{ borderColor: adminTheme.borderSubtle, backgroundColor: adminTheme.cardBackgroundStrong }}>
-                <Image
-                  source={{ uri: user.avatarUrl }}
-                  style={[
-                    { width: '100%', height: '100%' },
-                    Platform.OS === 'web' && user.mutedImage ? ({ filter: 'grayscale(1)' } as any) : null,
-                  ]}
-                  contentFit="cover"
-                />
-              </View>
-              <View className={userClassNames.userCopy}>
-                <Text className={userClassNames.userName} style={{ color: adminTheme.onSurface }} numberOfLines={1}>
-                  {user.name}
-                </Text>
-                <Text className={userClassNames.userEmail} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }} numberOfLines={1}>
-                  {user.email}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View className={userClassNames.cell} style={{ flex: 1.05, paddingRight: 16 }}>
+    <View className="min-h-24 flex-row items-stretch px-6">
+      <Pressable
+        onPress={onPress}
+        style={({ hovered }) => [
+          {
+            flexGrow: 7.5,
+            flexShrink: 1,
+            flexBasis: 0,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: hovered ? adminTheme.cardBackgroundStrong : 'transparent',
+          },
+          Platform.OS === 'web'
+            ? ({
+                transition: 'background-color 180ms ease',
+                cursor: onPress ? 'pointer' : 'default',
+              } as any)
+            : null,
+        ]}>
+        <View className={userClassNames.cell} style={{ flex: 2.55 }}>
+          <View className={userClassNames.userInfo}>
             <View
-              className={userClassNames.roleBadge}
-              style={{ backgroundColor: rolePalette.backgroundColor, borderColor: rolePalette.borderColor }}>
-              <Text className={userClassNames.roleText} style={{ color: rolePalette.color }}>
-                {user.role}
+              className={userClassNames.avatarFrame}
+              style={{ borderColor: adminTheme.borderSubtle, backgroundColor: adminTheme.cardBackgroundStrong }}>
+              <Image
+                source={{ uri: user.avatarUrl }}
+                style={[
+                  { width: '100%', height: '100%' },
+                  Platform.OS === 'web' && user.mutedImage ? ({ filter: 'grayscale(1)' } as any) : null,
+                ]}
+                contentFit="cover"
+              />
+            </View>
+            <View className={userClassNames.userCopy}>
+              <Text className={userClassNames.userName} style={{ color: adminTheme.onSurface }} numberOfLines={1}>
+                {user.name}
+              </Text>
+              <Text className={userClassNames.userEmail} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }} numberOfLines={1}>
+                {user.email}
               </Text>
             </View>
           </View>
+        </View>
 
-          <View className={userClassNames.cell} style={{ flex: 1.65, paddingRight: 18 }}>
-            <Text className={userClassNames.salonName} style={{ color: adminTheme.onSurface }} numberOfLines={1}>
-              {user.salonName}
-            </Text>
-            <Text className={userClassNames.salonLocation} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }} numberOfLines={1}>
-              {user.salonLocation}
+        <View className={userClassNames.cell} style={{ flex: 1.05, paddingRight: 16 }}>
+          <View
+            className={userClassNames.roleBadge}
+            style={{ backgroundColor: rolePalette.backgroundColor, borderColor: rolePalette.borderColor }}>
+            <Text className={userClassNames.roleText} style={{ color: rolePalette.color }}>
+              {user.role}
             </Text>
           </View>
+        </View>
 
-          <View className={userClassNames.cell} style={{ flex: 1, paddingRight: 16 }}>
-            <View className={userClassNames.statusRow}>
-              <View className={userClassNames.statusDot} style={{ backgroundColor: statusPalette.accent }} />
-              <Text className={userClassNames.statusText} style={{ color: statusPalette.color }}>
-                {user.status}
-              </Text>
-            </View>
+        <View className={userClassNames.cell} style={{ flex: 1.65, paddingRight: 18 }}>
+          <Text className={userClassNames.salonName} style={{ color: adminTheme.onSurface }} numberOfLines={1}>
+            {user.salonName}
+          </Text>
+          <Text className={userClassNames.salonLocation} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.82) }} numberOfLines={1}>
+            {user.salonLocation}
+          </Text>
+        </View>
+
+        <View className={userClassNames.cell} style={{ flex: 1, paddingRight: 16 }}>
+          <View className={userClassNames.statusRow}>
+            <View className={userClassNames.statusDot} style={{ backgroundColor: statusPalette.accent }} />
+            <Text className={userClassNames.statusText} style={{ color: statusPalette.color }}>
+              {user.status}
+            </Text>
           </View>
+        </View>
 
-          <View className={userClassNames.cell} style={{ flex: 1.25, paddingRight: 16 }}>
-            {user.dailyCapacity ? (
-              <View className={userClassNames.occupancyWrap}>
-                <View className={userClassNames.occupancyHeader}>
-                  <Text className={userClassNames.occupancyLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.78) }}>
-                    Doluluk
-                  </Text>
-                  <Text className={userClassNames.occupancyValue} style={{ color: adminTheme.primary }}>
-                    {formatOccupancy(user.dailyCapacity)}
-                  </Text>
-                </View>
-                <View className={userClassNames.occupancyBar} style={{ backgroundColor: adminTheme.cardBackgroundStrong }}>
-                  <View className={userClassNames.occupancyBarFill} style={{ width: `${occupancyRatio * 100}%`, backgroundColor: adminTheme.primary }} />
-                </View>
+        <View className={userClassNames.cell} style={{ flex: 1.25, paddingRight: 16 }}>
+          {user.dailyCapacity ? (
+            <View className={userClassNames.occupancyWrap}>
+              <View className={userClassNames.occupancyHeader}>
+                <Text className={userClassNames.occupancyLabel} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.78) }}>
+                  Doluluk
+                </Text>
+                <Text className={userClassNames.occupancyValue} style={{ color: adminTheme.primary }}>
+                  {formatOccupancy(user.dailyCapacity)}
+                </Text>
               </View>
-            ) : (
-              <Text className={userClassNames.occupancyNa} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }}>
-                N/A
-              </Text>
-            )}
-          </View>
-
-          <View className={cn(userClassNames.cell, 'items-end')} style={{ flex: 1.05 }}>
-            <View className={userClassNames.actionsRow} style={{ opacity: hovered ? 1 : 0.18 }}>
-              {actions.map((action) => (
-                <UserActionIcon
-                  key={`${user.id}-${action.icon}`}
-                  icon={action.icon}
-                  label={action.label}
-                  color={action.color}
-                  onPress={(event) => handleActionPress(event, action.icon === 'visibility')}
-                />
-              ))}
+              <View className={userClassNames.occupancyBar} style={{ backgroundColor: adminTheme.cardBackgroundStrong }}>
+                <View className={userClassNames.occupancyBarFill} style={{ width: `${occupancyRatio * 100}%`, backgroundColor: adminTheme.primary }} />
+              </View>
             </View>
-          </View>
-        </>
-      )}
-    </Pressable>
+          ) : (
+            <Text className={userClassNames.occupancyNa} style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.72) }}>
+              N/A
+            </Text>
+          )}
+        </View>
+      </Pressable>
+
+      <View
+        className={cn(userClassNames.cell, 'items-end justify-center')}
+        style={{
+          flexGrow: 1.05,
+          flexShrink: 0,
+          flexBasis: 0,
+          paddingRight: 16,
+          ...(Platform.OS === 'web' ? ({ zIndex: 2 } as const) : null),
+        }}>
+        <View className={userClassNames.actionsRow}>
+          {actions.map((action) => (
+            <UserActionIcon
+              key={`${user.id}-${action.icon}`}
+              icon={action.icon}
+              label={action.label}
+              color={action.color}
+              onPress={(event) => handleActionPress(event, action.icon)}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
   );
 }

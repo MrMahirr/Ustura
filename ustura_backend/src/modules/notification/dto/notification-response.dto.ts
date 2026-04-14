@@ -48,4 +48,10 @@ export class NotificationListResponseDto {
 
   @ApiProperty()
   totalPages: number;
+
+  @ApiProperty({
+    description:
+      'Unread count in the same scope as mark-all (global for super admin, recipient-scoped otherwise).',
+  })
+  unreadTotal: number;
 }

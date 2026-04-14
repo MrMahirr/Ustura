@@ -38,6 +38,17 @@ export interface SubmitOwnerApplicationInput {
   notes?: string;
 }
 
+export interface UpdateOwnerApplicationInput {
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  salonName: string;
+  salonAddress: string;
+  salonCity: string;
+  salonDistrict?: string;
+  notes?: string;
+}
+
 const DEFAULT_WORKING_HOURS: Record<string, OwnerApplicationWorkingHoursEntry> = {
   monday: { open: '09:00', close: '19:00' },
   tuesday: { open: '09:00', close: '19:00' },
@@ -109,5 +120,28 @@ export async function rejectOwnerApplication(
     method: 'POST',
     auth: true,
     body: reason ? { rejectionReason: reason } : undefined,
+  });
+}
+
+export async function updateOwnerApplication(
+  applicationId: string,
+  body: UpdateOwnerApplicationInput,
+) {
+  const payload = {
+    applicantName: body.applicantName.trim(),
+    applicantEmail: body.applicantEmail.trim().toLowerCase(),
+    applicantPhone: body.applicantPhone.trim(),
+    salonName: body.salonName.trim(),
+    salonAddress: body.salonAddress.trim(),
+    salonCity: body.salonCity.trim(),
+    salonDistrict: body.salonDistrict?.trim() || undefined,
+    notes: body.notes?.trim() || undefined,
+  };
+
+  return apiRequest<OwnerApplicationRecord, typeof payload>({
+    path: `/admin/owner-applications/${applicationId}`,
+    method: 'PATCH',
+    auth: true,
+    body: payload,
   });
 }

@@ -55,6 +55,8 @@ export interface CorsConfig {
 export interface EmailJsConfig {
   serviceId: string;
   templateApproval: string;
+  /** Personel davet e-postasi (bos ise sadece log / dry-run). */
+  templateStaffWelcome: string;
   publicKey: string;
   privateKey: string;
 }
@@ -89,6 +91,7 @@ export interface EnvironmentVariables {
   CORS_CREDENTIALS: boolean;
   EMAILJS_SERVICE_ID: string;
   EMAILJS_TEMPLATE_APPROVAL: string;
+  EMAILJS_TEMPLATE_STAFF_WELCOME: string;
   EMAILJS_PUBLIC_KEY: string;
   EMAILJS_PRIVATE_KEY: string;
   FRONTEND_BASE_URL: string;
