@@ -20,6 +20,12 @@ export class AuthUserResponseDto {
   @ApiProperty()
   isActive: boolean;
 
+  @ApiProperty({
+    description:
+      'Personel icin: otomatik sifre sonrasi true; sifre degisince false.',
+  })
+  mustChangePassword: boolean;
+
   @ApiProperty()
   createdAt: string;
 

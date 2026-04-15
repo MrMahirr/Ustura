@@ -1,8 +1,14 @@
 import type { ComponentProps } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { salonRecords } from '@/components/panel/super-admin/salon-management.data';
-import { userRecords, type UserRecord } from '@/components/panel/super-admin/user-management.data';
+import type { UserRecord } from '@/components/panel/super-admin/user-management.data';
+import type {
+  AdminUserActivityResponse,
+  AdminUserDetailResponse,
+  AdminUserReservationResponse,
+  AdminUserStatsResponse,
+  AdminUserWorkingDayResponse,
+} from '@/services/user.service';
 
 export interface UserProfileMetric {
   id: string;
@@ -66,170 +72,203 @@ export interface UserProfile {
   quickActions: UserProfileQuickAction[];
 }
 
-const monthLabels = ['Oca', 'Sub', 'Mar', 'Nis', 'May', 'Haz'];
-const customerNames = ['Caner Yildiz', 'Arda Turan', 'Murat Ozdemir', 'Baris Koc', 'Eren Kaya'];
-const expertisePool = ['Cilt Bakimi', 'Modern Gecis', 'Sicak Havlu Tirasi', 'Stil Verme', 'Klasik Kesim', 'Bakim'];
+function formatTurkishDate(iso: string): string {
+  try {
+    const date = new Date(iso);
+    const now = new Date();
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
 
-function hashValue(input: string) {
-  return input.split('').reduce((total, char, index) => total + char.charCodeAt(0) * (index + 5), 0);
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday =
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear();
+
+    const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+    if (isToday) return `Bugun, ${time}`;
+    if (isYesterday) return `Dun, ${time}`;
+
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 7) return `${diffDays} gun once, ${time}`;
+
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}, ${time}`;
+  } catch {
+    return iso;
+  }
+}
+
+function mapReservationStatus(status: string): { label: string; tone: 'primary' | 'success' } {
+  switch (status) {
+    case 'completed':
+      return { label: 'Tamamlandi', tone: 'success' };
+    case 'confirmed':
+      return { label: 'Onaylandi', tone: 'success' };
+    case 'pending':
+      return { label: 'Bekliyor', tone: 'primary' };
+    case 'cancelled':
+      return { label: 'Iptal', tone: 'primary' };
+    case 'no_show':
+      return { label: 'Gelmedi', tone: 'primary' };
+    default:
+      return { label: status, tone: 'primary' };
+  }
+}
+
+function mapAuditActionTitle(action: string): string {
+  switch (action) {
+    case 'auth.logged_in':
+      return 'Sisteme giris yapildi';
+    case 'auth.logged_out':
+      return 'Oturum kapatildi';
+    case 'auth.registered':
+      return 'Hesap olusturuldu';
+    case 'auth.refreshed':
+      return 'Oturum yenilendi';
+    case 'staff.created':
+      return 'Personel olarak atandi';
+    case 'staff.updated':
+      return 'Personel bilgileri guncellendi';
+    case 'staff.deactivated':
+      return 'Personel devre disi';
+    case 'reservation.created':
+      return 'Randevu olusturuldu';
+    case 'reservation.cancelled':
+      return 'Randevu iptal edildi';
+    case 'reservation.status_updated':
+      return 'Randevu durumu guncellendi';
+    default:
+      return action.replace(/\./g, ' ');
+  }
 }
 
 function formatCompactCurrency(value: number) {
-  return `${(value / 1000).toFixed(1)} Bin TL`;
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)} Bin TL`;
+  }
+  return `${value} TL`;
 }
 
-function buildPhoneNumber(hash: number) {
-  const chunk = String(1000 + (hash % 9000));
-  const middle = String(100 + (Math.floor(hash / 10) % 900));
-  return `+90 (5${20 + (hash % 70)}) ${middle} ${chunk.slice(0, 2)} ${chunk.slice(2)}`;
-}
-
-function extractDistrict(location: string) {
-  const [, district] = location.split(',');
-  return district?.trim() ?? location;
-}
-
-function createMetrics(user: UserRecord, hash: number): UserProfileMetric[] {
-  const totalAppointments = 960 + (hash % 620);
-  const averageRating = (4.7 + ((hash % 3) * 0.1)).toFixed(1);
-  const monthlyEarnings = 10800 + (hash % 4200);
-  const completedServices = Math.round(totalAppointments * 0.63);
+function buildMetrics(stats: AdminUserStatsResponse): UserProfileMetric[] {
+  const completionRate =
+    stats.totalReservations > 0
+      ? Math.round((stats.completedReservations / stats.totalReservations) * 100)
+      : 0;
 
   return [
     {
       id: 'appointments',
       label: 'Toplam Randevu',
-      value: new Intl.NumberFormat('tr-TR').format(totalAppointments),
-      note: 'Son 12 ay ozeti',
-      accentLabel: `+${8 + (hash % 9)}%`,
+      value: new Intl.NumberFormat('tr-TR').format(stats.totalReservations),
+      note: 'Tum zamanlar',
+      accentLabel: stats.last30DaysReservations > 0 ? `+${stats.last30DaysReservations}` : undefined,
       accentTone: 'positive',
       kind: 'progress',
-      progress: 68 + (hash % 22),
+      progress: completionRate,
     },
     {
-      id: 'rating',
-      label: 'Ortalama Puan',
-      value: averageRating,
-      note: `${640 + (hash % 280)} degerlendirme`,
-      kind: 'rating',
+      id: 'completed',
+      label: 'Tamamlanan',
+      value: new Intl.NumberFormat('tr-TR').format(stats.completedReservations),
+      note: `%${completionRate} tamamlanma orani`,
+      kind: 'summary',
     },
     {
-      id: 'earnings',
-      label: 'Aylik Kazanc',
-      value: formatCompactCurrency(monthlyEarnings),
-      note: 'Cari ay tahmini',
+      id: 'last30',
+      label: 'Son 30 Gun',
+      value: new Intl.NumberFormat('tr-TR').format(stats.last30DaysReservations),
+      note: `Gunluk ort. ${stats.averagePerDay.toFixed(1)}`,
       accentLabel: 'Canli',
       accentTone: 'positive',
       kind: 'summary',
     },
     {
-      id: 'services',
-      label: 'Tamamlanan Hizmetler',
-      value: new Intl.NumberFormat('tr-TR').format(completedServices),
-      note: 'Mali yil toplami',
+      id: 'cancelled',
+      label: 'Iptal Edilen',
+      value: new Intl.NumberFormat('tr-TR').format(stats.cancelledReservations),
+      note: stats.totalReservations > 0
+        ? `%${Math.round((stats.cancelledReservations / stats.totalReservations) * 100)} iptal orani`
+        : 'Veri yok',
       kind: 'summary',
     },
   ];
 }
 
-function createSchedule(hash: number): UserProfileScheduleItem[] {
-  const weekdayEnd = 18 + (hash % 2);
-  const saturdayEnd = 20 + (hash % 2);
+function buildSchedule(workingHours: AdminUserWorkingDayResponse[]): UserProfileScheduleItem[] {
+  if (workingHours.length === 0) {
+    return [
+      { id: 'no-schedule', label: 'Calisma saati bilgisi yok', hoursLabel: '-', tone: 'muted' },
+    ];
+  }
 
-  return [
-    {
-      id: 'weekday',
-      label: 'Pazartesi - Cuma',
-      hoursLabel: `09:00 - ${weekdayEnd}:00`,
-      tone: 'primary',
-    },
-    {
-      id: 'saturday',
-      label: 'Cumartesi',
-      hoursLabel: `10:00 - ${saturdayEnd}:00`,
-      tone: 'primary',
-    },
-    {
-      id: 'sunday',
-      label: 'Pazar',
-      hoursLabel: 'Kapali',
-      tone: 'error',
-    },
-  ];
-}
-
-function createAppointments(user: UserRecord, hash: number): UserProfileAppointment[] {
-  const services = [
-    `${user.specialties[0] ?? 'Sac Kesimi'} ve ${user.specialties[1] ?? 'Bakim'}`,
-    user.specialties[1] ?? 'Cilt Bakimi',
-    user.specialties[0] ?? 'Klasik Kesim',
-  ];
-  const dates = ['Bugun, 14:30', 'Bugun, 11:00', 'Dun, 17:00'];
-
-  return services.map((serviceName, index) => ({
-    id: `${user.id}-appointment-${index + 1}`,
-    customerName: customerNames[(hash + index * 2) % customerNames.length],
-    serviceName,
-    dateTimeLabel: dates[index],
-    statusLabel: index === 0 ? 'Aktif' : 'Tamamlandi',
-    statusTone: index === 0 ? 'primary' : 'success',
+  return workingHours.map((wh) => ({
+    id: wh.day.toLowerCase(),
+    label: wh.day,
+    hoursLabel: wh.open && wh.close ? `${wh.open} - ${wh.close}` : 'Kapali',
+    tone: (wh.open && wh.close ? 'primary' : 'error') as 'primary' | 'error',
   }));
 }
 
-function createEarningsSeries(hash: number): UserProfileEarningsPoint[] {
-  return monthLabels.map((monthLabel, index) => {
-    const averageLevel = 34 + ((hash + index * 9) % 22);
-    const revenueLevel = Math.min(100, averageLevel + 10 + ((hash + index * 13) % 28));
+function buildAppointments(reservations: AdminUserReservationResponse[]): UserProfileAppointment[] {
+  if (reservations.length === 0) {
+    return [];
+  }
 
+  return reservations.map((r) => {
+    const statusInfo = mapReservationStatus(r.status);
     return {
-      id: `${monthLabel.toLowerCase()}-${hash}`,
-      monthLabel,
-      revenueLevel,
-      averageLevel,
+      id: r.id,
+      customerName: r.customerName,
+      serviceName: r.notes?.trim() || 'Randevu',
+      dateTimeLabel: formatTurkishDate(r.slotStart),
+      statusLabel: statusInfo.label,
+      statusTone: statusInfo.tone,
     };
   });
 }
 
-function createExpertise(user: UserRecord, hash: number) {
-  const nextExpertise = expertisePool.filter((item) => !user.specialties.includes(item));
+function buildEarningsSeries(): UserProfileEarningsPoint[] {
+  return [];
+}
+
+function buildExpertise(user: UserRecord): string[] {
   const expertise = [...user.specialties];
-
-  while (expertise.length < 5 && nextExpertise.length > 0) {
-    const nextIndex = (hash + expertise.length * 3) % nextExpertise.length;
-    expertise.push(nextExpertise.splice(nextIndex, 1)[0]);
+  if (expertise.length === 0) {
+    if (user.role === 'Yonetici') {
+      expertise.push('Operasyon', 'Platform Yonetimi');
+    } else if (user.role === 'Sahip') {
+      expertise.push('Salon Yonetimi', user.city);
+    } else {
+      expertise.push('Sac Kesimi', 'Bakim');
+    }
   }
-
   return expertise;
 }
 
-function createActivities(user: UserRecord): UserProfileActivity[] {
-  return [
-    {
-      id: `${user.id}-activity-1`,
-      title: 'Randevu tamamlandi',
-      detail: `Musteri: ${user.name.split(' ')[0]} ile planlanan son seans kapatildi - Bugun, 11:45`,
-      highlighted: true,
-    },
-    {
-      id: `${user.id}-activity-2`,
-      title: 'Profil guncellendi',
-      detail: 'Iletisim telefonu ve calisma saatleri duzenlendi - Dun, 09:20',
-    },
-    {
-      id: `${user.id}-activity-3`,
-      title: 'Yeni sertifika eklendi',
-      detail: `${user.title} uzmanlik etiketi sisteme tanimlandi - 2 gun once`,
-    },
-    {
-      id: `${user.id}-activity-4`,
-      title: 'Sisteme giris yapildi',
-      detail: `${user.city} konumundan web panel oturumu acildi - 3 gun once`,
-      subdued: true,
-    },
-  ];
+function buildActivities(entries: AdminUserActivityResponse[]): UserProfileActivity[] {
+  if (entries.length === 0) {
+    return [
+      { id: 'no-activity', title: 'Henuz aktivite yok', detail: 'Bu kullanici icin kayitli islem bulunamadi.' },
+    ];
+  }
+
+  return entries.map((entry, index) => ({
+    id: entry.id,
+    title: mapAuditActionTitle(entry.action),
+    detail: entry.detail
+      ? `${entry.detail} - ${formatTurkishDate(entry.createdAt)}`
+      : formatTurkishDate(entry.createdAt),
+    highlighted: index === 0,
+    subdued: entry.action.startsWith('auth.'),
+  }));
 }
 
-function createQuickActions(): UserProfileQuickAction[] {
+function buildQuickActions(): UserProfileQuickAction[] {
   return [
     { id: 'reassign', label: 'Baska Salona Ata', icon: 'arrow-forward' },
     { id: 'reset-password', label: 'Sifre Sifirla', icon: 'lock-reset' },
@@ -237,35 +276,28 @@ function createQuickActions(): UserProfileQuickAction[] {
   ];
 }
 
-function buildProfile(user: UserRecord): UserProfile {
-  const hash = hashValue(user.id);
-  const salon = user.salonId ? salonRecords.find((record) => record.id === user.salonId) : undefined;
-  const district = extractDistrict(salon?.location ?? user.salonLocation);
+function extractDistrict(location: string) {
+  const [, district] = location.split(',');
+  return district?.trim() ?? location;
+}
+
+export function buildUserProfile(
+  user: UserRecord,
+  detail: AdminUserDetailResponse,
+): UserProfile {
+  const district = extractDistrict(user.salonLocation);
 
   return {
     user,
-    phoneNumber: buildPhoneNumber(hash),
-    assignedSalonLabel: `${salon?.name ?? user.salonName} - ${district}`,
+    phoneNumber: detail.user.phone || '-',
+    assignedSalonLabel: `${user.salonName} - ${district}`,
     locationLabel: user.city,
-    metrics: createMetrics(user, hash),
-    weeklySchedule: createSchedule(hash),
-    recentAppointments: createAppointments(user, hash),
-    earningsSeries: createEarningsSeries(hash),
-    expertise: createExpertise(user, hash),
-    activities: createActivities(user),
-    quickActions: createQuickActions(),
+    metrics: buildMetrics(detail.stats),
+    weeklySchedule: buildSchedule(detail.workingHours),
+    recentAppointments: buildAppointments(detail.recentReservations),
+    earningsSeries: buildEarningsSeries(),
+    expertise: buildExpertise(user),
+    activities: buildActivities(detail.recentActivity),
+    quickActions: buildQuickActions(),
   };
-}
-
-export function getUserProfileById(userId?: string) {
-  if (!userId) {
-    return null;
-  }
-
-  const user = userRecords.find((record) => record.id === userId);
-  if (!user) {
-    return null;
-  }
-
-  return buildProfile(user);
 }

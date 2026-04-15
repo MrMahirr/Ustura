@@ -14,6 +14,12 @@ export class StaffResponseDto {
   @ApiProperty()
   displayName: string;
 
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  phone: string;
+
   @ApiProperty({ enum: [Role.BARBER, Role.RECEPTIONIST] })
   role: Role.BARBER | Role.RECEPTIONIST;
 

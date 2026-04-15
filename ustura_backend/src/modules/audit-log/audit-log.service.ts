@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 import {
-  AuditLogRecord,
+  AuditLogListResult,
   CreateAuditLogInput,
 } from './interfaces/audit-log.types';
 import { AuditLogPolicy } from './policies/audit-log.policy';
@@ -22,16 +22,14 @@ export class AuditLogService {
       const message =
         error instanceof Error ? error.message : 'Unknown audit logging error.';
 
-      this.logger.warn(
-        `Audit log write skipped: ${message}`,
-      );
+      this.logger.warn(`Audit log write skipped: ${message}`);
     });
   }
 
   async list(
     currentUser: JwtPayload,
     query: ListAuditLogsQueryDto,
-  ): Promise<AuditLogRecord[]> {
+  ): Promise<AuditLogListResult> {
     this.auditLogPolicy.assertCanList(currentUser);
 
     return this.auditLogRepository.findAll({
@@ -40,6 +38,7 @@ export class AuditLogService {
       entityType: query.entityType,
       entityId: query.entityId,
       limit: query.limit,
+      page: query.page,
     });
   }
 }

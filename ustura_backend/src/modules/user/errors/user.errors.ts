@@ -2,6 +2,7 @@ import { ERROR_CODES } from '../../../shared/errors/error-codes';
 import {
   badRequestError,
   conflictError,
+  forbiddenError,
   notFoundError,
 } from '../../../shared/errors/http-exception.factory';
 
@@ -61,6 +62,13 @@ export function passwordRequiredError() {
   );
 }
 
+export function invalidCurrentPasswordError() {
+  return badRequestError(
+    'Current password is incorrect.',
+    ERROR_CODES.USER.INVALID_CURRENT_PASSWORD,
+  );
+}
+
 export function phoneAlreadyExistsError() {
   return conflictError(
     'A user with this phone already exists.',
@@ -74,4 +82,11 @@ export function phoneRequiredError() {
 
 export function userNotFoundError() {
   return notFoundError('User not found.', ERROR_CODES.USER.NOT_FOUND);
+}
+
+export function cannotSelfDeactivateAdminUserError() {
+  return forbiddenError(
+    'You cannot deactivate your own administrator account.',
+    ERROR_CODES.USER.CANNOT_SELF_DEACTIVATE,
+  );
 }

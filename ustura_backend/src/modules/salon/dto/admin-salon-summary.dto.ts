@@ -28,6 +28,9 @@ export class AdminSalonSummaryDto {
   @ApiProperty({ nullable: true })
   photoUrl: string | null;
 
+  @ApiProperty({ type: [String] })
+  galleryUrls: string[];
+
   @ApiProperty()
   isActive: boolean;
 

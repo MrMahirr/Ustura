@@ -28,7 +28,9 @@ export class DomainEventBus {
     ) => {
       void Promise.resolve(handler(event)).catch((error: unknown) => {
         const message =
-          error instanceof Error ? error.message : 'Unknown domain event error.';
+          error instanceof Error
+            ? error.message
+            : 'Unknown domain event error.';
 
         this.logger.warn(
           `Domain event handler failed for ${eventName}: ${message}`,

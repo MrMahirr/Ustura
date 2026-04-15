@@ -14,10 +14,7 @@ import {
 import { SalonManagementService } from '../src/modules/salon/salon-management.service';
 import { SalonQueryService } from '../src/modules/salon/salon-query.service';
 import { createContractTestApp } from './helpers/create-contract-test-app';
-import {
-  TEST_JWT_SECRET,
-  TestJwtStrategy,
-} from './helpers/test-jwt.strategy';
+import { TEST_JWT_SECRET, TestJwtStrategy } from './helpers/test-jwt.strategy';
 
 describe('SalonController (e2e)', () => {
   let app: INestApplication;
@@ -140,7 +137,9 @@ describe('SalonController (e2e)', () => {
   });
 
   it('GET /api/salons/:salonId preserves the salon not found error contract', async () => {
-    salonQueryService.findPublicById.mockRejectedValueOnce(salonNotFoundError());
+    salonQueryService.findPublicById.mockRejectedValueOnce(
+      salonNotFoundError(),
+    );
 
     await request(app.getHttpServer())
       .get('/api/salons/11111111-1111-4111-8111-111111111111')

@@ -165,9 +165,7 @@ export class ReservationPolicy {
     throw cancellationForbiddenError();
   }
 
-  assertCanUpdateStatus(
-    context: ReservationStatusUpdatePolicyContext,
-  ): void {
+  assertCanUpdateStatus(context: ReservationStatusUpdatePolicyContext): void {
     const { currentUser, reservation, salonOwnerId, membership } = context;
 
     if (currentUser.role === Role.OWNER && salonOwnerId === currentUser.sub) {

@@ -13,6 +13,7 @@ export interface SalonRecord {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   workingHours: Record<string, WorkingHoursEntry | null>;
   isActive: boolean;
   createdAt: string;
@@ -43,9 +44,14 @@ export interface AdminSalonRecord {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminSalonDetailRecord extends AdminSalonRecord {
+  workingHours: Record<string, WorkingHoursEntry | null>;
 }
 
 export interface AdminSalonOverview {
@@ -118,8 +124,143 @@ export async function getAdminSalonCities() {
   });
 }
 
+export type AdminSalonUpdatePayload = {
+  name?: string;
+  address?: string;
+  city?: string;
+  district?: string;
+  photoUrl?: string | null;
+  galleryUrls?: string[];
+  workingHours?: Record<string, unknown>;
+  isActive?: boolean;
+};
+
+export async function getAdminSalonById(salonId: string) {
+  return apiRequest<AdminSalonDetailRecord>({
+    path: `/salons/admin/${salonId}`,
+    auth: true,
+  });
+}
+
+export async function patchAdminSalon(salonId: string, body: AdminSalonUpdatePayload) {
+  return apiRequest<AdminSalonRecord>({
+    path: `/salons/admin/${salonId}`,
+    method: 'PATCH',
+    auth: true,
+    body,
+  });
+}
+
+export async function patchAdminSalonStatus(salonId: string, isActive: boolean) {
+  return patchAdminSalon(salonId, { isActive });
+}
+
+export async function deleteAdminSalon(salonId: string) {
+  return apiRequest<void>({
+    path: `/salons/admin/${salonId}`,
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
 export async function getSalonById(salonId: string) {
   return apiRequest<SalonRecord>({
     path: `/salons/${salonId}`,
+  });
+}
+
+export interface OwnedSalonSummary {
+  id: string;
+  name: string;
+  city: string;
+  district: string | null;
+  photoUrl: string | null;
+  galleryUrls: string[];
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export async function getOwnedSalons() {
+  return apiRequest<OwnedSalonSummary[]>({
+    path: '/salons/owned',
+    auth: true,
+  });
+}
+
+export type OwnedSalonUpdatePayload = {
+  name?: string;
+  address?: string;
+  city?: string;
+  district?: string | null;
+  photoUrl?: string | null;
+  galleryUrls?: string[];
+  workingHours?: Record<string, WorkingHoursEntry | null>;
+};
+
+export async function getOwnedSalonDetail(salonId: string) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}`,
+    auth: true,
+  });
+}
+
+export async function updateOwnedSalon(salonId: string, body: OwnedSalonUpdatePayload) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}`,
+    method: 'PATCH',
+    auth: true,
+    body,
+  });
+}
+
+export async function uploadOwnedSalonPhoto(salonId: string, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiRequest<SalonRecord, FormData>({
+    path: `/salons/${salonId}/storefront-photo`,
+    method: 'POST',
+    auth: true,
+    body: formData,
+  });
+}
+
+export async function removeOwnedSalonPhoto(salonId: string) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}/storefront-photo`,
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
+export async function uploadOwnedSalonGalleryPhotos(
+  salonId: string,
+  files: File[],
+) {
+  const formData = new FormData();
+
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+
+  return apiRequest<SalonRecord, FormData>({
+    path: `/salons/${salonId}/storefront-gallery`,
+    method: 'POST',
+    auth: true,
+    body: formData,
+  });
+}
+
+export async function removeOwnedSalonGalleryPhoto(
+  salonId: string,
+  photoUrl: string,
+) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}/storefront-gallery`,
+    method: 'DELETE',
+    auth: true,
+    query: {
+      photoUrl,
+    },
   });
 }

@@ -156,6 +156,7 @@ export default function UserSalonGroupSection({
                 user={user}
                 basis={memberCardBasis}
                 onPress={() => onOpenUser?.(user.id)}
+                onMenuPress={() => onOpenUser?.(user.id)}
               />
             ))}
             <UserSalonAddCard basis={memberCardBasis} onPress={onAddUser} />

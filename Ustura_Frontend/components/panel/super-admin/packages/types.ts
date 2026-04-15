@@ -13,10 +13,17 @@ export interface PackageDefinition {
   pricePerMonth: number;
   features: PackageFeature[];
   activeSalonCount: number;
+  /** Active or pending subscriptions block hard delete (cancelled/expired do not). */
+  linkedSubscriptionCount: number;
   isFeatured: boolean;
+  isActive: boolean;
 }
 
-export type SubscriptionStatus = 'Aktif' | 'Suresi Doldu' | 'Beklemede';
+export type SubscriptionStatus =
+  | 'Aktif'
+  | 'Suresi Doldu'
+  | 'Beklemede'
+  | 'Iptal Edildi';
 
 export interface SubscriptionRecord {
   id: string;
@@ -27,6 +34,8 @@ export interface SubscriptionRecord {
   startDate: string;
   endDate: string | null;
   status: SubscriptionStatus;
+  /** True when admin may set subscription status to cancelled. */
+  canCancel: boolean;
 }
 
 export interface PackageOverview {

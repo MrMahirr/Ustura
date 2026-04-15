@@ -31,7 +31,17 @@ export interface SubmitOwnerApplicationInput {
   applicantName: string;
   applicantEmail: string;
   applicantPhone: string;
-  password: string;
+  salonName: string;
+  salonAddress: string;
+  salonCity: string;
+  salonDistrict?: string;
+  notes?: string;
+}
+
+export interface UpdateOwnerApplicationInput {
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
   salonName: string;
   salonAddress: string;
   salonCity: string;
@@ -53,7 +63,6 @@ interface SubmitOwnerApplicationPayload {
   applicantName: string;
   applicantEmail: string;
   applicantPhone: string;
-  password: string;
   salonName: string;
   salonAddress: string;
   salonCity: string;
@@ -72,7 +81,6 @@ export async function submitOwnerApplication(input: SubmitOwnerApplicationInput)
     applicantName: input.applicantName.trim(),
     applicantEmail: input.applicantEmail.trim().toLowerCase(),
     applicantPhone: input.applicantPhone.trim(),
-    password: input.password,
     salonName: input.salonName.trim(),
     salonAddress: input.salonAddress.trim(),
     salonCity: input.salonCity.trim(),
@@ -84,6 +92,56 @@ export async function submitOwnerApplication(input: SubmitOwnerApplicationInput)
   return apiRequest<OwnerApplicationRecord, SubmitOwnerApplicationPayload>({
     path: '/owner-applications',
     method: 'POST',
+    body: payload,
+  });
+}
+
+export async function getOwnerApplications() {
+  return apiRequest<OwnerApplicationRecord[]>({
+    path: '/admin/owner-applications',
+    auth: true,
+  });
+}
+
+export async function approveOwnerApplication(applicationId: string) {
+  return apiRequest<OwnerApplicationRecord>({
+    path: `/admin/owner-applications/${applicationId}/approve`,
+    method: 'POST',
+    auth: true,
+  });
+}
+
+export async function rejectOwnerApplication(
+  applicationId: string,
+  reason?: string,
+) {
+  return apiRequest<OwnerApplicationRecord, { rejectionReason?: string }>({
+    path: `/admin/owner-applications/${applicationId}/reject`,
+    method: 'POST',
+    auth: true,
+    body: reason ? { rejectionReason: reason } : undefined,
+  });
+}
+
+export async function updateOwnerApplication(
+  applicationId: string,
+  body: UpdateOwnerApplicationInput,
+) {
+  const payload = {
+    applicantName: body.applicantName.trim(),
+    applicantEmail: body.applicantEmail.trim().toLowerCase(),
+    applicantPhone: body.applicantPhone.trim(),
+    salonName: body.salonName.trim(),
+    salonAddress: body.salonAddress.trim(),
+    salonCity: body.salonCity.trim(),
+    salonDistrict: body.salonDistrict?.trim() || undefined,
+    notes: body.notes?.trim() || undefined,
+  };
+
+  return apiRequest<OwnerApplicationRecord, typeof payload>({
+    path: `/admin/owner-applications/${applicationId}`,
+    method: 'PATCH',
+    auth: true,
     body: payload,
   });
 }

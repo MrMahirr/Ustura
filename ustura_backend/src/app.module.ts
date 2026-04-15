@@ -7,6 +7,7 @@ import { EventsModule } from './events/events.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
@@ -15,6 +16,9 @@ import { SalonModule } from './modules/salon/salon.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { ReservationModule } from './modules/reservation/reservation.module';
 import { PackageModule } from './modules/package/package.module';
+import { AdminReportsModule } from './modules/admin-reports/admin-reports.module';
+import { SalonServiceModule } from './modules/salon-service/salon-service.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { StartupValidationService } from './startup/startup-validation.service';
 
 @Module({
@@ -32,6 +36,7 @@ import { StartupValidationService } from './startup/startup-validation.service';
     ]),
     AuthModule,
     AuditLogModule,
+    EmailModule,
     HealthModule,
     NotificationModule,
     PlatformAdminModule,
@@ -40,10 +45,13 @@ import { StartupValidationService } from './startup/startup-validation.service';
     StaffModule,
     ReservationModule,
     PackageModule,
+    AdminReportsModule,
+    SalonServiceModule,
   ],
   controllers: [],
   providers: [
     StartupValidationService,
+    JwtAuthGuard,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

@@ -166,6 +166,10 @@ function buildUrl(path: string, query?: Record<string, QueryValue>) {
   return url.toString();
 }
 
+function isFormDataBody(value: unknown): value is FormData {
+  return typeof FormData !== 'undefined' && value instanceof FormData;
+}
+
 export async function apiRequest<TResponse, TBody = unknown>({
   path,
   method = 'GET',
@@ -180,7 +184,7 @@ export async function apiRequest<TResponse, TBody = unknown>({
     ...headers,
   };
 
-  if (body !== undefined) {
+  if (body !== undefined && !isFormDataBody(body)) {
     requestHeaders['Content-Type'] = 'application/json';
   }
 
@@ -192,10 +196,17 @@ export async function apiRequest<TResponse, TBody = unknown>({
     }
   }
 
+  const requestBody =
+    body === undefined
+      ? undefined
+      : isFormDataBody(body)
+        ? body
+        : JSON.stringify(body);
+
   const response = await fetch(buildUrl(path, query), {
     method,
     headers: requestHeaders,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: requestBody,
   });
 
   if (response.status === 401 && auth && retryOnUnauthorized) {

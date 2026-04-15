@@ -8,10 +8,7 @@ import { AppConfigService } from '../../config/config.service';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
-import type {
-  PaginatedResult,
-  Salon,
-} from './interfaces/salon.types';
+import type { PaginatedResult, Salon } from './interfaces/salon.types';
 import { SalonPolicy } from './policies/salon.policy';
 import { SalonProjectionService } from './salon-projection.service';
 import { SalonOwnershipService } from './salon-ownership.service';
@@ -40,6 +37,7 @@ function createSalon(overrides: Partial<Salon> = {}): Salon {
     city: 'Istanbul',
     district: 'Besiktas',
     photoUrl: 'https://example.com/photo.jpg',
+    galleryUrls: [],
     workingHours: {
       monday: { open: '09:00', close: '19:00' },
       tuesday: { open: '09:00', close: '19:00' },
@@ -63,7 +61,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -101,7 +103,9 @@ describe('SalonService', () => {
       salonRepository,
       salonPolicy,
     );
-    const salonWorkingHoursService = new SalonWorkingHoursService(configService);
+    const salonWorkingHoursService = new SalonWorkingHoursService(
+      configService,
+    );
     const salonQueryService = new SalonQueryService(
       salonRepository,
       salonPolicy,
@@ -153,6 +157,7 @@ describe('SalonService', () => {
           city: 'Istanbul',
           district: 'Besiktas',
           photoUrl: 'https://example.com/photo.jpg',
+          galleryUrls: [],
         },
       ],
       pagination: {
@@ -167,7 +172,10 @@ describe('SalonService', () => {
   });
 
   it('lists distinct active salon cities for public filters', async () => {
-    salonRepository.findDistinctCities.mockResolvedValue(['Ankara', 'Istanbul']);
+    salonRepository.findDistinctCities.mockResolvedValue([
+      'Ankara',
+      'Istanbul',
+    ]);
 
     const result = await salonService.findPublicCities();
 
@@ -198,6 +206,7 @@ describe('SalonService', () => {
         city: 'Istanbul',
         district: 'Besiktas',
         photoUrl: 'https://example.com/salon.jpg',
+        galleryUrls: [],
         workingHours: {
           monday: { open: '09:00', close: '19:00' },
           tuesday: null,
@@ -217,6 +226,7 @@ describe('SalonService', () => {
       city: 'Istanbul',
       district: 'Besiktas',
       photoUrl: 'https://example.com/photo.jpg',
+      galleryUrls: [],
       workingHours: createSalon().workingHours,
       isActive: true,
       createdAt: new Date('2026-04-08T00:00:00.000Z'),

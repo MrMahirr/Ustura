@@ -5,6 +5,8 @@ import {
   USER_QUERY_SERVICE,
 } from './interfaces/user.contracts';
 import { UserController } from './user.controller';
+import { UserAdminManagementService } from './user-admin-management.service';
+import { UserAdminQueryService } from './user-admin-query.service';
 import { UserAccountPolicy } from './policies/user-account.policy';
 import { UserProfileService } from './user-profile.service';
 import { UserService } from './user.service';
@@ -16,6 +18,8 @@ import { UserRepository } from './repositories/user.repository';
   providers: [
     UserService,
     UserProfileService,
+    UserAdminQueryService,
+    UserAdminManagementService,
     UserRepository,
     UserAccountPolicy,
     {

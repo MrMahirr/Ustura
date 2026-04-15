@@ -87,7 +87,10 @@ describe('StaffRepository (Integration)', () => {
     salonStaff = await staffRepository.findActiveBarbersBySalonId(salonId);
     expect(salonStaff).toHaveLength(1);
 
-    const check1 = await staffRepository.findActiveByUserIdAndSalon(staffUserId, salonId);
+    const check1 = await staffRepository.findActiveByUserIdAndSalon(
+      staffUserId,
+      salonId,
+    );
     expect(check1?.id).toBe(created.id);
 
     const deactivated = await staffRepository.deactivate(created.id);
@@ -98,7 +101,9 @@ describe('StaffRepository (Integration)', () => {
   });
 
   it('find returns null for non existing staff', async () => {
-    const found = await staffRepository.findById('00000000-0000-0000-0000-000000000000');
+    const found = await staffRepository.findById(
+      '00000000-0000-0000-0000-000000000000',
+    );
     expect(found).toBeNull();
   });
 });

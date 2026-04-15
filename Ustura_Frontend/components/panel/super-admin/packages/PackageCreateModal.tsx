@@ -7,11 +7,14 @@ import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import { hexToRgba } from '@/utils/color';
+import type { CreatePackageInput, PackageTier } from '@/services/package.service';
 
 interface PackageCreateModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CreatePackageInput) => Promise<boolean>;
+  isSubmitting?: boolean;
+  errorMessage?: string | null;
 }
 
 const DEFAULT_FEATURES = [
@@ -26,16 +29,30 @@ export default function PackageCreateModal({
   visible,
   onClose,
   onSubmit,
+  isSubmitting = false,
+  errorMessage,
 }: PackageCreateModalProps) {
   const adminTheme = useSuperAdminTheme();
 
   const [name, setName] = useState('');
+  const [tier, setTier] = useState<PackageTier>('baslangic');
   const [tierLabel, setTierLabel] = useState('');
   const [pricePerMonth, setPricePerMonth] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  // Reset state when closing/opening could go here
+  React.useEffect(() => {
+    if (!visible) {
+      setName('');
+      setTier('baslangic');
+      setTierLabel('');
+      setPricePerMonth('');
+      setIsFeatured(false);
+      setFeatures(DEFAULT_FEATURES);
+      setLocalError(null);
+    }
+  }, [visible]);
 
   const handleToggleFeature = (index: number) => {
     setFeatures((prev) =>
@@ -49,15 +66,32 @@ export default function PackageCreateModal({
     );
   };
 
-  const submit = () => {
-    const data = {
+  const submit = async () => {
+    if (!name.trim() || !tierLabel.trim()) {
+      setLocalError('Paket adi ve tier etiketi zorunludur.');
+      return;
+    }
+
+    const parsedPrice = parseFloat(pricePerMonth);
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      setLocalError('Gecerli bir aylik fiyat gir.');
+      return;
+    }
+
+    setLocalError(null);
+    const data: CreatePackageInput = {
       name,
+      tier,
       tierLabel,
-      pricePerMonth: parseFloat(pricePerMonth) || 0,
+      pricePerMonth: parsedPrice,
       isFeatured,
       features,
     };
-    onSubmit(data);
+
+    const didSucceed = await onSubmit(data);
+    if (didSucceed) {
+      onClose();
+    }
   };
 
   return (
@@ -90,7 +124,11 @@ export default function PackageCreateModal({
 
       {/* Body */}
       <ScrollView
-        style={{ maxHeight: Platform.OS === 'web' ? '70vh' : 500 }}
+        style={
+          Platform.OS === 'web'
+            ? ({ maxHeight: '70vh' } as any)
+            : { maxHeight: 500 }
+        }
         contentContainerStyle={{ padding: 24 }}>
         <Text
           className="mb-4 font-label text-[10px] uppercase tracking-widest"
@@ -104,6 +142,50 @@ export default function PackageCreateModal({
             onChangeText={setName}
             iconLeft="title"
           />
+          <View className="gap-3">
+            <Text
+              className="font-label text-[10px] uppercase tracking-widest"
+              style={{ color: adminTheme.onSurfaceVariant, fontFamily: 'Manrope-Bold' }}>
+              Paket Kademesi
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {[
+                { label: 'Baslangic', value: 'baslangic' as const },
+                { label: 'Profesyonel', value: 'profesyonel' as const },
+                { label: 'Kurumsal', value: 'kurumsal' as const },
+              ].map((option) => {
+                const isSelected = option.value === tier;
+
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => setTier(option.value)}
+                    className="rounded-full border px-4 py-2"
+                    style={({ hovered }) => ({
+                      backgroundColor: isSelected
+                        ? hexToRgba(adminTheme.primary, 0.14)
+                        : hovered
+                          ? adminTheme.cardBackgroundStrong
+                          : 'transparent',
+                      borderColor: isSelected
+                        ? hexToRgba(adminTheme.primary, 0.3)
+                        : adminTheme.borderSubtle,
+                    })}>
+                    <Text
+                      className="font-label text-[10px] uppercase tracking-[2px]"
+                      style={{
+                        color: isSelected
+                          ? adminTheme.primary
+                          : adminTheme.onSurfaceVariant,
+                        fontFamily: 'Manrope-Bold',
+                      }}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
           <Input
             label="Tier Etiketi (ornegin: Standard Access)"
             value={tierLabel}
@@ -195,12 +277,19 @@ export default function PackageCreateModal({
       </ScrollView>
 
       {/* Footer */}
-      <View
-        className="flex-row items-center justify-end gap-3 border-t px-6 py-5"
+        <View
+          className="flex-row items-center justify-end gap-3 border-t px-6 py-5"
         style={{
           borderTopColor: adminTheme.borderSubtle,
           backgroundColor: adminTheme.cardBackgroundMuted,
         }}>
+        {localError || errorMessage ? (
+          <Text
+            className="mr-auto max-w-[320px] font-body text-xs"
+            style={{ color: adminTheme.error }}>
+            {localError || errorMessage}
+          </Text>
+        ) : null}
         <Pressable
           onPress={onClose}
           className="min-h-[44px] items-center justify-center rounded-md px-6"
@@ -222,9 +311,10 @@ export default function PackageCreateModal({
         </Pressable>
         <Pressable
           onPress={submit}
+          disabled={isSubmitting}
           className="overflow-hidden rounded-md"
           style={({ pressed, hovered }) => [
-            { transform: [{ scale: pressed ? 0.98 : 1 }] },
+            { transform: [{ scale: pressed ? 0.98 : 1 }], opacity: isSubmitting ? 0.7 : 1 },
             Platform.OS === 'web'
               ? ({
                   transition: 'transform 150ms ease, box-shadow 150ms ease',
@@ -247,7 +337,7 @@ export default function PackageCreateModal({
             <Text
               className="font-label text-xs uppercase tracking-widest"
               style={{ color: adminTheme.onPrimary, fontFamily: 'Manrope-Bold' }}>
-              Kaydet
+              {isSubmitting ? 'Kaydediliyor' : 'Kaydet'}
             </Text>
           </LinearGradient>
         </Pressable>

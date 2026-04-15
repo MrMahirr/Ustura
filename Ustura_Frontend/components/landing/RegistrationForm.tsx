@@ -32,7 +32,6 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
     ownerName: '',
     phone: '',
     email: '',
-    password: '',
     city: '',
     district: '',
     address: '',
@@ -62,7 +61,6 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
         applicantName: form.ownerName,
         applicantEmail: form.email,
         applicantPhone: form.phone,
-        password: form.password,
         salonName: form.salonName,
         salonAddress: form.address,
         salonCity: form.city,
@@ -78,7 +76,6 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
         ownerName: '',
         phone: '',
         email: '',
-        password: '',
         city: '',
         district: '',
         address: '',
@@ -177,23 +174,11 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
           <View className="mb-8" style={{ flexDirection: isDesktop ? 'row' : 'column', gap: width < 768 ? 20 : 32 }}>
             <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
               <Input
-                label="SIFRE"
-                secureTextEntry
-                autoCapitalize="none"
-                value={form.password}
-                onChangeText={(value) => updateFormValue('password', value)}
-              />
-            </View>
-            <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
-              <Input
                 label="SEHIR"
                 value={form.city}
                 onChangeText={(value) => updateFormValue('city', value)}
               />
             </View>
-          </View>
-
-          <View className="mb-8" style={{ flexDirection: isDesktop ? 'row' : 'column', gap: width < 768 ? 20 : 32 }}>
             <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
               <Input
                 label="ILCE"
@@ -201,6 +186,9 @@ export default function RegistrationForm({ onLayout }: RegistrationFormProps) {
                 onChangeText={(value) => updateFormValue('district', value)}
               />
             </View>
+          </View>
+
+          <View className="mb-8" style={{ flexDirection: isDesktop ? 'row' : 'column', gap: width < 768 ? 20 : 32 }}>
             <View className="w-full" style={{ flex: isDesktop ? 1 : undefined }}>
               <Input
                 label="ADRES"

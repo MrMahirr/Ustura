@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 
@@ -31,11 +31,9 @@ export default function SuperAdminAccessScreen() {
   const horizontalPadding = width < 480 ? 20 : width < 768 ? 24 : 32;
   const footerPaddingBottom = isDesktop ? 32 : 20;
 
-  React.useEffect(() => {
-    if (isAuthenticated && role === 'super_admin') {
-      router.replace('/panel');
-    }
-  }, [isAuthenticated, role, router]);
+  if (isAuthenticated && role === 'super_admin') {
+    return <Redirect href="/panel" />;
+  }
 
   const gridOverlayStyle =
     Platform.OS === 'web'

@@ -19,7 +19,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -70,7 +74,10 @@ function createReservationRepository(): jest.Mocked<
  * connection.
  */
 class InProcessRedisClient implements RedisClientLike {
-  private readonly store = new Map<string, { value: string; expiresAt: number | null }>();
+  private readonly store = new Map<
+    string,
+    { value: string; expiresAt: number | null }
+  >();
 
   async ping(): Promise<string> {
     return 'PONG';

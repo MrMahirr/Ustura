@@ -6,7 +6,6 @@ import {
   IsUrl,
   Length,
   MaxLength,
-  MinLength,
 } from 'class-validator';
 
 export class CreateOwnerApplicationDto {
@@ -20,11 +19,6 @@ export class CreateOwnerApplicationDto {
   @IsString()
   @Length(8, 20)
   applicantPhone: string;
-
-  @IsString()
-  @MinLength(8)
-  @MaxLength(72)
-  password: string;
 
   @IsString()
   @Length(2, 150)

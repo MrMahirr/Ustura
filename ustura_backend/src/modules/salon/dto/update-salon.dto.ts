@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsObject,
   IsOptional,
@@ -34,6 +35,16 @@ export class UpdateSalonDto {
     require_protocol: true,
   })
   photoUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUrl(
+    {
+      require_protocol: true,
+    },
+    { each: true },
+  )
+  galleryUrls?: string[];
 
   @IsOptional()
   @IsObject()

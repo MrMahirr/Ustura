@@ -1,5 +1,4 @@
 import React from 'react';
-import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, Text, View } from 'react-native';
 
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
@@ -14,6 +13,7 @@ function StatusBadge({ status }: { status: SubscriptionRecord['status'] }) {
     Aktif: adminTheme.success,
     'Suresi Doldu': adminTheme.error,
     Beklemede: adminTheme.warning,
+    'Iptal Edildi': adminTheme.error,
   };
 
   const color = colorMap[status];
@@ -67,22 +67,20 @@ function PackageBadge({ packageName, tier }: { packageName: string; tier: Subscr
   );
 }
 
-export default function SubscriptionRow({ subscription }: { subscription: SubscriptionRecord }) {
+export default function SubscriptionRow({
+  subscription,
+  onCancelSubscription,
+  cancelDisabled,
+}: {
+  subscription: SubscriptionRecord;
+  onCancelSubscription?: () => void;
+  cancelDisabled?: boolean;
+}) {
   const adminTheme = useSuperAdminTheme();
+  const showCancel = subscription.canCancel && onCancelSubscription;
 
   return (
-    <Pressable
-      className="min-h-[60px] flex-row items-center px-5"
-      style={({ hovered }) => [
-        {
-          backgroundColor: hovered
-            ? hexToRgba(adminTheme.onSurface, 0.03)
-            : 'transparent',
-        },
-        Platform.OS === 'web'
-          ? ({ transition: 'background-color 180ms ease', cursor: 'pointer' } as any)
-          : null,
-      ]}>
+    <View className="min-h-[60px] flex-row items-center px-5">
       {/* Salon */}
       <View className="flex-row items-center gap-3" style={{ flex: 2 }}>
         <View
@@ -122,20 +120,39 @@ export default function SubscriptionRow({ subscription }: { subscription: Subscr
       </View>
 
       {/* Action */}
-      <View className="items-end" style={{ flex: 0.5 }}>
-        <Pressable
-          className="h-8 w-8 items-center justify-center"
-          style={({ hovered }) => ({
-            opacity: hovered ? 1 : 0.6,
-          })}>
-          <MaterialIcons
-            name="more-vert"
-            size={18}
-            color={adminTheme.onSurfaceVariant}
-          />
-        </Pressable>
+      <View className="min-w-[100px] items-end justify-center" style={{ flex: 1 }}>
+        {showCancel ? (
+          <Pressable
+            disabled={cancelDisabled}
+            onPress={onCancelSubscription}
+            accessibilityLabel="Aboneligi iptal et"
+            className="min-h-[32px] items-center justify-center rounded-md border px-2.5 py-1"
+            style={({ hovered, pressed }) => [
+              {
+                opacity: cancelDisabled ? 0.45 : 1,
+                borderColor: hexToRgba(adminTheme.error, hovered || pressed ? 0.55 : 0.35),
+                backgroundColor:
+                  hovered || pressed ? hexToRgba(adminTheme.error, 0.08) : 'transparent',
+              },
+              Platform.OS === 'web'
+                ? ({ transition: 'border-color 150ms ease, background-color 150ms ease' } as any)
+                : null,
+            ]}>
+            <Text
+              className="font-label text-[9px] uppercase tracking-wide"
+              style={{ color: adminTheme.error, fontFamily: 'Manrope-Bold' }}>
+              Abonelik Iptali
+            </Text>
+          </Pressable>
+        ) : (
+          <Text
+            className="font-body text-xs"
+            style={{ color: hexToRgba(adminTheme.onSurfaceVariant, 0.35) }}>
+            —
+          </Text>
+        )}
       </View>
-    </Pressable>
+    </View>
   );
 }
 

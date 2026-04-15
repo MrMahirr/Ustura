@@ -11,15 +11,80 @@ import PackageProfileHero from '@/components/panel/super-admin/package-profile/P
 import { packageProfileClassNames } from '@/components/panel/super-admin/package-profile/presentation';
 import { usePackageProfile } from '@/components/panel/super-admin/package-profile/use-package-profile';
 import SubscriptionListSection from '@/components/panel/super-admin/packages/SubscriptionListSection';
+import type { SubscriptionRecord } from '@/components/panel/super-admin/packages/types';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { panelRoutes } from '@/constants/routes';
+import { PackageService, type Subscription } from '@/services/package.service';
 import { cn } from '@/utils/cn';
+import { hexToRgba } from '@/utils/color';
+import { confirmDestructive, showErrorFlash } from '@/utils/flash';
 
 export default function SuperAdminPackageProfile({ packageId }: { packageId?: string }) {
   const { width } = useWindowDimensions();
   const adminTheme = useSuperAdminTheme();
-  const { profile, isLoading, formState, handleSave } = usePackageProfile(packageId);
+  const { profile, isLoading, formState, handleSave, refresh } = usePackageProfile(packageId);
   const [query, setQuery] = React.useState('');
+  const [isCancellingSubscription, setIsCancellingSubscription] = React.useState(false);
+  const packageSubscribers = React.useMemo<SubscriptionRecord[]>(
+    () =>
+      (profile?.subscribers ?? []).map((subscription: Subscription) => ({
+        id: subscription.id,
+        salonName: subscription.salonName,
+        salonInitial:
+          subscription.salonInitial ??
+          subscription.salonName.slice(0, 1).toLocaleUpperCase('tr-TR'),
+        packageName: subscription.packageName,
+        packageTier: subscription.packageTier,
+        startDate: new Intl.DateTimeFormat('tr-TR').format(
+          new Date(subscription.startDate),
+        ),
+        endDate: subscription.endDate
+          ? new Intl.DateTimeFormat('tr-TR').format(new Date(subscription.endDate))
+          : null,
+        status:
+          subscription.status === 'active'
+            ? 'Aktif'
+            : subscription.status === 'expired'
+              ? 'Suresi Doldu'
+              : subscription.status === 'cancelled'
+                ? 'Iptal Edildi'
+                : 'Beklemede',
+        canCancel:
+          subscription.status === 'active' || subscription.status === 'pending',
+      })),
+    [profile?.subscribers],
+  );
+
+  const handleCancelSubscription = React.useCallback(
+    async (sub: SubscriptionRecord) => {
+      if (!sub.canCancel) {
+        return;
+      }
+
+      const msg = `"${sub.salonName}" salonunun bu paket aboneligini iptal etmek istiyor musunuz?`;
+      const ok = await confirmDestructive('Aboneligi iptal et', msg);
+
+      if (!ok) {
+        return;
+      }
+
+      setIsCancellingSubscription(true);
+      try {
+        await PackageService.updateSubscriptionStatus(sub.id, 'cancelled');
+        await refresh();
+      } catch (err: any) {
+        showErrorFlash(
+          'Hata',
+          typeof err?.message === 'string' && err.message.trim()
+            ? err.message
+            : 'Abonelik iptal edilemedi.',
+        );
+      } finally {
+        setIsCancellingSubscription(false);
+      }
+    },
+    [refresh],
+  );
 
   const isWide = width >= 1160;
   const useDesktopTable = width >= 1180;
@@ -93,14 +158,31 @@ export default function SuperAdminPackageProfile({ packageId }: { packageId?: st
           </View>
 
           <View className="mt-4">
-             <Text className="font-headline text-xl text-center mb-6" style={{color: adminTheme.onSurface}}>Pakete Abone Olan Guncel Salonlar</Text>
+             <Text className="font-headline text-xl text-center mb-4" style={{color: adminTheme.onSurface}}>Pakete Abone Olan Guncel Salonlar</Text>
+             {packageSubscribers.length > 0 ? (
+               <View
+                 className="mb-4 rounded-md border px-3 py-2.5"
+                 style={{
+                   backgroundColor: hexToRgba(adminTheme.warning, 0.08),
+                   borderColor: hexToRgba(adminTheme.warning, 0.25),
+                 }}>
+                 <Text className="font-body text-xs leading-5" style={{ color: adminTheme.onSurface }}>
+                   <Text style={{ fontFamily: 'Manrope-Bold' }}>Not: </Text>
+                   Aktif veya beklemedeki abonelikleri sonlandirmak icin listedeki &quot;Abonelik Iptali&quot; dugmesini
+                   kullanin. Abonelik iptali aninda uygulanir; paket adi, fiyat ve ozellikler icin &quot;Degisiklikleri
+                   Kaydet&quot;e basin.
+                 </Text>
+               </View>
+             ) : null}
              <SubscriptionListSection
-               subscriptions={profile.subscribers}
+               subscriptions={packageSubscribers}
                useDesktopTable={useDesktopTable}
+               onCancelSubscription={handleCancelSubscription}
+               cancelSubscriptionDisabled={isCancellingSubscription}
              />
           </View>
 
-          <PackageProfileFooter onSave={handleSave} />
+          <PackageProfileFooter onSave={handleSave} saveDisabled={isCancellingSubscription} />
         </View>
       </ScrollView>
     </View>

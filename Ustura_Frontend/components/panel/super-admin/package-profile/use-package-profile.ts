@@ -1,5 +1,11 @@
 import React from 'react';
-import { PackageService, type Package, type Subscription } from '@/services/package.service';
+import {
+  PackageService,
+  type Package,
+  type PackageFeature,
+  type PackageTier,
+  type Subscription,
+} from '@/services/package.service';
 
 export interface PackageProfileData extends Package {
   subscribers: Subscription[];
@@ -12,10 +18,11 @@ export function usePackageProfile(packageId?: string) {
   
   // Editable form state
   const [name, setName] = React.useState('');
+  const [tier, setTier] = React.useState<PackageTier>('baslangic');
   const [tierLabel, setTierLabel] = React.useState('');
   const [pricePerMonth, setPricePerMonth] = React.useState('');
   const [isFeatured, setIsFeatured] = React.useState(false);
-  const [features, setFeatures] = React.useState<any[]>([]);
+  const [features, setFeatures] = React.useState<PackageFeature[]>([]);
 
   const fetchProfile = React.useCallback(async () => {
     if (!packageId) {
@@ -31,6 +38,7 @@ export function usePackageProfile(packageId?: string) {
       
       // Initialize form state
       setName(data.name);
+      setTier(data.tier);
       setTierLabel(data.tierLabel);
       setPricePerMonth(data.pricePerMonth.toString());
       setIsFeatured(data.isFeatured);
@@ -67,36 +75,81 @@ export function usePackageProfile(packageId?: string) {
     setFeatures((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = async () => {
-    if (!packageId) return false;
-    
+  const handleSave = async (): Promise<
+    { ok: true } | { ok: false; message: string }
+  > => {
+    if (!packageId) {
+      const message = 'Paket secilmedi.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    setError(null);
+
+    const trimmedName = name.trim();
+    const trimmedTierLabel = tierLabel.trim();
+    if (!trimmedName || !trimmedTierLabel) {
+      const message = 'Paket adi ve tier etiketi zorunludur.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    const normalizedPrice = String(pricePerMonth).trim().replace(',', '.');
+    const parsedPrice = parseFloat(normalizedPrice);
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      const message = 'Gecerli bir aylik fiyat girin.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    const sanitizedFeatures = features.map((f, index) => ({
+      label: (f.label ?? '').trim() || `Ozellik ${index + 1}`,
+      included: Boolean(f.included),
+    }));
+
     try {
-      const updatedData = {
-        name,
-        tierLabel,
-        pricePerMonth: parseFloat(pricePerMonth) || 0,
+      await PackageService.updatePackage(packageId, {
+        name: trimmedName,
+        tier,
+        tierLabel: trimmedTierLabel,
+        pricePerMonth: parsedPrice,
         isFeatured,
-        features,
-      };
-      
-      await PackageService.updatePackage(packageId, updatedData);
-      await fetchProfile(); // Refresh
-      return true;
+        features: sanitizedFeatures,
+      });
+      await fetchProfile();
+      return { ok: true };
     } catch (err: any) {
-      setError(err.message);
-      return false;
+      const message =
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
+          : 'Kayit sirasinda bir hata olustu.';
+      setError(message);
+      return { ok: false, message };
     }
   };
 
-  const handleDeactivate = async () => {
-    if (!packageId) return false;
+  const handleDeactivate = async (): Promise<
+    { ok: true } | { ok: false; message: string }
+  > => {
+    if (!packageId) {
+      const message = 'Paket secilmedi.';
+      setError(message);
+      return { ok: false, message };
+    }
+
+    setError(null);
+
     try {
       await PackageService.updatePackage(packageId, { isActive: false });
       await fetchProfile();
-      return true;
+      return { ok: true };
     } catch (err: any) {
-      setError(err.message);
-      return false;
+      const message =
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
+          : 'Islem basarisiz.';
+      setError(message);
+      return { ok: false, message };
     }
   };
 
@@ -106,6 +159,7 @@ export function usePackageProfile(packageId?: string) {
     error,
     formState: {
       name, setName,
+      tier, setTier,
       tierLabel, setTierLabel,
       pricePerMonth, setPricePerMonth,
       isFeatured, setIsFeatured,

@@ -3,7 +3,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import { userOverview } from '@/components/panel/super-admin/user-management.data';
+import type { UserOverview } from '@/components/panel/super-admin/user-management.data';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { hexToRgba } from '@/utils/color';
 import { cn } from '@/utils/cn';
@@ -69,7 +69,13 @@ function ExportButton({
   );
 }
 
-export default function UserInsightsSection({ isWide }: { isWide: boolean }) {
+export default function UserInsightsSection({
+  isWide,
+  overview,
+}: {
+  isWide: boolean;
+  overview: UserOverview;
+}) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -96,8 +102,8 @@ export default function UserInsightsSection({ isWide }: { isWide: boolean }) {
         </View>
 
         <View className={userClassNames.growthMetrics}>
-          <GrowthMetricCard label="Yeni Kayit" value={userOverview.newRegistrations} valueColor={adminTheme.success} />
-          <GrowthMetricCard label="Donusum" value={userOverview.conversion} valueColor={adminTheme.primary} />
+          <GrowthMetricCard label="Yeni Kayit" value={overview.newRegistrations} valueColor={adminTheme.success} />
+          <GrowthMetricCard label="Donusum" value={overview.conversion} valueColor={adminTheme.primary} />
         </View>
       </View>
 

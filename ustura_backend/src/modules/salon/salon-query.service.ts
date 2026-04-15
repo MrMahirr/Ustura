@@ -4,6 +4,7 @@ import { FindAdminSalonsQueryDto } from './dto/find-admin-salons-query.dto';
 import { FindSalonsQueryDto } from './dto/find-salons-query.dto';
 import { salonNotFoundError } from './errors/salon.errors';
 import type {
+  AdminSalonDetail,
   AdminSalonSummary,
   PaginatedAdminSalonResult,
   OwnedSalonSummary,
@@ -71,11 +72,23 @@ export class SalonQueryService implements SalonCatalogServiceContract {
     return this.salonRepository.findAdminDistinctCities();
   }
 
+  async findAdminSalonById(id: string): Promise<AdminSalonDetail> {
+    const detail = await this.salonRepository.findAdminDetailById(id);
+
+    if (!detail) {
+      throw salonNotFoundError();
+    }
+
+    return detail;
+  }
+
   async findOwned(currentUser: JwtPayload): Promise<OwnedSalonSummary[]> {
     this.salonPolicy.assertCanManage(currentUser);
 
     const salons = await this.salonRepository.findByOwnerId(currentUser.sub);
-    return salons.map((salon) => this.salonProjectionService.toOwnedSummary(salon));
+    return salons.map((salon) =>
+      this.salonProjectionService.toOwnedSummary(salon),
+    );
   }
 
   async findPublicById(id: string): Promise<SalonPublicDetail> {

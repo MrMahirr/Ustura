@@ -7,10 +7,7 @@ import type { SlotSelection } from './slot.types';
 // ---------------------------------------------------------------------------
 
 function createMockSlotService(): jest.Mocked<
-  Pick<
-    SlotService,
-    'getSelections' | 'holdSelection' | 'releaseSelection'
-  >
+  Pick<SlotService, 'getSelections' | 'holdSelection' | 'releaseSelection'>
 > {
   return {
     getSelections: jest.fn().mockResolvedValue([]),
@@ -153,9 +150,7 @@ describe('SlotGateway – WebSocket slot interaction', () => {
         SELECTION_PAYLOAD.slotStart,
         'client-1',
       );
-      expect(client.data.selectedSlotStart).toBe(
-        SELECTION_PAYLOAD.slotStart,
-      );
+      expect(client.data.selectedSlotStart).toBe(SELECTION_PAYLOAD.slotStart);
       expect(server.to).toHaveBeenCalled();
       expect(result).toMatchObject({ selections });
     });
@@ -165,9 +160,7 @@ describe('SlotGateway – WebSocket slot interaction', () => {
       client.data.slotScope = SCOPE;
       client.data.selectedSlotStart = '2026-04-10T09:30:00.000Z';
 
-      slotService.holdSelection.mockResolvedValue(
-        buildSelections('client-1'),
-      );
+      slotService.holdSelection.mockResolvedValue(buildSelections('client-1'));
 
       await gateway.selectSlot(client as any, SELECTION_PAYLOAD as any);
 
@@ -183,9 +176,7 @@ describe('SlotGateway – WebSocket slot interaction', () => {
       client.data.slotScope = SCOPE;
       client.data.selectedSlotStart = SELECTION_PAYLOAD.slotStart;
 
-      slotService.holdSelection.mockResolvedValue(
-        buildSelections('client-1'),
-      );
+      slotService.holdSelection.mockResolvedValue(buildSelections('client-1'));
 
       await gateway.selectSlot(client as any, SELECTION_PAYLOAD as any);
 
@@ -226,9 +217,7 @@ describe('SlotGateway – WebSocket slot interaction', () => {
 
       await gateway.unselectSlot(client as any, SELECTION_PAYLOAD as any);
 
-      expect(client.data.selectedSlotStart).toBe(
-        '2026-04-10T11:00:00.000Z',
-      );
+      expect(client.data.selectedSlotStart).toBe('2026-04-10T11:00:00.000Z');
     });
   });
 

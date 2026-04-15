@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
-import {
-  CreatePackageInput,
-  Package,
-  PackageRow,
-  UpdatePackageInput,
-} from '../interfaces/package.types';
+import { Package, PackageRow } from '../interfaces/package.types';
+import { CreatePackageDto } from '../dto/create-package.dto';
+import { UpdatePackageDto } from '../dto/update-package.dto';
 
 @Injectable()
 export class PackagesRepository {
@@ -24,6 +21,18 @@ export class PackagesRepository {
     return result.rows.map((row) => this.mapRow(row));
   }
 
+  async findAllAdmin(): Promise<Package[]> {
+    const result = await this.databaseService.query<PackageRow>({
+      name: 'package.find-all-admin',
+      text: `
+        SELECT * FROM packages
+        ORDER BY is_active DESC, price_per_month ASC, created_at DESC
+      `,
+    });
+
+    return result.rows.map((row) => this.mapRow(row));
+  }
+
   async findById(id: string): Promise<Package | null> {
     const result = await this.databaseService.query<PackageRow>({
       name: 'package.find-by-id',
@@ -34,7 +43,7 @@ export class PackagesRepository {
     return result.rows[0] ? this.mapRow(result.rows[0]) : null;
   }
 
-  async create(input: CreatePackageInput): Promise<Package> {
+  async create(input: CreatePackageDto): Promise<Package> {
     const result = await this.databaseService.query<PackageRow>({
       name: 'package.create',
       text: `
@@ -57,13 +66,17 @@ export class PackagesRepository {
     return this.mapRow(result.rows[0]);
   }
 
-  async update(id: string, input: UpdatePackageInput): Promise<Package | null> {
+  async update(id: string, input: UpdatePackageDto): Promise<Package | null> {
     const updates: string[] = [];
     const values: any[] = [];
 
     if (input.name !== undefined) {
       values.push(input.name);
       updates.push(`name = $${values.length}`);
+    }
+    if (input.tier !== undefined) {
+      values.push(input.tier);
+      updates.push(`tier = $${values.length}`);
     }
     if (input.tierLabel !== undefined) {
       values.push(input.tierLabel);
@@ -100,6 +113,16 @@ export class PackagesRepository {
     });
 
     return result.rows[0] ? this.mapRow(result.rows[0]) : null;
+  }
+
+  async deleteById(id: string): Promise<boolean> {
+    const result = await this.databaseService.query<{ id: string }>({
+      name: 'package.delete-by-id',
+      text: `DELETE FROM packages WHERE id = $1 RETURNING id`,
+      values: [id],
+    });
+
+    return result.rows.length > 0;
   }
 
   private mapRow(row: PackageRow): Package {

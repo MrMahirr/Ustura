@@ -5,6 +5,7 @@ import type { SqlQueryExecutor } from '../../../database/database.types';
 import { Role } from '../../../shared/auth/role.enum';
 import {
   AuditLogRecord,
+  AuditLogListResult,
   CreateAuditLogInput,
   ListAuditLogsFilters,
 } from '../interfaces/audit-log.types';
@@ -54,52 +55,74 @@ export class AuditLogRepository {
     return this.mapRow(result.rows[0]) as AuditLogRecord;
   }
 
-  async findAll(filters: ListAuditLogsFilters): Promise<AuditLogRecord[]> {
+  async findAll(filters: ListAuditLogsFilters): Promise<AuditLogListResult> {
     const clauses: string[] = [];
     const values: unknown[] = [];
 
     if (filters.actorUserId) {
       values.push(filters.actorUserId);
-      clauses.push(`actor_user_id = $${values.length}`);
+      clauses.push(`al.actor_user_id = $${values.length}`);
     }
 
     if (filters.action) {
       values.push(filters.action);
-      clauses.push(`action = $${values.length}`);
+      clauses.push(`al.action = $${values.length}`);
     }
 
     if (filters.entityType) {
       values.push(filters.entityType);
-      clauses.push(`entity_type = $${values.length}`);
+      clauses.push(`al.entity_type = $${values.length}`);
     }
 
     if (filters.entityId) {
       values.push(filters.entityId);
-      clauses.push(`entity_id = $${values.length}`);
+      clauses.push(`al.entity_id = $${values.length}`);
     }
 
+    const whereClause =
+      clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+
+    const countResult = await this.databaseService.query<{ count: string }>({
+      text: `SELECT COUNT(*)::text AS count FROM audit_logs al ${whereClause}`,
+      values: [...values],
+    });
+    const total = Number(countResult.rows[0]?.count ?? 0);
+
+    const offset = (filters.page - 1) * filters.limit;
     values.push(filters.limit);
+    const limitIdx = values.length;
+    values.push(offset);
+    const offsetIdx = values.length;
 
     const result = await this.databaseService.query<AuditLogRow>({
       text: `
         SELECT
-          id,
-          actor_user_id,
-          actor_role,
-          action,
-          entity_type,
-          entity_id,
-          metadata,
-          created_at
-        FROM audit_logs
-        ${clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : ''}
-        ORDER BY created_at DESC
-        LIMIT $${values.length}
+          al.id,
+          al.actor_user_id,
+          al.actor_role,
+          al.action,
+          al.entity_type,
+          al.entity_id,
+          al.metadata,
+          al.created_at,
+          COALESCE(p.name, pa.name) AS actor_name
+        FROM audit_logs al
+        LEFT JOIN personnel p ON p.id = al.actor_user_id
+        LEFT JOIN platform_admins pa ON pa.id = al.actor_user_id
+        ${whereClause}
+        ORDER BY al.created_at DESC
+        LIMIT $${limitIdx} OFFSET $${offsetIdx}
       `,
       values,
     });
 
-    return result.rows.map((row) => this.mapRow(row) as AuditLogRecord);
+    return {
+      items: result.rows.map((row) => this.mapRow(row) as AuditLogRecord),
+      total,
+      page: filters.page,
+      pageSize: filters.limit,
+      totalPages: Math.ceil(total / filters.limit),
+    };
   }
 
   private mapRow(row?: AuditLogRow): AuditLogRecord | null {
@@ -111,6 +134,7 @@ export class AuditLogRepository {
       id: row.id,
       actorUserId: row.actor_user_id,
       actorRole: row.actor_role,
+      actorName: row.actor_name ?? null,
       action: row.action,
       entityType: row.entity_type,
       entityId: row.entity_id,
@@ -124,6 +148,7 @@ interface AuditLogRow extends QueryResultRow {
   id: string;
   actor_user_id: string | null;
   actor_role: Role | null;
+  actor_name?: string | null;
   action: AuditLogAction;
   entity_type: AuditLogEntityType;
   entity_id: string | null;

@@ -14,6 +14,8 @@ interface SubscriptionListSectionProps {
   subscriptions: SubscriptionRecord[];
   useDesktopTable: boolean;
   onViewAll?: () => void;
+  onCancelSubscription?: (subscription: SubscriptionRecord) => void;
+  cancelSubscriptionDisabled?: boolean;
 }
 
 function EmptyState() {
@@ -45,7 +47,15 @@ function EmptyState() {
   );
 }
 
-function DesktopTable({ subscriptions }: { subscriptions: SubscriptionRecord[] }) {
+function DesktopTable({
+  subscriptions,
+  onCancelSubscription,
+  cancelSubscriptionDisabled,
+}: {
+  subscriptions: SubscriptionRecord[];
+  onCancelSubscription?: (subscription: SubscriptionRecord) => void;
+  cancelSubscriptionDisabled?: boolean;
+}) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -85,7 +95,8 @@ function DesktopTable({ subscriptions }: { subscriptions: SubscriptionRecord[] }
         <Text
           className={packageClassNames.headerText}
           style={{
-            flex: 0.5,
+            flex: 1,
+            minWidth: 108,
             color: hexToRgba(adminTheme.onSurfaceVariant, 0.7),
             textAlign: 'right',
             fontFamily: 'Manrope-Bold',
@@ -104,7 +115,13 @@ function DesktopTable({ subscriptions }: { subscriptions: SubscriptionRecord[] }
                 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 }
                 : undefined
             }>
-            <SubscriptionRow subscription={sub} />
+            <SubscriptionRow
+              subscription={sub}
+              onCancelSubscription={
+                onCancelSubscription ? () => onCancelSubscription(sub) : undefined
+              }
+              cancelDisabled={cancelSubscriptionDisabled}
+            />
           </View>
         ))}
       </View>
@@ -116,6 +133,8 @@ export default function SubscriptionListSection({
   subscriptions,
   useDesktopTable,
   onViewAll,
+  onCancelSubscription,
+  cancelSubscriptionDisabled,
 }: SubscriptionListSectionProps) {
   const adminTheme = useSuperAdminTheme();
 
@@ -165,11 +184,22 @@ export default function SubscriptionListSection({
         {subscriptions.length === 0 ? (
           <EmptyState />
         ) : useDesktopTable ? (
-          <DesktopTable subscriptions={subscriptions} />
+          <DesktopTable
+            subscriptions={subscriptions}
+            onCancelSubscription={onCancelSubscription}
+            cancelSubscriptionDisabled={cancelSubscriptionDisabled}
+          />
         ) : (
           <View className="gap-3 p-4">
             {subscriptions.map((sub) => (
-              <SubscriptionMobileCard key={sub.id} subscription={sub} />
+              <SubscriptionMobileCard
+                key={sub.id}
+                subscription={sub}
+                onCancelSubscription={
+                  onCancelSubscription ? () => onCancelSubscription(sub) : undefined
+                }
+                cancelDisabled={cancelSubscriptionDisabled}
+              />
             ))}
           </View>
         )}

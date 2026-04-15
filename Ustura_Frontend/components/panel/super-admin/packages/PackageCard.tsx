@@ -11,12 +11,20 @@ import type { PackageDefinition } from './types';
 interface PackageCardProps {
   pkg: PackageDefinition;
   onEdit: () => void;
-  onDisable: () => void;
+  onToggleActive: (nextIsActive: boolean) => void;
+  onDelete: () => void;
 }
 
-export default function PackageCard({ pkg, onEdit, onDisable }: PackageCardProps) {
+export default function PackageCard({
+  pkg,
+  onEdit,
+  onToggleActive,
+  onDelete,
+}: PackageCardProps) {
   const adminTheme = useSuperAdminTheme();
   const isFeatured = pkg.isFeatured;
+  const isActive = pkg.isActive;
+  const canHardDelete = pkg.linkedSubscriptionCount === 0;
 
   return (
     <View
@@ -54,15 +62,32 @@ export default function PackageCard({ pkg, onEdit, onDisable }: PackageCardProps
         </View>
       )}
 
-      {/* Tier label */}
-      <Text
-        className="mb-5 font-label text-[10px] uppercase tracking-[3px]"
-        style={{
-          color: isFeatured ? adminTheme.primary : hexToRgba(adminTheme.onSurfaceVariant, 0.55),
-          fontFamily: 'Manrope-Bold',
-        }}>
-        {pkg.tierLabel}
-      </Text>
+      <View className="mb-5 flex-row items-center justify-between gap-3">
+        <Text
+          className="font-label text-[10px] uppercase tracking-[3px]"
+          style={{
+            color: isFeatured ? adminTheme.primary : hexToRgba(adminTheme.onSurfaceVariant, 0.55),
+            fontFamily: 'Manrope-Bold',
+          }}>
+          {pkg.tierLabel}
+        </Text>
+        <View
+          className="rounded-full px-2.5 py-1"
+          style={{
+            backgroundColor: isActive
+              ? hexToRgba(adminTheme.success, 0.1)
+              : hexToRgba(adminTheme.error, 0.1),
+          }}>
+          <Text
+            className="font-label text-[9px] uppercase tracking-[1.6px]"
+            style={{
+              color: isActive ? adminTheme.success : adminTheme.error,
+              fontFamily: 'Manrope-Bold',
+            }}>
+            {isActive ? 'Aktif' : 'Pasif'}
+          </Text>
+        </View>
+      </View>
 
       {/* Name */}
       <Text
@@ -188,7 +213,7 @@ export default function PackageCard({ pkg, onEdit, onDisable }: PackageCardProps
           </Pressable>
 
           <Pressable
-            onPress={onDisable}
+            onPress={() => onToggleActive(!pkg.isActive)}
             className="min-h-[44px] w-[44px] items-center justify-center rounded-md border"
             style={({ hovered }) => [
               {
@@ -203,7 +228,7 @@ export default function PackageCard({ pkg, onEdit, onDisable }: PackageCardProps
             ]}>
             {({ hovered }) => (
               <MaterialIcons
-                name="block"
+                name={isActive ? 'block' : 'autorenew'}
                 size={18}
                 color={
                   hovered
@@ -211,6 +236,42 @@ export default function PackageCard({ pkg, onEdit, onDisable }: PackageCardProps
                     : isFeatured
                       ? adminTheme.primary
                       : hexToRgba(adminTheme.onSurfaceVariant, 0.6)
+                }
+              />
+            )}
+          </Pressable>
+
+          <Pressable
+            disabled={!canHardDelete}
+            onPress={onDelete}
+            accessibilityLabel="Paketi sil"
+            className="min-h-[44px] w-[44px] items-center justify-center rounded-md border"
+            style={({ hovered, pressed }) => [
+              {
+                opacity: canHardDelete ? 1 : 0.35,
+                borderColor: hexToRgba(
+                  canHardDelete && hovered
+                    ? adminTheme.error
+                    : adminTheme.outlineVariant,
+                  canHardDelete && (hovered || pressed) ? 0.45 : 0.3,
+                ),
+              },
+              Platform.OS === 'web'
+                ? ({ transition: 'border-color 180ms ease, color 180ms ease' } as any)
+                : null,
+            ]}>
+            {({ hovered }) => (
+              <MaterialIcons
+                name="delete-outline"
+                size={18}
+                color={
+                  !canHardDelete
+                    ? hexToRgba(adminTheme.onSurfaceVariant, 0.25)
+                    : hovered
+                      ? adminTheme.error
+                      : isFeatured
+                        ? adminTheme.primary
+                        : hexToRgba(adminTheme.onSurfaceVariant, 0.6)
                 }
               />
             )}

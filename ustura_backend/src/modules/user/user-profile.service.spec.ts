@@ -1,5 +1,11 @@
-import { BadRequestException, ConflictException, HttpException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import { UserAccountPolicy } from './policies/user-account.policy';
 import { UserRepository } from './repositories/user.repository';
@@ -16,6 +22,7 @@ function createUser(overrides: Partial<User> = {}): User {
     firebaseUid: null,
     role: Role.CUSTOMER,
     isActive: true,
+    mustChangePassword: false,
     createdAt: new Date('2026-04-10T00:00:00.000Z'),
     updatedAt: new Date('2026-04-10T00:00:00.000Z'),
     ...overrides,
@@ -29,7 +36,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -42,12 +53,10 @@ describe('UserProfileService', () => {
 
   beforeEach(() => {
     userRepository = {
-      findById: jest.fn(),
-      findByEmail: jest.fn(),
-      findByEmailWithExecutor: jest.fn(),
+      findByPrincipal: jest.fn(),
+      findByEmailForPrincipal: jest.fn(),
       findByFirebaseUid: jest.fn(),
-      findByPhone: jest.fn(),
-      findByPhoneWithExecutor: jest.fn(),
+      findByPhoneForPrincipal: jest.fn(),
       create: jest.fn(),
       updateProfile: jest.fn(),
       deactivate: jest.fn(),
@@ -58,16 +67,16 @@ describe('UserProfileService', () => {
   });
 
   it('returns not found when the profile owner does not exist', async () => {
-    userRepository.findById.mockResolvedValue(null);
+    userRepository.findByPrincipal.mockResolvedValue(null);
 
-    await expect(service.getProfileById('missing-user')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.getProfileByPrincipal(PrincipalKind.CUSTOMER, 'missing-user'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rejects profile updates when another user already owns the requested phone', async () => {
-    userRepository.findById.mockResolvedValue(createUser());
-    userRepository.findByPhone.mockResolvedValue(
+    userRepository.findByPrincipal.mockResolvedValue(createUser());
+    userRepository.findByPhoneForPrincipal.mockResolvedValue(
       createUser({
         id: 'user-2',
         phone: '+905559998877',
@@ -77,7 +86,7 @@ describe('UserProfileService', () => {
     let capturedError: unknown;
 
     try {
-      await service.updateProfile('user-1', {
+      await service.updateProfile(PrincipalKind.CUSTOMER, 'user-1', {
         phone: ' +905559998877 ',
       });
     } catch (error) {
@@ -92,12 +101,12 @@ describe('UserProfileService', () => {
   });
 
   it('rejects blank phone updates before writing to the database', async () => {
-    userRepository.findById.mockResolvedValue(createUser());
+    userRepository.findByPrincipal.mockResolvedValue(createUser());
 
     let capturedError: unknown;
 
     try {
-      await service.updateProfile('user-1', {
+      await service.updateProfile(PrincipalKind.CUSTOMER, 'user-1', {
         phone: '   ',
       });
     } catch (error) {
@@ -105,8 +114,10 @@ describe('UserProfileService', () => {
     }
 
     expect(capturedError).toBeInstanceOf(BadRequestException);
-    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.PHONE_REQUIRED);
-    expect(userRepository.findByPhone).not.toHaveBeenCalled();
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.PHONE_REQUIRED,
+    );
+    expect(userRepository.findByPhoneForPrincipal).not.toHaveBeenCalled();
     expect(userRepository.updateProfile).not.toHaveBeenCalled();
   });
 });

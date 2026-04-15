@@ -64,7 +64,11 @@ export class SalonService {
     input: CreateOwnedSalonDraft,
     executor?: SqlQueryExecutor,
   ): Promise<Salon> {
-    return this.salonManagementService.createOwnedSalon(ownerId, input, executor);
+    return this.salonManagementService.createOwnedSalon(
+      ownerId,
+      input,
+      executor,
+    );
   }
 
   async update(
@@ -72,7 +76,11 @@ export class SalonService {
     salonId: string,
     updateSalonDto: UpdateSalonDto,
   ): Promise<OwnedSalonDetail> {
-    return this.salonManagementService.update(currentUser, salonId, updateSalonDto);
+    return this.salonManagementService.update(
+      currentUser,
+      salonId,
+      updateSalonDto,
+    );
   }
 
   async remove(

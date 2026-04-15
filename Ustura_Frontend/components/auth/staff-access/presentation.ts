@@ -2,18 +2,20 @@ import type { Href } from 'expo-router';
 
 import type { AuthStatusTone } from '@/components/auth/shared/AuthStatusNotice';
 
-export type StaffAccessState = 'idle' | 'validationError' | 'testReady' | 'forgotPassword';
+export type StaffAccessState =
+  | 'idle'
+  | 'validationError'
+  | 'authorizing'
+  | 'accessGranted'
+  | 'invalidCredentials'
+  | 'requestError'
+  | 'forgotPassword';
 
 export interface StaffAccessNotice {
   badge: string;
   title: string;
   description: string;
   tone: AuthStatusTone;
-}
-
-export interface StaffSalonOption {
-  id: string;
-  label: string;
 }
 
 export interface StaffAccessSupportLink {
@@ -29,20 +31,14 @@ export const STAFF_ACCESS_COPY = {
   passwordLabel: 'Sifre',
   passwordPlaceholder: '********',
   forgotPasswordLabel: 'Sifremi Unuttum',
-  salonLabel: 'Salon Sec',
   rememberLabel: 'Beni Hatirla',
   submitLabel: 'GIRIS YAP',
+  submittingLabel: 'GIRIS YAPILIYOR',
   restrictedAreaLabel: 'Bu alan sadece yetkili personel icindir',
   customerPromptLabel: 'Musteri misin?',
   customerPromptAction: 'Musteri girisine git',
   footerNote: '(c) 2024 OBSIDYEN ATOLYESI. Tum haklari saklidir.',
 } as const;
-
-export const STAFF_SALON_OPTIONS: StaffSalonOption[] = [
-  { id: 'nisantasi', label: 'Merkez Salon (Nisantasi)' },
-  { id: 'erenkoy', label: 'Erenkoy Subesi' },
-  { id: 'besiktas', label: 'Besiktas Atolyesi' },
-];
 
 export const STAFF_ACCESS_SUPPORT_LINKS: StaffAccessSupportLink[] = [
   { label: 'Gizlilik Politikasi', href: '/gizlilik-politikasi' },
@@ -52,22 +48,42 @@ export const STAFF_ACCESS_SUPPORT_LINKS: StaffAccessSupportLink[] = [
 
 export function getStaffAccessNotice(
   state: StaffAccessState,
-  selectedSalonLabel: string
 ): StaffAccessNotice {
   switch (state) {
     case 'validationError':
       return {
         badge: 'Form Kontrolu',
         title: 'Bilgileri yeniden kontrol et',
-        description: 'Telefon/e-posta, sifre ve salon bilgisi gecerli olmadan test akisi ilerlemez.',
+        description: 'Telefon/e-posta ve sifre gecerli olmadan giris ilerlemez.',
         tone: 'error',
       };
-    case 'testReady':
+    case 'authorizing':
       return {
-        badge: 'Test Onayi',
-        title: 'Yerel dogrulama tamamlandi',
-        description: `${selectedSalonLabel} icin giris bilgileri yerelde dogrulandi. Gercek panel erisimi arka uc girisi sonrasi eklenecek.`,
+        badge: 'Dogrulama',
+        title: 'Kimlik dogrulaniyor',
+        description: 'Giris bilgileri kontrol ediliyor. Lutfen bekleyin...',
+        tone: 'neutral',
+      };
+    case 'accessGranted':
+      return {
+        badge: 'Basarili',
+        title: 'Giris onaylandi',
+        description: 'Salon paneline yonlendiriliyorsunuz...',
         tone: 'success',
+      };
+    case 'invalidCredentials':
+      return {
+        badge: 'Hatali Bilgi',
+        title: 'Giris basarisiz',
+        description: 'E-posta veya sifre hatali. Lutfen bilgileri kontrol edip tekrar dene.',
+        tone: 'error',
+      };
+    case 'requestError':
+      return {
+        badge: 'Sunucu Hatasi',
+        title: 'Giris tamamlanamadi',
+        description: 'Sunucuyla iletisim kurulamadi. Lutfen internet baglantini kontrol edip tekrar dene.',
+        tone: 'error',
       };
     case 'forgotPassword':
       return {
@@ -81,7 +97,7 @@ export function getStaffAccessNotice(
       return {
         badge: 'Hazirlik',
         title: 'Personel erisim katmani hazir',
-        description: 'Bu ekran su an arayuz ve yerel form dogrulama testi icin aktif. Gercek salon paneli baglantisi sonra eklenecek.',
+        description: 'Salon paneline erisim icin e-posta ve sifre bilgilerinizi girin.',
         tone: 'neutral',
       };
   }

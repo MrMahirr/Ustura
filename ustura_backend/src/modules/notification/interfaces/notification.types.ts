@@ -30,8 +30,7 @@ export interface ReservationCreatedNotificationPayload {
   slotEnd: Date;
 }
 
-export interface ReservationCancelledNotificationPayload
-  extends ReservationCreatedNotificationPayload {
+export interface ReservationCancelledNotificationPayload extends ReservationCreatedNotificationPayload {
   cancelledByRole: string;
 }
 

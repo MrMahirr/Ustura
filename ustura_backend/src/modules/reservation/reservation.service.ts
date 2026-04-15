@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
@@ -150,7 +151,9 @@ export class ReservationService {
     }
   }
 
-  async findByCustomerId(currentUser: JwtPayload): Promise<ReservationRecord[]> {
+  async findByCustomerId(
+    currentUser: JwtPayload,
+  ): Promise<ReservationRecord[]> {
     this.reservationPolicy.assertCanViewOwnReservations(currentUser);
 
     return this.reservationRepository.findByCustomerId(currentUser.sub);
@@ -171,7 +174,8 @@ export class ReservationService {
       membership,
     });
 
-    const reservations = await this.reservationRepository.findBySalonId(salonId);
+    const reservations =
+      await this.reservationRepository.findBySalonId(salonId);
 
     if (accessScope === 'assigned_only') {
       return reservations.filter(
@@ -186,7 +190,8 @@ export class ReservationService {
     currentUser: JwtPayload,
     reservationId: string,
   ): Promise<ReservationRecord> {
-    const reservation = await this.reservationRepository.findById(reservationId);
+    const reservation =
+      await this.reservationRepository.findById(reservationId);
 
     if (!reservation) {
       throw reservationNotFoundError();
@@ -252,7 +257,8 @@ export class ReservationService {
     reservationId: string,
     updateReservationStatusDto: UpdateReservationStatusDto,
   ): Promise<ReservationRecord> {
-    const reservation = await this.reservationRepository.findById(reservationId);
+    const reservation =
+      await this.reservationRepository.findById(reservationId);
 
     if (!reservation) {
       throw reservationNotFoundError();
@@ -315,7 +321,10 @@ export class ReservationService {
     createReservationDto: CreateReservationDto,
   ) {
     if (currentUser.role === Role.CUSTOMER) {
-      const customer = await this.userQueryService.findById(currentUser.sub);
+      const customer = await this.userQueryService.findByPrincipal(
+        PrincipalKind.CUSTOMER,
+        currentUser.sub,
+      );
 
       if (!customer || customer.role !== Role.CUSTOMER || !customer.isActive) {
         throw customerNotFoundError();
@@ -325,7 +334,8 @@ export class ReservationService {
     }
 
     if (createReservationDto.customerId) {
-      const customer = await this.userQueryService.findById(
+      const customer = await this.userQueryService.findByPrincipal(
+        PrincipalKind.CUSTOMER,
         createReservationDto.customerId,
       );
 
@@ -344,11 +354,12 @@ export class ReservationService {
       throw customerDetailsRequiredError();
     }
 
-    const customer = await this.userProvisioningService.findOrCreateManagedCustomer({
-      name: createReservationDto.customerName,
-      email: createReservationDto.customerEmail,
-      phone: createReservationDto.customerPhone,
-    });
+    const customer =
+      await this.userProvisioningService.findOrCreateManagedCustomer({
+        name: createReservationDto.customerName,
+        email: createReservationDto.customerEmail,
+        phone: createReservationDto.customerPhone,
+      });
 
     return customer;
   }
@@ -397,7 +408,10 @@ export class ReservationService {
 
   private async findCustomerForEvent(customerId: string) {
     try {
-      const customer = await this.userQueryService.findById(customerId);
+      const customer = await this.userQueryService.findByPrincipal(
+        PrincipalKind.CUSTOMER,
+        customerId,
+      );
 
       if (!customer || customer.role !== Role.CUSTOMER) {
         return null;

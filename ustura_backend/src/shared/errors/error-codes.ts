@@ -10,18 +10,17 @@ export const ERROR_CODES = {
     GOOGLE_VERIFICATION_UNAVAILABLE: 'auth.google_verification_unavailable',
     GOOGLE_WEB_NOT_CONFIGURED: 'auth.google_web_not_configured',
     INVALID_CREDENTIALS: 'auth.invalid_credentials',
+    PASSWORD_CHANGE_REQUIRED: 'auth.password_change_required',
     REFRESH_TOKEN_INVALID: 'auth.refresh_token_invalid',
     REFRESH_TOKEN_REUSE_DETECTED: 'auth.refresh_token_reuse_detected',
     FIREBASE_GOOGLE_NOT_CONFIGURED: 'auth.firebase_google_not_configured',
-    FIREBASE_CERTIFICATES_UNAVAILABLE:
-      'auth.firebase_certificates_unavailable',
+    FIREBASE_CERTIFICATES_UNAVAILABLE: 'auth.firebase_certificates_unavailable',
     FIREBASE_CERTIFICATES_INVALID: 'auth.firebase_certificates_invalid',
   },
   USER: {
     CUSTOMER_CREDENTIALS_REQUIRED: 'user.customer_credentials_required',
     CUSTOMER_INACTIVE: 'user.customer_inactive',
-    CUSTOMER_ONLY_MANAGED_RESERVATION:
-      'user.customer_only_managed_reservation',
+    CUSTOMER_ONLY_MANAGED_RESERVATION: 'user.customer_only_managed_reservation',
     CUSTOMER_GOOGLE_ONLY: 'user.customer_google_only',
     EMAIL_ALREADY_EXISTS: 'user.email_already_exists',
     GOOGLE_IDENTITY_ALREADY_LINKED: 'user.google_identity_already_linked',
@@ -30,6 +29,8 @@ export const ERROR_CODES = {
     PHONE_ALREADY_EXISTS: 'user.phone_already_exists',
     PASSWORD_REQUIRED: 'user.password_required',
     PHONE_REQUIRED: 'user.phone_required',
+    INVALID_CURRENT_PASSWORD: 'user.invalid_current_password',
+    CANNOT_SELF_DEACTIVATE: 'user.cannot_self_deactivate',
   },
   PLATFORM_ADMIN: {
     ACCESS_FORBIDDEN: 'platform_admin.access_forbidden',
@@ -38,24 +39,37 @@ export const ERROR_CODES = {
     OWNER_APPLICATION_ALREADY_REVIEWED:
       'platform_admin.owner_application_already_reviewed',
     OWNER_APPLICATION_NOT_FOUND: 'platform_admin.owner_application_not_found',
+    OWNER_APPLICATION_APPLICANT_EMAIL_USED_BY_STAFF:
+      'platform_admin.owner_application_applicant_email_used_by_staff',
+    OWNER_APPLICATION_APPLICANT_OWNER_INACTIVE:
+      'platform_admin.owner_application_applicant_owner_inactive',
   },
   STAFF: {
     ALREADY_ASSIGNED: 'staff.already_assigned',
     INVALID_ACCOUNT_ROLE: 'staff.invalid_account_role',
+    INVALID_MEDIA_FILE: 'staff.invalid_media_file',
     MANAGEMENT_FORBIDDEN: 'staff.management_forbidden',
     NOT_FOUND: 'staff.not_found',
     PROVISIONING_MODE_INVALID: 'staff.provisioning_mode_invalid',
     SALON_NOT_FOUND: 'staff.salon_not_found',
+    SELF_MANAGEMENT_FORBIDDEN: 'staff.self_management_forbidden',
     SELF_VIEW_FORBIDDEN: 'staff.self_view_forbidden',
     USER_INACTIVE: 'staff.user_inactive',
     USER_NOT_FOUND: 'staff.user_not_found',
   },
   SALON: {
     INVALID_FIELD: 'salon.invalid_field',
+    INVALID_MEDIA_FILE: 'salon.invalid_media_file',
     INACTIVE_UPDATE_FORBIDDEN: 'salon.inactive_update_forbidden',
     INVALID_WORKING_HOURS: 'salon.invalid_working_hours',
     MANAGEMENT_FORBIDDEN: 'salon.management_forbidden',
     NOT_FOUND: 'salon.not_found',
+  },
+  SALON_SERVICE: {
+    INVALID_FIELD: 'salon_service.invalid_field',
+    MANAGEMENT_FORBIDDEN: 'salon_service.management_forbidden',
+    NOT_FOUND: 'salon_service.not_found',
+    SALON_NOT_FOUND: 'salon_service.salon_not_found',
   },
   RESERVATION: {
     BARBER_NOT_FOUND: 'reservation.barber_not_found',

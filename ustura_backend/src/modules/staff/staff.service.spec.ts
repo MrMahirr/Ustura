@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import type { DatabaseTransaction } from '../../database/database.types';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
@@ -69,6 +74,7 @@ function createUser(overrides: Partial<User> = {}): User {
     firebaseUid: null,
     role: Role.BARBER,
     isActive: true,
+    mustChangePassword: false,
     createdAt: new Date('2026-04-09T00:00:00.000Z'),
     updatedAt: new Date('2026-04-09T00:00:00.000Z'),
     ...overrides,
@@ -98,7 +104,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -109,11 +119,13 @@ describe('StaffService', () => {
   let service: StaffService;
   let staffRepository: jest.Mocked<StaffRepository>;
   let salonCatalogService: { findActiveById: jest.Mock };
-  let userQueryService: { findById: jest.Mock };
+  let userQueryService: { findByPrincipal: jest.Mock };
   let userProvisioningService: { createEmployee: jest.Mock };
   let databaseService: { transaction: jest.Mock };
   let auditLogService: jest.Mocked<Pick<AuditLogService, 'recordBestEffort'>>;
   let domainEventBus: jest.Mocked<Pick<DomainEventBus, 'publish'>>;
+  let emailService: { sendStaffWelcomeEmail: jest.Mock };
+  let appConfig: { frontend: { baseUrl: string } };
 
   beforeEach(() => {
     staffRepository = {
@@ -132,20 +144,28 @@ describe('StaffService', () => {
       findActiveById: jest.fn(),
     };
     userQueryService = {
-      findById: jest.fn(),
+      findByPrincipal: jest.fn(),
     };
     userProvisioningService = {
       createEmployee: jest.fn(),
     };
     databaseService = {
-      transaction: jest.fn(async (operation: (tx: DatabaseTransaction) => Promise<unknown>) =>
-        operation({ query: jest.fn() } as DatabaseTransaction)),
+      transaction: jest.fn(
+        async (operation: (tx: DatabaseTransaction) => Promise<unknown>) =>
+          operation({ query: jest.fn() } as DatabaseTransaction),
+      ),
     };
     auditLogService = {
       recordBestEffort: jest.fn(),
     };
     domainEventBus = {
       publish: jest.fn(),
+    };
+    emailService = {
+      sendStaffWelcomeEmail: jest.fn().mockResolvedValue({ success: true }),
+    };
+    appConfig = {
+      frontend: { baseUrl: 'http://localhost:8081' },
     };
 
     service = new StaffService(
@@ -157,6 +177,8 @@ describe('StaffService', () => {
       new StaffPolicy(),
       auditLogService as AuditLogService,
       domainEventBus as DomainEventBus,
+      emailService as never,
+      appConfig as never,
     );
   });
 
@@ -208,9 +230,11 @@ describe('StaffService', () => {
         phone: '+905551119999',
         role: Role.RECEPTIONIST,
         passwordHash: expect.any(String),
+        mustChangePassword: false,
       }),
       expect.any(Object),
     );
+    expect(emailService.sendStaffWelcomeEmail).not.toHaveBeenCalled();
     expect(staffRepository.create).toHaveBeenCalledWith(
       {
         userId: 'user-9',
@@ -237,9 +261,53 @@ describe('StaffService', () => {
     expect(result.id).toBe('staff-9');
   });
 
+  it('auto-generates password and emails staff when employee password is omitted', async () => {
+    salonCatalogService.findActiveById.mockResolvedValue(createSalon());
+    userProvisioningService.createEmployee.mockResolvedValue(
+      createUser({
+        id: 'user-auto',
+        role: Role.BARBER,
+      }),
+    );
+    staffRepository.findByUserIdAndSalon.mockResolvedValue(null);
+    staffRepository.create.mockResolvedValue(
+      createStaffMember({
+        id: 'staff-auto',
+        userId: 'user-auto',
+        role: Role.BARBER,
+      }),
+    );
+
+    await service.create(createOwnerPayload(), 'salon-1', {
+      employee: {
+        name: 'Auto Barber',
+        email: 'auto@example.com',
+        phone: '+905551118888',
+      },
+      role: Role.BARBER,
+    });
+
+    expect(userProvisioningService.createEmployee).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mustChangePassword: true,
+        passwordHash: expect.any(String),
+      }),
+      expect.any(Object),
+    );
+    expect(emailService.sendStaffWelcomeEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientEmail: 'auto@example.com',
+        recipientName: 'Auto Barber',
+        salonName: 'Ustura Barber',
+        temporaryPassword: expect.any(String),
+        loginUrl: expect.stringContaining('/personel/giris?token='),
+      }),
+    );
+  });
+
   it('reactivates an existing inactive staff assignment instead of creating a duplicate row', async () => {
     salonCatalogService.findActiveById.mockResolvedValue(createSalon());
-    userQueryService.findById.mockResolvedValue(createUser());
+    userQueryService.findByPrincipal.mockResolvedValue(createUser());
     staffRepository.findByUserIdAndSalon.mockResolvedValue(
       createStaffMember({
         id: 'staff-9',
@@ -286,7 +354,7 @@ describe('StaffService', () => {
 
   it('rejects creating duplicate active staff assignments in the same salon', async () => {
     salonCatalogService.findActiveById.mockResolvedValue(createSalon());
-    userQueryService.findById.mockResolvedValue(createUser());
+    userQueryService.findByPrincipal.mockResolvedValue(createUser());
     staffRepository.findByUserIdAndSalon.mockResolvedValue(createStaffMember());
 
     await expect(
@@ -350,7 +418,7 @@ describe('StaffService', () => {
 
   it('rejects creating staff assignments with user roles that do not match the staff role', async () => {
     salonCatalogService.findActiveById.mockResolvedValue(createSalon());
-    userQueryService.findById.mockResolvedValue(
+    userQueryService.findByPrincipal.mockResolvedValue(
       createUser({
         role: Role.RECEPTIONIST,
       }),

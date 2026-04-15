@@ -17,9 +17,7 @@ function createUser(overrides: Partial<JwtPayload> = {}): JwtPayload {
   };
 }
 
-function createMembership(
-  overrides: Partial<StaffMember> = {},
-): StaffMember {
+function createMembership(overrides: Partial<StaffMember> = {}): StaffMember {
   return {
     id: 'staff-1',
     userId: 'user-1',
@@ -63,7 +61,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 

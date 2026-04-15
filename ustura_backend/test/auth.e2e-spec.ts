@@ -99,7 +99,9 @@ describe('AuthController (e2e)', () => {
       .expect(200)
       .expect((res) => {
         expect(res.body.success).toBe(true);
-        expect(res.body.data).toEqual({ clientId: 'client-id.apps.googleusercontent.com' });
+        expect(res.body.data).toEqual({
+          clientId: 'client-id.apps.googleusercontent.com',
+        });
       });
 
     expect(authService.getGoogleCustomerWebConfiguration).toHaveBeenCalledTimes(
@@ -152,13 +154,16 @@ describe('AuthController (e2e)', () => {
         expect(res.body.data).toEqual(sessionResponse);
       });
 
-    expect(authService.login).toHaveBeenCalledWith({
-      email: 'customer@example.com',
-      password: 'password123',
-    }, expect.objectContaining({
-      userAgent: null,
-      ipAddress: expect.any(String),
-    }));
+    expect(authService.login).toHaveBeenCalledWith(
+      {
+        email: 'customer@example.com',
+        password: 'password123',
+      },
+      expect.objectContaining({
+        userAgent: null,
+        ipAddress: expect.any(String),
+      }),
+    );
   });
 
   it('POST /api/auth/refresh returns the rotated session payload from the auth service', async () => {
@@ -173,12 +178,15 @@ describe('AuthController (e2e)', () => {
         expect(res.body.data).toEqual(sessionResponse);
       });
 
-    expect(authService.refreshToken).toHaveBeenCalledWith({
-      refreshToken: 'refresh-token-value',
-    }, expect.objectContaining({
-      userAgent: null,
-      ipAddress: expect.any(String),
-    }));
+    expect(authService.refreshToken).toHaveBeenCalledWith(
+      {
+        refreshToken: 'refresh-token-value',
+      },
+      expect.objectContaining({
+        userAgent: null,
+        ipAddress: expect.any(String),
+      }),
+    );
   });
 
   it('POST /api/auth/google/customer/web preserves the domain error code contract', async () => {
@@ -217,11 +225,13 @@ describe('AuthController (e2e)', () => {
         });
       });
 
-    expect(authService.logoutAll).toHaveBeenCalledWith(expect.objectContaining({
-      sub: 'mock-user-id',
-      email: 'mock@example.com',
-      role: 'customer',
-      tokenType: 'access',
-    }));
+    expect(authService.logoutAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: 'mock-user-id',
+        email: 'mock@example.com',
+        role: 'customer',
+        tokenType: 'access',
+      }),
+    );
   });
 });

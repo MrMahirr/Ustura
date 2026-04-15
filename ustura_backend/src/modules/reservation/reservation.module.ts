@@ -13,13 +13,7 @@ import { SlotController } from './slot/slot.controller';
 import { SlotGateway } from './slot/slot.gateway';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    EventsModule,
-    UserModule,
-    SalonModule,
-    StaffModule,
-  ],
+  imports: [DatabaseModule, EventsModule, UserModule, SalonModule, StaffModule],
   controllers: [ReservationController, SlotController],
   providers: [
     ReservationService,

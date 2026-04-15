@@ -90,6 +90,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof DatabaseQueryError ||
       exception instanceof DatabaseTransactionError
     ) {
+      const dbEx = exception as DatabaseError;
+      const pgHint = dbEx.cause?.message ? ` (${dbEx.cause.message})` : '';
+      if (pgHint) {
+        this.logger.warn(
+          `Database error detail:${pgHint} code=${dbEx.code ?? ''} query=${dbEx.queryName ?? ''}`,
+        );
+      }
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'A database operation failed.',
@@ -154,7 +161,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return fallbackMessage;
   }
 
-  private resolveHttpExceptionCode(response: string | object): string | undefined {
+  private resolveHttpExceptionCode(
+    response: string | object,
+  ): string | undefined {
     if (typeof response !== 'object' || response == null) {
       return undefined;
     }

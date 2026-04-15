@@ -16,6 +16,7 @@ export class SalonProjectionService {
       city: salon.city,
       district: salon.district,
       photoUrl: salon.photoUrl,
+      galleryUrls: salon.galleryUrls,
     };
   }
 
@@ -34,6 +35,7 @@ export class SalonProjectionService {
       city: salon.city,
       district: salon.district,
       photoUrl: salon.photoUrl,
+      galleryUrls: salon.galleryUrls,
       isActive: salon.isActive,
       updatedAt: salon.updatedAt,
     };
