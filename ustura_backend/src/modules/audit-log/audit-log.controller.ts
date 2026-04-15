@@ -11,7 +11,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { Role } from '../../shared/auth/role.enum';
-import { AuditLogResponseDto } from './dto/audit-log-response.dto';
+import { AuditLogListResponseDto } from './dto/audit-log-response.dto';
 import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 import { AuditLogService } from './audit-log.service';
 
@@ -25,7 +25,7 @@ export class AuditLogController {
   @Get()
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List audit logs for super admins' })
-  @ApiOkResponse({ type: AuditLogResponseDto, isArray: true })
+  @ApiOkResponse({ type: AuditLogListResponseDto })
   async list(
     @CurrentUser() currentUser: JwtPayload,
     @Query() query: ListAuditLogsQueryDto,

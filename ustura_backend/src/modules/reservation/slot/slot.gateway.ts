@@ -74,10 +74,12 @@ export class SlotGateway implements OnGatewayDisconnect<ReservationSocket> {
 
       client.data.slotScope = payload;
       client.data.selectedSlotStart = payload.slotStart;
-      this.server.to(this.getRoomName(payload)).emit('slot:selection.snapshot', {
-        scope: payload,
-        selections,
-      });
+      this.server
+        .to(this.getRoomName(payload))
+        .emit('slot:selection.snapshot', {
+          scope: payload,
+          selections,
+        });
 
       return { selections };
     } catch (error) {
@@ -102,10 +104,12 @@ export class SlotGateway implements OnGatewayDisconnect<ReservationSocket> {
         client.data.selectedSlotStart = undefined;
       }
 
-      this.server.to(this.getRoomName(payload)).emit('slot:selection.snapshot', {
-        scope: payload,
-        selections,
-      });
+      this.server
+        .to(this.getRoomName(payload))
+        .emit('slot:selection.snapshot', {
+          scope: payload,
+          selections,
+        });
 
       return { selections };
     } catch (error) {
@@ -183,10 +187,12 @@ export class SlotGateway implements OnGatewayDisconnect<ReservationSocket> {
       client.id,
     );
 
-    this.server.to(this.getRoomName(currentScope)).emit('slot:selection.snapshot', {
-      scope: currentScope,
-      selections,
-    });
+    this.server
+      .to(this.getRoomName(currentScope))
+      .emit('slot:selection.snapshot', {
+        scope: currentScope,
+        selections,
+      });
   }
 
   private async ensureScope(

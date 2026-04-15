@@ -1,54 +1,5 @@
-export interface BarberNotification {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  tone: 'success' | 'warning' | 'error' | 'primary';
-  unread?: boolean;
-}
-
-export const barberNotifications: BarberNotification[] = [
-  {
-    id: 'notif-1',
-    title: 'Yeni randevu talebi',
-    description: 'Caner Yildiz, yarin 14:00 icin sac kesimi randevusu talep etti.',
-    time: '5 dk once',
-    tone: 'primary',
-    unread: true,
-  },
-  {
-    id: 'notif-2',
-    title: 'Randevu iptal edildi',
-    description: 'Selin Demir, bugunki 11:00 randevusunu iptal etti.',
-    time: '12 dk once',
-    tone: 'error',
-    unread: true,
-  },
-  {
-    id: 'notif-3',
-    title: 'Personel moladan dondu',
-    description: 'Veli Soylu aktif duruma gecti, musait randevu alabilir.',
-    time: '28 dk once',
-    tone: 'success',
-    unread: false,
-  },
-  {
-    id: 'notif-4',
-    title: 'Yogun saat uyarisi',
-    description: '14:00 - 16:00 arasi tum berberler dolu, ek kapasite gerekebilir.',
-    time: '1 sa once',
-    tone: 'warning',
-    unread: false,
-  },
-  {
-    id: 'notif-5',
-    title: 'Gunluk rapor hazir',
-    description: 'Dunku performans raporu incelemeniz icin hazir.',
-    time: '2 sa once',
-    tone: 'primary',
-    unread: false,
-  },
-];
+import type { ReservationRecord } from '@/services/reservation.service';
+import type { StaffRecord } from '@/services/staff.service';
 
 export type BarberMetricTone = 'positive' | 'neutral' | 'attention';
 
@@ -65,6 +16,7 @@ export type BarberAppointmentStatus = 'approved' | 'pending' | 'cancelled';
 
 export interface BarberAppointmentRecord {
   id: string;
+  backendId: string;
   time: string;
   durationLabel: string;
   customerName: string;
@@ -80,9 +32,11 @@ export type BarberStaffState = 'available' | 'busy' | 'break';
 
 export interface BarberStaffRecord {
   id: string;
+  backendId: string;
   name: string;
   title: string;
   state: BarberStaffState;
+  photoUrl: string | null;
   imageUrl: string;
   nextAppointmentLabel?: string;
 }
@@ -97,123 +51,232 @@ export interface BarberDashboardSnapshot {
   staff: BarberStaffRecord[];
 }
 
-export const barberDashboardSnapshot: BarberDashboardSnapshot = {
-  heroLabel: 'Yonetim Paneli',
-  title: 'Hos Geldiniz, Kemal.',
-  subtitle:
-    'Gunluk randevu akislarini, aktif personel durumunu ve acil operasyon sinyallerini tek panelde yonetin.',
-  dateLabel: '24 MAYIS 2024, CUMA',
-  metrics: [
+function pad(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+function isSameDay(d1: Date, d2: Date): boolean {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+}
+
+function isInCurrentWeek(date: Date, now: Date): boolean {
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + 1);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  return date >= weekStart && date < weekEnd;
+}
+
+function mapReservationStatus(
+  status: ReservationRecord['status'],
+): BarberAppointmentStatus {
+  if (status === 'confirmed' || status === 'completed') return 'approved';
+  if (status === 'cancelled' || status === 'no_show') return 'cancelled';
+  return 'pending';
+}
+
+function computeDurationLabel(slotStart: string, slotEnd: string): string {
+  const ms = new Date(slotEnd).getTime() - new Date(slotStart).getTime();
+  const minutes = Math.round(ms / 60_000);
+  return `${minutes} DK`;
+}
+
+function getServiceIcon(
+  _index: number,
+): 'content-cut' | 'face' | 'brush' {
+  const icons: ('content-cut' | 'face' | 'brush')[] = [
+    'content-cut',
+    'face',
+    'brush',
+  ];
+  return icons[_index % icons.length];
+}
+
+export function buildDashboardMetrics(
+  reservations: ReservationRecord[],
+  staff: StaffRecord[],
+): BarberDashboardMetric[] {
+  const now = new Date();
+
+  const todayReservations = reservations.filter((r) =>
+    isSameDay(new Date(r.slotStart), now),
+  );
+  const weekReservations = reservations.filter((r) =>
+    isInCurrentWeek(new Date(r.slotStart), now),
+  );
+  const pendingCount = todayReservations.filter(
+    (r) => r.status === 'pending',
+  ).length;
+  const activeStaff = staff.filter((s) => s.isActive).length;
+
+  return [
     {
       id: 'appointments-today',
-      label: 'Bugunun Randevulari',
-      value: '12',
-      deltaLabel: '+20%',
-      tone: 'positive',
+      label: 'Bugünün Randevuları',
+      value: String(todayReservations.length).padStart(2, '0'),
+      deltaLabel:
+        todayReservations.length > 0
+          ? `${todayReservations.length} randevu`
+          : 'Randevu yok',
+      tone: todayReservations.length > 0 ? 'positive' : 'neutral',
       icon: 'event-available',
     },
     {
       id: 'appointments-week',
       label: 'Bu Haftaki Randevular',
-      value: '84',
-      deltaLabel: '+5%',
-      tone: 'positive',
+      value: String(weekReservations.length).padStart(2, '0'),
+      deltaLabel: `${weekReservations.length} randevu`,
+      tone: weekReservations.length > 0 ? 'positive' : 'neutral',
       icon: 'calendar-view-week',
     },
     {
       id: 'staff-total',
       label: 'Toplam Personel',
-      value: '06',
-      deltaLabel: 'Sabit',
+      value: String(activeStaff).padStart(2, '0'),
+      deltaLabel: 'Aktif',
       tone: 'neutral',
       icon: 'groups',
     },
     {
       id: 'approvals',
       label: 'Bekleyen Onaylar',
-      value: '03',
-      deltaLabel: 'Acil',
-      tone: 'attention',
+      value: String(pendingCount).padStart(2, '0'),
+      deltaLabel: pendingCount > 0 ? 'Acil' : 'Yok',
+      tone: pendingCount > 0 ? 'attention' : 'neutral',
       icon: 'pending-actions',
     },
-  ],
-  appointments: [
-    {
-      id: 'apt-1',
-      time: '09:30',
-      durationLabel: '45 DK',
-      customerName: 'Caner Yildiz',
-      serviceLabel: 'Sac Kesimi & Yikama',
-      serviceIcon: 'content-cut',
-      barberName: 'Ahmet Y.',
-      status: 'approved',
-      imageUrl:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDnWSvakxP_tK8mXEJwX529HjTHRNYLPgL24Qa0TUzRXRZjne3WRRQLsYvFlLoLhKzQoXRSFEApenT61OduEMSLJky2mfgHB97IyyK5n8qNQeq8Zrse5xYz3mKSyQIz1X_6e7AeSRNedn11CAFOgzwYBs_9XoRci9Ti-Z4nZfR0Keoang5rLgTLXukL7r9JFzCTu8PIvX7mqmiyzcsbMUv2AGwdaoi8XykhW_Om78tD7UsJc-hmDQw0fhN4fnLDVucmQmfzozknfYs',
-    },
-    {
-      id: 'apt-2',
-      time: '10:15',
-      durationLabel: '30 DK',
-      customerName: 'Murat Kaya',
-      serviceLabel: 'Sakal Tirasi',
-      serviceIcon: 'face',
-      barberName: 'Mehmet B.',
-      status: 'pending',
-      imageUrl:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuAbWxYpnDDa7kGRIlt7KC6kDHPkf5MFC0035QDSf3B0apE4La3oivdC8yS_-RX_KPGgtZdE-MmZSUOdV8j2Cy-ETHjcyNb7KuCKYZ-lN8IMSDTbLEiCdt-GcH_QEPZr4ix-i4n9SZo1Swl5UaT4cxZxD8MgknzimiCyBvGtLXM4IbxLvwzfxxqbyblzaTBAKL-E4S7kF76BH2a79ur7FLVH8ZHS1OwhKsMubGL_nWZRX0FC1qofZ87sCyGYnSBI2dyMLP19Pq1S0X0',
-    },
-    {
-      id: 'apt-3',
-      time: '11:00',
-      durationLabel: '60 DK',
-      customerName: 'Selin Demir',
-      serviceLabel: 'Komple Bakim',
-      serviceIcon: 'brush',
-      barberName: 'Veli S.',
-      status: 'cancelled',
-      imageUrl:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCynyhYenLrmhfWKki95oEt4WfEhtJ2IQFLFtts45H4nDOKobiDsGYfWkz0XorzHx878JPmBgQVpFlyb6EB2oE6QSf-GHYoa76PKn9YTRjNPIsJWRxYA5U9fCt_tJZ8G__BLi-Q1wQND1Q7W2u8NJhfg7JBxzo1eSG0prs4vqn0A4TEyVWQnLVRWL40AELw8EY78D_nfbRQN9ABpuJN49VUTwepOEWmy100GyWfU71-dB_9LYhNNbRyiWP5VC64Hy42aiBZRj8SV64',
-      isDimmed: true,
-    },
-    {
-      id: 'apt-4',
-      time: '12:30',
-      durationLabel: '45 DK',
-      customerName: 'Efe Tekin',
-      serviceLabel: 'Sac & Sakal Kombin',
-      serviceIcon: 'content-cut',
-      barberName: 'Ahmet Y.',
-      status: 'approved',
-      imageUrl:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuA1hq9OZWL5-3Af-0huLyXAOealNCTuQFO4TpvkqdDSnqRg0bVQ26g_lrL0h_VB_qBDJ_EWzEtH8-tXXmgvieGVcFbPz9BAO1p39F-eIb40pAvpEbNcJQfL4--IPB_A9gDLQwiI8JZiPF7-rKyDXmNU-GutTC6b917wqkLK2pkztfmqHjP3wizv1iHPcL17hEaPjEElFn6QXhG06kaHv6fVnElBjPGjrD5CrX0VHyDmB0NhXSa08jyGY-e0gDqxjYtOIzY94Yt7jR0',
-    },
-  ],
-  staff: [
-    {
-      id: 'staff-1',
-      name: 'Ahmet Yilmaz',
-      title: 'Usta Berber',
-      state: 'busy',
-      nextAppointmentLabel: '12:30 - Efe Tekin',
-      imageUrl:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuD5TG1SCRsdanIRb29jkidKaCYRyWNOCPhs0Z83ZEdB9dog7982BcNVqcyEtQxmsgtZbq61oBZegP-cGFcGHX0ytY_xwvK_kl9fziX43ZK6_VZ46u9QogUpHG0U0LT2ymLfOsynMqL4bvrkpM2lxPVl7N_FT-B3BWSELFJsgveHIjzcubvx10MszyLIdHQIPMUqktpZQZkgHzdvd6_xJHMabI3klMyEQwEuVZ3GcWZ7SA98oio9SgLAU8yjqw8OCnLYwwhbXmRK3Co',
-    },
-    {
-      id: 'staff-2',
-      name: 'Mehmet Bal',
-      title: 'Kidemli Berber',
-      state: 'available',
-      nextAppointmentLabel: '14:00 - Omer G.',
-      imageUrl:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBV1E_ghIUxwTw3oQ-BG1ym1YKqxGDFESD5yNT4V5Rm3cErLwVrDBo38GOKMBL7PzUpUbeyJTKKl4y_aWCmqNoWtxkMfHU9qlG7MEkjXiiJjiXlztwnvqgcAgg51T7FpDGBdcCnalAV_YH0hZxgAq2pDKAS2g2WYa3cx9ZSZDpqDMPtgxff4sG80L9Fs4pH1FzWE5QDfuL1Pg_hjYeswFn1p20UFCndT_3IMrGVBZ9ZIvfxEy3oIA3sZssCTEw8boBq3hS_V5Kj2sQ',
-    },
-    {
-      id: 'staff-3',
-      name: 'Veli Soylu',
-      title: 'Mola Veriyor',
-      state: 'break',
-      imageUrl:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDT86t558JQ0U0nigqCFHsPhvSs8MbgcVCabI8_4wQ40ct_H6mT__VXpnyufzAK_u8seZs5LP0psORbIaxcF4F8VHncY8e4UPqVm3jcGaOnFRV99gkkR0lXiVNxUhEoFgEJ_mWxWDI6YbO4CbXVhKyUW923vrPO8U-FT8-8e1K6SvRxN5NqOcrkqJZ4zjgVbp29Pe2PpsgjsOch56r0RGe1FoSjdE5n3bdf5P7y68XuvmtYU4BRMrTtVdCcmoSi0xqBLo8OJLMsALc',
-    },
-  ],
-};
+  ];
+}
+
+export function buildTodayAppointments(
+  reservations: ReservationRecord[],
+  staffLookup: Map<string, StaffRecord>,
+): BarberAppointmentRecord[] {
+  const now = new Date();
+
+  return reservations
+    .filter((r) => isSameDay(new Date(r.slotStart), now))
+    .sort(
+      (a, b) =>
+        new Date(a.slotStart).getTime() - new Date(b.slotStart).getTime(),
+    )
+    .map((r, index) => {
+      const start = new Date(r.slotStart);
+      const staff = staffLookup.get(r.staffId);
+      const uiStatus = mapReservationStatus(r.status);
+
+      return {
+        id: r.id,
+        backendId: r.id,
+        time: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
+        durationLabel: computeDurationLabel(r.slotStart, r.slotEnd),
+        customerName: r.notes ?? 'Müşteri',
+        serviceLabel: 'Randevu',
+        serviceIcon: getServiceIcon(index),
+        barberName: staff?.displayName ?? 'Personel',
+        status: uiStatus,
+        imageUrl: staff?.photoUrl ?? '',
+        isDimmed: uiStatus === 'cancelled',
+      };
+    });
+}
+
+export function buildStaffStatus(
+  staff: StaffRecord[],
+  reservations: ReservationRecord[],
+): BarberStaffRecord[] {
+  const now = new Date();
+  const currentTime = now.getTime();
+
+  return staff
+    .filter((s) => s.isActive)
+    .map((s) => {
+      const staffReservations = reservations
+        .filter(
+          (r) =>
+            r.staffId === s.id &&
+            isSameDay(new Date(r.slotStart), now) &&
+            r.status !== 'cancelled',
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.slotStart).getTime() - new Date(b.slotStart).getTime(),
+        );
+
+      const activeNow = staffReservations.find((r) => {
+        const start = new Date(r.slotStart).getTime();
+        const end = new Date(r.slotEnd).getTime();
+        return start <= currentTime && currentTime < end;
+      });
+
+      const nextUp = staffReservations.find(
+        (r) => new Date(r.slotStart).getTime() > currentTime,
+      );
+
+      let state: BarberStaffState = 'available';
+      if (activeNow) state = 'busy';
+
+      let nextAppointmentLabel: string | undefined;
+      if (nextUp) {
+        const start = new Date(nextUp.slotStart);
+        nextAppointmentLabel = `${pad(start.getHours())}:${pad(start.getMinutes())} - ${nextUp.notes ?? 'Müşteri'}`;
+      }
+
+      const roleTitle =
+        s.role === 'barber' ? 'Berber' : 'Resepsiyonist';
+
+      return {
+        id: s.id,
+        backendId: s.id,
+        name: s.displayName,
+        title: activeNow ? 'Meşgul' : roleTitle,
+        state,
+        photoUrl: s.photoUrl,
+        imageUrl: s.photoUrl ?? '',
+        nextAppointmentLabel,
+      };
+    });
+}
+
+export function buildDateLabel(): string {
+  const now = new Date();
+  return now
+    .toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'long',
+    })
+    .toUpperCase();
+}
+
+export function buildDashboardSnapshot(
+  userName: string,
+  reservations: ReservationRecord[],
+  staff: StaffRecord[],
+): BarberDashboardSnapshot {
+  const staffLookup = new Map<string, StaffRecord>();
+  for (const s of staff) {
+    staffLookup.set(s.id, s);
+  }
+
+  const firstName = userName.split(' ')[0] || userName;
+
+  return {
+    heroLabel: 'Yönetim Paneli',
+    title: `Hoş Geldiniz, ${firstName}.`,
+    subtitle:
+      'Günlük randevu akışlarını, aktif personel durumunu ve acil operasyon sinyallerini tek panelde yönetin.',
+    dateLabel: buildDateLabel(),
+    metrics: buildDashboardMetrics(reservations, staff),
+    appointments: buildTodayAppointments(reservations, staffLookup),
+    staff: buildStaffStatus(staff, reservations),
+  };
+}

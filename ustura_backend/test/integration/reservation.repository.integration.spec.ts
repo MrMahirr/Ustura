@@ -97,11 +97,12 @@ describe('ReservationRepository (Integration)', () => {
     expect(created.status).toBe(ReservationStatus.PENDING);
     expect(created.slotStart).toEqual(slotStart);
 
-    let activeReservations = await reservationRepository.findActiveByStaffIdsAndRange(
-      [staffId],
-      new Date('2026-05-10T00:00:00Z'),
-      new Date('2026-05-11T00:00:00Z'),
-    );
+    let activeReservations =
+      await reservationRepository.findActiveByStaffIdsAndRange(
+        [staffId],
+        new Date('2026-05-10T00:00:00Z'),
+        new Date('2026-05-11T00:00:00Z'),
+      );
     expect(activeReservations).toHaveLength(1);
 
     const updated = await reservationRepository.updateStatus(
@@ -112,15 +113,19 @@ describe('ReservationRepository (Integration)', () => {
     expect(updated?.status).toBe(ReservationStatus.CONFIRMED);
     expect(updated?.statusChangedByUserId).toBe(ownerId);
 
-    const cancelled = await reservationRepository.cancel(created.id, customerId);
+    const cancelled = await reservationRepository.cancel(
+      created.id,
+      customerId,
+    );
     expect(cancelled?.status).toBe(ReservationStatus.CANCELLED);
     expect(cancelled?.cancelledByUserId).toBe(customerId);
 
-    activeReservations = await reservationRepository.findActiveByStaffIdsAndRange(
+    activeReservations =
+      await reservationRepository.findActiveByStaffIdsAndRange(
         [staffId],
         new Date('2026-05-10T00:00:00Z'),
         new Date('2026-05-11T00:00:00Z'),
-    );
+      );
     expect(activeReservations).toHaveLength(0);
   });
 });

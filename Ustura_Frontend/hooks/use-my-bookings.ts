@@ -10,55 +10,93 @@ import {
   cancelReservation,
   getMyReservations,
   type ReservationRecord,
+  type ReservationStatus,
 } from '@/services/reservation.service';
 import { getSalonById, type SalonRecord } from '@/services/salon.service';
+import { getStaffBySalon, type StaffRecord } from '@/services/staff.service';
 
 const DEFAULT_BOOKING_IMAGE_URI =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuDbCcDL9ClvUTlxURQkh_tdoHL5LahAajl2oTf7AI27_8x2NMx9XY1TZPjfoalIJuugLykfjzZHNkpBm12mAsoJXka8KS5KiuXXPw1lPtLiu9_I-zBtKMmX1mqLCccL7AJxkB7fVNpySKgrfBSCIuN6SfNUTaGWSv29i4YmjIoqCWcydnchIi16Z5tQQ5MX4R7QTs_sOK5c6s4eejJtFSkkCa2rYNn5l-7Y6LJPdYJPTap0U8JqNB0lC1KwEb8TFBfWaUJ2DoGdmSM';
 
-function deriveBookingStatus(reservation: ReservationRecord): CustomerBookingStatus {
-  if (reservation.status === 'cancelled') {
-    return 'cancelled';
-  }
+const BACKEND_STATUS_MAP: Record<ReservationStatus, CustomerBookingStatus> = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  completed: 'completed',
+  cancelled: 'cancelled',
+  no_show: 'no_show',
+};
 
-  return new Date(reservation.slotStart).getTime() >= Date.now()
-    ? 'upcoming'
-    : 'completed';
+function resolveBarberName(
+  staffId: string,
+  staffMap: Map<string, StaffRecord>,
+): string {
+  const staff = staffMap.get(staffId);
+  return staff?.displayName ?? 'Berber';
 }
 
 function mapReservationToBooking(
   reservation: ReservationRecord,
-  salon?: SalonRecord,
+  salon: SalonRecord | undefined,
+  staffMap: Map<string, StaffRecord>,
 ): CustomerBookingRecord {
   return {
     id: reservation.id,
     salonName: salon?.name ?? 'USTURA Salonu',
     address: salon?.address ?? 'Salon adresi su anda goruntulenemiyor.',
-    barberName: 'Berber bilgisi yakinda',
+    city: salon?.city ?? 'Istanbul',
+    district: salon?.district ?? null,
+    barberName: resolveBarberName(reservation.staffId, staffMap),
     serviceName: reservation.notes?.trim() || 'Standart Randevu',
     startsAt: reservation.slotStart,
-    status: deriveBookingStatus(reservation),
+    endsAt: reservation.slotEnd,
+    bookedAt: reservation.createdAt,
+    status: BACKEND_STATUS_MAP[reservation.status],
     imageUri: salon?.photoUrl ?? DEFAULT_BOOKING_IMAGE_URI,
   };
 }
 
 async function hydrateBookings(reservations: ReservationRecord[]) {
-  const uniqueSalonIds = [...new Set(reservations.map((reservation) => reservation.salonId))];
-  const salonEntries = await Promise.all(
-    uniqueSalonIds.map(async (salonId) => {
-      try {
-        const salon = await getSalonById(salonId);
-        return [salonId, salon] as const;
-      } catch {
-        return [salonId, null] as const;
-      }
-    }),
-  );
+  const uniqueSalonIds = [...new Set(reservations.map((r) => r.salonId))];
+
+  const [salonEntries, staffEntries] = await Promise.all([
+    Promise.all(
+      uniqueSalonIds.map(async (salonId) => {
+        try {
+          const salon = await getSalonById(salonId);
+          return [salonId, salon] as const;
+        } catch {
+          return [salonId, null] as const;
+        }
+      }),
+    ),
+    Promise.all(
+      uniqueSalonIds.map(async (salonId) => {
+        try {
+          const staff = await getStaffBySalon(salonId);
+          return [salonId, staff] as const;
+        } catch {
+          return [salonId, [] as StaffRecord[]] as const;
+        }
+      }),
+    ),
+  ]);
+
   const salonMap = new Map<string, SalonRecord | null>(salonEntries);
+
+  const staffMap = new Map<string, StaffRecord>();
+  for (const [, staffList] of staffEntries) {
+    for (const member of staffList) {
+      staffMap.set(member.id, member);
+    }
+  }
 
   return sortBookingsByDate(
     reservations.map((reservation) =>
-      mapReservationToBooking(reservation, salonMap.get(reservation.salonId) ?? undefined),
+      mapReservationToBooking(
+        reservation,
+        salonMap.get(reservation.salonId) ?? undefined,
+        staffMap,
+      ),
     ),
   );
 }

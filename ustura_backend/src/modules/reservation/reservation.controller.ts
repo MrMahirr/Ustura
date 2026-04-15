@@ -38,7 +38,8 @@ export class ReservationController {
   @Post()
   @Roles(Role.CUSTOMER, Role.OWNER, Role.BARBER, Role.RECEPTIONIST)
   @ApiOperation({
-    summary: 'Create a reservation for the current customer or on behalf of a customer',
+    summary:
+      'Create a reservation for the current customer or on behalf of a customer',
   })
   @ApiCreatedResponse({ type: ReservationResponseDto })
   async create(
@@ -50,7 +51,9 @@ export class ReservationController {
 
   @Get('my')
   @Roles(Role.CUSTOMER)
-  @ApiOperation({ summary: 'List reservations belonging to the authenticated customer' })
+  @ApiOperation({
+    summary: 'List reservations belonging to the authenticated customer',
+  })
   @ApiOkResponse({ type: ReservationResponseDto, isArray: true })
   async findMyReservations(@CurrentUser() currentUser: JwtPayload) {
     return this.reservationService.findByCustomerId(currentUser);
@@ -58,7 +61,9 @@ export class ReservationController {
 
   @Get('salon/:salonId')
   @Roles(Role.OWNER, Role.RECEPTIONIST, Role.BARBER)
-  @ApiOperation({ summary: 'List reservations for a salon within the caller scope' })
+  @ApiOperation({
+    summary: 'List reservations for a salon within the caller scope',
+  })
   @ApiParam({ name: 'salonId', format: 'uuid' })
   @ApiOkResponse({ type: ReservationResponseDto, isArray: true })
   async findSalonReservations(

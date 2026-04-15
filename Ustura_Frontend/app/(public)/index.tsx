@@ -9,6 +9,7 @@ import SalonsSection from '@/components/landing/SalonsSection';
 import WhyUs from '@/components/landing/WhyUs';
 import RegistrationForm from '@/components/landing/RegistrationForm';
 import Footer from '@/components/landing/Footer';
+import { publicRoutes } from '@/constants/routes';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function LandingPage() {
@@ -37,7 +38,7 @@ export default function LandingPage() {
     scrollToRegistration();
 
     if (registrationOffset !== null) {
-      router.replace('/(public)');
+      router.replace(publicRoutes.home);
     }
   }, [registrationOffset, router, scrollTo, scrollToRegistration]);
 

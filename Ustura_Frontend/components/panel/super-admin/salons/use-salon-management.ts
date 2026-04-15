@@ -3,6 +3,7 @@ import React from 'react';
 import type {
   AdminSalonFilters,
   AdminSalonRecord,
+  PaginatedAdminSalonResponse,
 } from '@/services/salon.service';
 import {
   getAdminSalonCities,
@@ -89,6 +90,28 @@ function mapAdminSalonToListItem(salon: AdminSalonRecord): SalonListItem {
   };
 }
 
+/** Son kayit silindiginde sayfa toplam sayfa sayisinin ustunde kalmasin (bos liste). */
+async function fetchAdminSalonsWithPageClamp(
+  params: AdminSalonFilters & { page: number; pageSize: number },
+): Promise<{ response: PaginatedAdminSalonResponse; effectivePage: number }> {
+  let requestPage = params.page;
+  let response = await getAdminSalons(params);
+
+  if (response.pagination.total === 0) {
+    return { response, effectivePage: 1 };
+  }
+
+  let totalPages = Math.max(response.pagination.totalPages, 1);
+
+  if (requestPage > totalPages) {
+    requestPage = totalPages;
+    response = await getAdminSalons({ ...params, page: requestPage });
+    totalPages = Math.max(response.pagination.totalPages, 1);
+  }
+
+  return { response, effectivePage: requestPage };
+}
+
 function cycleOption<TOption extends string>(
   options: readonly TOption[],
   current: TOption,
@@ -148,7 +171,7 @@ export function useSalonManagement() {
     setErrorMessage(null);
 
     try {
-      const response = await getAdminSalons({
+      const { response, effectivePage } = await fetchAdminSalonsWithPageClamp({
         search: query.trim() || undefined,
         city: selectedCity === 'Tum Sehirler' ? undefined : selectedCity,
         status: mapStatusValue(selectedStatus),
@@ -156,6 +179,10 @@ export function useSalonManagement() {
         page,
         pageSize: PAGE_SIZE,
       });
+
+      if (effectivePage !== page) {
+        setPage(effectivePage);
+      }
 
       setSalons(response.items.map(mapAdminSalonToListItem));
       setFilteredSalonsCount(response.pagination.total);
@@ -215,7 +242,7 @@ export function useSalonManagement() {
       setErrorMessage(null);
 
       try {
-        const response = await getAdminSalons({
+        const { response, effectivePage } = await fetchAdminSalonsWithPageClamp({
           search: query.trim() || undefined,
           city: selectedCity === 'Tum Sehirler' ? undefined : selectedCity,
           status: mapStatusValue(selectedStatus),
@@ -226,6 +253,10 @@ export function useSalonManagement() {
 
         if (!isActive) {
           return;
+        }
+
+        if (effectivePage !== page) {
+          setPage(effectivePage);
         }
 
         setSalons(response.items.map(mapAdminSalonToListItem));

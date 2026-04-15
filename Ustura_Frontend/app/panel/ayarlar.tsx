@@ -1,11 +1,5 @@
-import PanelPlaceholder from '@/components/panel/PanelPlaceholder';
+import SuperAdminSettings from '@/components/panel/super-admin/SuperAdminSettings';
 
 export default function AyarlarPage() {
-  return (
-    <PanelPlaceholder
-      title="Salon Ayarlari"
-      description="Salon bilgileri, calisma saatleri ve medya yonetimi alanlari bu shell icinde moduler olarak devam edecek."
-      icon="settings"
-    />
-  );
+  return <SuperAdminSettings />;
 }

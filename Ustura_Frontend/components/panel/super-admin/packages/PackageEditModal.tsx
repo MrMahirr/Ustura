@@ -10,7 +10,13 @@ import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import { hexToRgba } from '@/utils/color';
-import type { Subscription } from '@/services/package.service';
+import { PackageService, type Subscription } from '@/services/package.service';
+
+import { confirmDestructive, showErrorFlash } from '@/utils/flash';
+
+function showErrorAlert(message: string) {
+  showErrorFlash('Hata', message);
+}
 
 interface PackageEditModalProps {
   packageId: string | null;
@@ -24,8 +30,10 @@ export default function PackageEditModal({
   onSaved,
 }: PackageEditModalProps) {
   const adminTheme = useSuperAdminTheme();
-  const { profile, isLoading, formState, handleSave, handleDeactivate } =
+  const { profile, isLoading, error, formState, handleSave, handleDeactivate, refresh } =
     usePackageProfile(packageId || undefined);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isCancellingSubscription, setIsCancellingSubscription] = React.useState(false);
 
   const mapSubscriptionRecord = React.useCallback(
     (subscription: Subscription): SubscriptionRecord => ({
@@ -50,24 +58,73 @@ export default function PackageEditModal({
             : subscription.status === 'cancelled'
               ? 'Iptal Edildi'
               : 'Beklemede',
+      canCancel:
+        subscription.status === 'active' || subscription.status === 'pending',
     }),
     [],
+  );
+
+  const handleCancelSubscription = React.useCallback(
+    async (sub: SubscriptionRecord) => {
+      if (!packageId || !sub.canCancel) {
+        return;
+      }
+
+      const msg = `"${sub.salonName}" salonunun bu paket aboneligini iptal etmek istiyor musunuz?`;
+      const ok = await confirmDestructive('Aboneligi iptal et', msg);
+
+      if (!ok) {
+        return;
+      }
+
+      setIsCancellingSubscription(true);
+      try {
+        await PackageService.updateSubscriptionStatus(sub.id, 'cancelled');
+        await refresh();
+        onSaved();
+      } catch (err: any) {
+        showErrorAlert(
+          typeof err?.message === 'string' && err.message.trim()
+            ? err.message
+            : 'Abonelik iptal edilemedi.',
+        );
+      } finally {
+        setIsCancellingSubscription(false);
+      }
+    },
+    [packageId, onSaved, refresh],
   );
 
   if (!packageId) return null;
 
   const submit = async () => {
-    const didSave = await handleSave();
-    if (!didSave) return;
-    onSaved();
-    onClose();
+    setIsSubmitting(true);
+    try {
+      const result = await handleSave();
+      if (!result.ok) {
+        showErrorAlert(result.message);
+        return;
+      }
+      onSaved();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const deactivate = async () => {
-    const didDeactivate = await handleDeactivate();
-    if (!didDeactivate) return;
-    onSaved();
-    onClose();
+    setIsSubmitting(true);
+    try {
+      const result = await handleDeactivate();
+      if (!result.ok) {
+        showErrorAlert(result.message);
+        return;
+      }
+      onSaved();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderContent = () => {
@@ -278,10 +335,27 @@ export default function PackageEditModal({
             ABONELER ({profile.subscribers.length})
           </Text>
           {profile.subscribers.length > 0 ? (
-             <SubscriptionListSection
+            <>
+              <View
+                className="mb-3 rounded-md border px-3 py-2.5"
+                style={{
+                  backgroundColor: hexToRgba(adminTheme.warning, 0.08),
+                  borderColor: hexToRgba(adminTheme.warning, 0.25),
+                }}>
+                <Text className="font-body text-xs leading-5" style={{ color: adminTheme.onSurface }}>
+                  <Text style={{ fontFamily: 'Manrope-Bold' }}>Not: </Text>
+                  Aktif veya beklemedeki abonelikleri sonlandirmak icin satirdaki &quot;Abonelik Iptali&quot;
+                  dugmesini kullanin. Abonelik iptali aninda uygulanir; paket bilgilerini kaydetmek icin alttaki
+                  &quot;Kaydet&quot;e basin.
+                </Text>
+              </View>
+              <SubscriptionListSection
                 subscriptions={profile.subscribers.map(mapSubscriptionRecord)}
-                useDesktopTable={false} // Force mobile view inside modal since space is tight
-             />
+                useDesktopTable={false}
+                onCancelSubscription={handleCancelSubscription}
+                cancelSubscriptionDisabled={isSubmitting || isCancellingSubscription}
+              />
+            </>
           ) : (
              <View className="items-center justify-center py-6 rounded-md border" style={{backgroundColor: adminTheme.cardBackgroundMuted, borderColor: adminTheme.borderSubtle}}>
                 <Text style={{color: adminTheme.onSurfaceVariant, fontSize: 13}}>Bu pakete ait henuz abone bulunmuyor.</Text>
@@ -334,16 +408,24 @@ export default function PackageEditModal({
       {/* Footer */}
       {!isLoading && profile && (
         <View
-          className="flex-row items-center justify-between gap-3 border-t px-6 py-5"
+          className="gap-3 border-t px-6 py-5"
           style={{
             borderTopColor: adminTheme.borderSubtle,
             backgroundColor: adminTheme.cardBackgroundMuted,
           }}>
+          {error ? (
+            <Text className="font-body text-xs" style={{ color: adminTheme.error }}>
+              {error}
+            </Text>
+          ) : null}
+          <View className="flex-row flex-wrap items-center justify-between gap-3">
           <Pressable
             onPress={deactivate}
+            disabled={isSubmitting || isCancellingSubscription}
             className="rounded-md border px-3 py-2"
             style={({ hovered }) => [
               {
+                opacity: isSubmitting || isCancellingSubscription ? 0.45 : 1,
                 backgroundColor: hovered ? hexToRgba(adminTheme.error, 0.05) : 'transparent',
                 borderColor: hovered ? adminTheme.error : hexToRgba(adminTheme.outlineVariant, 0.3),
               },
@@ -361,9 +443,13 @@ export default function PackageEditModal({
           <View className="flex-row gap-2">
             <Pressable
               onPress={onClose}
+              disabled={isSubmitting || isCancellingSubscription}
               className="min-h-[44px] items-center justify-center rounded-md px-4"
               style={({ hovered }) => [
-                { backgroundColor: hovered ? hexToRgba(adminTheme.onSurfaceVariant, 0.08) : 'transparent' },
+                {
+                  opacity: isSubmitting || isCancellingSubscription ? 0.45 : 1,
+                  backgroundColor: hovered ? hexToRgba(adminTheme.onSurfaceVariant, 0.08) : 'transparent',
+                },
                 Platform.OS === 'web' ? ({ transition: 'background-color 150ms ease' } as any) : null,
               ]}>
               <Text className="font-label text-xs uppercase tracking-widest" style={{ color: adminTheme.onSurface, fontFamily: 'Manrope-Bold' }}>
@@ -371,10 +457,16 @@ export default function PackageEditModal({
               </Text>
             </Pressable>
             <Pressable
-              onPress={submit}
+              onPress={() => {
+                void submit();
+              }}
+              disabled={isSubmitting || isCancellingSubscription}
               className="overflow-hidden rounded-md"
               style={({ pressed, hovered }) => [
-                { transform: [{ scale: pressed ? 0.98 : 1 }] },
+                {
+                  opacity: isSubmitting || isCancellingSubscription ? 0.55 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
                 Platform.OS === 'web' ? ({ transition: 'transform 150ms ease, box-shadow 150ms ease', boxShadow: hovered ? `0 12px 24px ${hexToRgba(adminTheme.primary, 0.25)}` : 'none' } as any) : null,
               ]}>
               <LinearGradient
@@ -383,10 +475,11 @@ export default function PackageEditModal({
                 end={{ x: 1, y: 1 }}
                 style={{ minHeight: 44, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}>
                 <Text className="font-label text-xs uppercase tracking-widest" style={{ color: adminTheme.onPrimary, fontFamily: 'Manrope-Bold' }}>
-                  Kaydet
+                  {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
                 </Text>
               </LinearGradient>
             </Pressable>
+          </View>
           </View>
         </View>
       )}

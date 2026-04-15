@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { configureApiAuth } from '@/services/api';
 import {
   type AuthSession,
+  changeAuthenticatedPassword,
   getGoogleCustomerWebConfiguration,
   loginWithPassword,
   loginCustomerWithGoogleWeb,
@@ -28,6 +29,7 @@ export interface AuthUser {
   email?: string;
   phone?: string;
   role: AuthUserRole;
+  mustChangePassword?: boolean;
 }
 
 export interface LoginInput {
@@ -51,12 +53,14 @@ interface AuthContextValue {
   user: AuthUser | null;
   role: AuthUserRole | null;
   isAuthenticated: boolean;
+  mustChangePassword: boolean;
   isGoogleLoginLoading: boolean;
   login: (input: LoginInput) => Promise<AuthUser>;
   loginSuperAdmin: (input: LoginInput) => Promise<AuthUser>;
   loginStaff: (input: LoginInput) => Promise<AuthUser>;
   loginWithGoogle: () => Promise<AuthUser>;
   register: (input: RegistrationInput) => Promise<AuthUser>;
+  submitPasswordChange: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -66,6 +70,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   role: null,
   isAuthenticated: false,
+  mustChangePassword: false,
   isGoogleLoginLoading: false,
   login: async () => {
     throw new Error('AuthContext hazir degil.');
@@ -80,6 +85,9 @@ const AuthContext = createContext<AuthContextValue>({
     throw new Error('AuthContext hazir degil.');
   },
   register: async () => {
+    throw new Error('AuthContext hazir degil.');
+  },
+  submitPasswordChange: async () => {
     throw new Error('AuthContext hazir degil.');
   },
   logout: async () => {},
@@ -222,6 +230,7 @@ function mapAuthSession(session: AuthSession): StoredSession {
       email: normalizedEmail || undefined,
       phone: normalizedPhone || undefined,
       role: session.user.role,
+      mustChangePassword: session.user.mustChangePassword === true,
     },
     tokens: session.tokens,
   };
@@ -341,6 +350,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: session?.user ?? null,
       role: session?.user.role ?? null,
       isAuthenticated: session != null,
+      mustChangePassword: session?.user.mustChangePassword === true,
       isGoogleLoginLoading,
       login: async (input) => {
         const nextSession = mapAuthSession(
@@ -348,6 +358,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await loginWithPassword({
               email: normalizeEmail(input.identifier),
               password: input.password.trim(),
+              principalKind: 'customer',
             }),
             'customer',
           ),
@@ -361,6 +372,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await loginWithPassword({
               email: normalizeEmail(input.identifier),
               password: input.password.trim(),
+              principalKind: 'platform_admin',
             }),
             'super_admin',
           ),
@@ -374,6 +386,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await loginWithPassword({
               email: normalizeEmail(input.identifier),
               password: input.password.trim(),
+              principalKind: 'personnel',
             }),
             'staff',
           ),
@@ -424,6 +437,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         setSession(nextSession);
         return nextSession.user;
+      },
+      submitPasswordChange: async (currentPassword, newPassword) => {
+        const nextSession = mapAuthSession(
+          await changeAuthenticatedPassword({
+            currentPassword,
+            newPassword,
+          }),
+        );
+        setSession(nextSession);
       },
       logout: async () => {
         const refreshToken = sessionRef.current?.tokens.refreshToken;

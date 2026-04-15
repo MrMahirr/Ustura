@@ -1,5 +1,8 @@
 import { apiRequest } from '@/services/api';
 
+/** Backend `PrincipalKind` — login isteğinde hangi kimlik tablosunda aranacağını belirler. */
+export type PrincipalKind = 'customer' | 'personnel' | 'platform_admin';
+
 export type SessionRole = 'customer' | 'owner' | 'barber' | 'receptionist' | 'super_admin';
 
 export interface SessionTokens {
@@ -16,6 +19,8 @@ export interface SessionUser {
   phone: string;
   role: SessionRole;
   isActive: boolean;
+  /** Backend: otomatik personel sifresi sonrasi true. */
+  mustChangePassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +46,8 @@ interface RegisterCustomerPayload {
 interface LoginWithPasswordPayload {
   email: string;
   password: string;
+  /** Verilmezse backend müşteri kabul eder; personel ve süper admin için zorunlu. */
+  principalKind?: PrincipalKind;
 }
 
 interface LoginCustomerWithGoogleWebPayload {
@@ -72,7 +79,10 @@ export async function loginWithPassword(payload: LoginWithPasswordPayload) {
 }
 
 export async function loginCustomer(payload: LoginWithPasswordPayload) {
-  return loginWithPassword(payload);
+  return loginWithPassword({
+    ...payload,
+    principalKind: payload.principalKind ?? 'customer',
+  });
 }
 
 export async function getGoogleCustomerWebConfiguration() {
@@ -110,6 +120,22 @@ export async function logoutSession(refreshToken: string) {
     path: '/auth/logout',
     method: 'POST',
     body: { refreshToken },
+    auth: true,
+  });
+}
+
+interface ChangeAuthenticatedPasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export async function changeAuthenticatedPassword(
+  payload: ChangeAuthenticatedPasswordPayload,
+) {
+  return apiRequest<AuthSession, ChangeAuthenticatedPasswordPayload>({
+    path: '/auth/password/change',
+    method: 'POST',
+    body: payload,
     auth: true,
   });
 }

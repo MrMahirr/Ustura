@@ -2,13 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { QueryResultRow } from 'pg';
 import { DatabaseService } from '../../../database/database.service';
 import { SqlQueryExecutor } from '../../../database/database.types';
+import { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
+import { Role } from '../../../shared/auth/role.enum';
 import {
+  AdminUserActivityEntry,
   AdminUserFilterOption,
   AdminUserFilterOptions,
   AdminUserOverview,
+  AdminUserReservation,
+  AdminUserStats,
   AdminUserSummary,
+  AdminUserWorkingDay,
   FindAdminUsersFilters,
   CreateUserRecordInput,
+  UpdateManagedEmployeeInput,
   UpdateUserProfileInput,
   User,
 } from '../interfaces/user.types';
@@ -17,23 +24,42 @@ import {
 export class UserRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findById(id: string): Promise<User | null> {
+  async findByPrincipal(kind: PrincipalKind, id: string): Promise<User | null> {
+    const roleSql =
+      kind === PrincipalKind.PLATFORM_ADMIN
+        ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
+        : kind === PrincipalKind.CUSTOMER
+          ? `'${Role.CUSTOMER}'::varchar(20) AS role`
+          : 'p.role';
+
+    const fromClause =
+      kind === PrincipalKind.CUSTOMER
+        ? `customers p`
+        : kind === PrincipalKind.PLATFORM_ADMIN
+          ? `platform_admins p`
+          : `personnel p`;
+
+    const selectFirebase =
+      kind === PrincipalKind.CUSTOMER
+        ? 'p.firebase_uid'
+        : 'NULL::varchar(128) AS firebase_uid';
+
     const result = await this.databaseService.query<UserRow>({
-      name: 'user.find-by-id',
       text: `
         SELECT
-          id,
-          name,
-          email,
-          phone,
-          password_hash,
-          firebase_uid,
-          role,
-          is_active,
-          created_at,
-          updated_at
-        FROM users
-        WHERE id = $1
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          ${selectFirebase},
+          ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
+        FROM ${fromClause}
+        WHERE p.id = $1
         LIMIT 1
       `,
       values: [id],
@@ -42,30 +68,46 @@ export class UserRepository {
     return this.mapRow(result.rows[0]);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.findByEmailWithExecutor(email);
-  }
-
-  async findByEmailWithExecutor(
+  async findByEmailForPrincipal(
     email: string,
+    kind: PrincipalKind,
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<User | null> {
+    const roleSql =
+      kind === PrincipalKind.PLATFORM_ADMIN
+        ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
+        : kind === PrincipalKind.CUSTOMER
+          ? `'${Role.CUSTOMER}'::varchar(20) AS role`
+          : 'p.role';
+
+    const fromClause =
+      kind === PrincipalKind.CUSTOMER
+        ? `customers p`
+        : kind === PrincipalKind.PLATFORM_ADMIN
+          ? `platform_admins p`
+          : `personnel p`;
+
+    const selectFirebase =
+      kind === PrincipalKind.CUSTOMER
+        ? 'p.firebase_uid'
+        : 'NULL::varchar(128) AS firebase_uid';
+
     const result = await executor.query<UserRow>({
-      name: 'user.find-by-email',
       text: `
         SELECT
-          id,
-          name,
-          email,
-          phone,
-          password_hash,
-          firebase_uid,
-          role,
-          is_active,
-          created_at,
-          updated_at
-        FROM users
-        WHERE email = $1
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          ${selectFirebase},
+          ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
+        FROM ${fromClause}
+        WHERE LOWER(p.email) = LOWER($1)
         LIMIT 1
       `,
       values: [email],
@@ -79,18 +121,19 @@ export class UserRepository {
       name: 'user.find-by-firebase-uid',
       text: `
         SELECT
-          id,
-          name,
-          email,
-          phone,
-          password_hash,
-          firebase_uid,
-          role,
-          is_active,
-          created_at,
-          updated_at
-        FROM users
-        WHERE firebase_uid = $1
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          p.firebase_uid,
+          '${Role.CUSTOMER}'::varchar(20) AS role,
+          FALSE::boolean AS must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
+        FROM customers p
+        WHERE p.firebase_uid = $1
         LIMIT 1
       `,
       values: [firebaseUid],
@@ -99,30 +142,46 @@ export class UserRepository {
     return this.mapRow(result.rows[0]);
   }
 
-  async findByPhone(phone: string): Promise<User | null> {
-    return this.findByPhoneWithExecutor(phone);
-  }
-
-  async findByPhoneWithExecutor(
+  async findByPhoneForPrincipal(
     phone: string,
+    kind: PrincipalKind,
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<User | null> {
+    const roleSql =
+      kind === PrincipalKind.PLATFORM_ADMIN
+        ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
+        : kind === PrincipalKind.CUSTOMER
+          ? `'${Role.CUSTOMER}'::varchar(20) AS role`
+          : 'p.role';
+
+    const fromClause =
+      kind === PrincipalKind.CUSTOMER
+        ? `customers p`
+        : kind === PrincipalKind.PLATFORM_ADMIN
+          ? `platform_admins p`
+          : `personnel p`;
+
+    const selectFirebase =
+      kind === PrincipalKind.CUSTOMER
+        ? 'p.firebase_uid'
+        : 'NULL::varchar(128) AS firebase_uid';
+
     const result = await executor.query<UserRow>({
-      name: 'user.find-by-phone',
       text: `
         SELECT
-          id,
-          name,
-          email,
-          phone,
-          password_hash,
-          firebase_uid,
-          role,
-          is_active,
-          created_at,
-          updated_at
-        FROM users
-        WHERE phone = $1
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          ${selectFirebase},
+          ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
+        FROM ${fromClause}
+        WHERE p.phone = $1
         LIMIT 1
       `,
       values: [phone],
@@ -131,7 +190,26 @@ export class UserRepository {
     return this.mapRow(result.rows[0]);
   }
 
-  async findAdminUsers(filters: FindAdminUsersFilters): Promise<AdminUserSummary[]> {
+  private tableForPrincipalKind(kind: PrincipalKind): string {
+    switch (kind) {
+      case PrincipalKind.CUSTOMER:
+        return 'customers';
+      case PrincipalKind.PLATFORM_ADMIN:
+        return 'platform_admins';
+      default:
+        return 'personnel';
+    }
+  }
+
+  private mustChangePasswordSelect(kind: PrincipalKind): string {
+    return kind === PrincipalKind.PERSONNEL
+      ? 'p.must_change_password'
+      : 'FALSE::boolean';
+  }
+
+  async findAdminUsers(
+    filters: FindAdminUsersFilters,
+  ): Promise<AdminUserSummary[]> {
     const { values, whereClause } = this.buildAdminFilters(filters);
     const result = await this.databaseService.query<AdminUserRow>({
       text: `
@@ -168,7 +246,9 @@ export class UserRepository {
       values,
     });
 
-    return result.rows.map((row) => this.mapAdminUserRow(row) as AdminUserSummary);
+    return result.rows.map(
+      (row) => this.mapAdminUserRow(row) as AdminUserSummary,
+    );
   }
 
   async findAdminUserById(id: string): Promise<AdminUserSummary | null> {
@@ -201,7 +281,6 @@ export class UserRepository {
           u.updated_at
         ${this.getAdminUserFromClause()}
         WHERE u.id = $1
-          AND u.role <> 'customer'
           AND (u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)
         LIMIT 1
       `,
@@ -209,6 +288,361 @@ export class UserRepository {
     });
 
     return this.mapAdminUserRow(result.rows[0]);
+  }
+
+  /**
+   * Super-admin: enable/disable salon personnel or platform admins.
+   * Staff rows for personnel are aligned so admin list status stays consistent.
+   */
+  async adminSetManagedUserActive(
+    userId: string,
+    isActive: boolean,
+  ): Promise<boolean> {
+    return this.databaseService.transaction(async (tx) => {
+      const platformResult = await tx.query(
+        `
+        UPDATE platform_admins
+        SET is_active = $2,
+            updated_at = NOW()
+        WHERE id = $1
+        `,
+        [userId, isActive],
+      );
+
+      if (platformResult.rowCount && platformResult.rowCount > 0) {
+        return true;
+      }
+
+      const personnelResult = await tx.query(
+        `
+        UPDATE personnel
+        SET is_active = $2,
+            updated_at = NOW()
+        WHERE id = $1
+        `,
+        [userId, isActive],
+      );
+
+      if (!personnelResult.rowCount || personnelResult.rowCount < 1) {
+        return false;
+      }
+
+      await tx.query(
+        `
+        UPDATE staff
+        SET is_active = $2,
+            updated_at = NOW()
+        WHERE user_id = $1
+        `,
+        [userId, isActive],
+      );
+
+      return true;
+    });
+  }
+
+  async findReservationsForUser(
+    userId: string,
+    limit = 10,
+  ): Promise<AdminUserReservation[]> {
+    const result = await this.databaseService.query<{
+      id: string;
+      customer_name: string;
+      slot_start: Date;
+      slot_end: Date;
+      status: string;
+      notes: string | null;
+    }>({
+      text: `
+        SELECT
+          r.id,
+          COALESCE(c.name, 'Misafir') AS customer_name,
+          r.slot_start,
+          r.slot_end,
+          r.status,
+          r.notes
+        FROM reservations r
+        INNER JOIN staff st ON st.id = r.staff_id
+        LEFT JOIN customers c ON c.id = r.customer_id
+        WHERE st.user_id = $1
+        ORDER BY r.slot_start DESC
+        LIMIT $2
+      `,
+      values: [userId, limit],
+    });
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      customerName: row.customer_name,
+      slotStart: row.slot_start,
+      slotEnd: row.slot_end,
+      status: row.status,
+      notes: row.notes,
+    }));
+  }
+
+  async findStatsForUser(userId: string): Promise<AdminUserStats> {
+    const result = await this.databaseService.query<{
+      total: number;
+      completed: number;
+      cancelled: number;
+      last_30: number;
+      avg_per_day: number;
+    }>({
+      text: `
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE r.status = 'completed')::int AS completed,
+          COUNT(*) FILTER (WHERE r.status = 'cancelled')::int AS cancelled,
+          COUNT(*) FILTER (WHERE r.slot_start >= NOW() - INTERVAL '30 days')::int AS last_30,
+          COALESCE(
+            ROUND(
+              COUNT(*) FILTER (WHERE r.slot_start >= NOW() - INTERVAL '30 days')::numeric
+              / NULLIF(30, 0),
+              1
+            ),
+            0
+          )::float8 AS avg_per_day
+        FROM reservations r
+        INNER JOIN staff st ON st.id = r.staff_id
+        WHERE st.user_id = $1
+      `,
+      values: [userId],
+    });
+
+    const row = result.rows[0];
+    return {
+      totalReservations: row?.total ?? 0,
+      completedReservations: row?.completed ?? 0,
+      cancelledReservations: row?.cancelled ?? 0,
+      last30DaysReservations: row?.last_30 ?? 0,
+      averagePerDay: Number(row?.avg_per_day ?? 0),
+    };
+  }
+
+  async findActivityForUser(
+    userId: string,
+    limit = 10,
+  ): Promise<AdminUserActivityEntry[]> {
+    const result = await this.databaseService.query<{
+      id: string;
+      action: string;
+      entity_type: string;
+      metadata: Record<string, unknown> | null;
+      created_at: Date;
+    }>({
+      text: `
+        SELECT
+          id,
+          action,
+          entity_type,
+          metadata,
+          created_at
+        FROM audit_logs
+        WHERE actor_user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+      `,
+      values: [userId, limit],
+    });
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      action: row.action,
+      entityType: row.entity_type,
+      detail: this.formatAuditDetail(row.action, row.metadata),
+      createdAt: row.created_at,
+    }));
+  }
+
+  async findWorkingHoursForUser(
+    userId: string,
+  ): Promise<AdminUserWorkingDay[]> {
+    const result = await this.databaseService.query<{
+      working_hours: Record<
+        string,
+        { open: string; close: string } | null
+      > | null;
+    }>({
+      text: `
+        SELECT s.working_hours
+        FROM salons s
+        LEFT JOIN staff st ON st.salon_id = s.id AND st.user_id = $1 AND st.is_active = TRUE
+        LEFT JOIN salons os ON os.owner_id = $1
+        WHERE st.id IS NOT NULL OR os.id IS NOT NULL
+        ORDER BY st.id IS NOT NULL DESC
+        LIMIT 1
+      `,
+      values: [userId],
+    });
+
+    const wh = result.rows[0]?.working_hours;
+    if (!wh) {
+      return [];
+    }
+
+    const dayLabels: Record<string, string> = {
+      monday: 'Pazartesi',
+      tuesday: 'Sali',
+      wednesday: 'Carsamba',
+      thursday: 'Persembe',
+      friday: 'Cuma',
+      saturday: 'Cumartesi',
+      sunday: 'Pazar',
+    };
+
+    return Object.entries(dayLabels).map(([key, label]) => {
+      const entry = wh[key];
+      return {
+        day: label,
+        open: entry?.open ?? null,
+        close: entry?.close ?? null,
+      };
+    });
+  }
+
+  private formatAuditDetail(
+    action: string,
+    metadata: Record<string, unknown> | null,
+  ): string | null {
+    if (!metadata) return null;
+
+    switch (action) {
+      case 'auth.logged_in':
+        return 'Sisteme giris yapildi';
+      case 'auth.logged_out':
+        return 'Oturum kapatildi';
+      case 'auth.registered':
+        return 'Hesap olusturuldu';
+      case 'staff.created':
+        return `Personel olarak atandi${metadata.salonId ? '' : ''}`;
+      case 'staff.updated':
+        return 'Personel bilgileri guncellendi';
+      case 'staff.deactivated':
+        return 'Personel kaydi devre disi birakildi';
+      case 'reservation.created':
+        return 'Yeni randevu olusturuldu';
+      case 'reservation.cancelled':
+        return 'Randevu iptal edildi';
+      case 'reservation.status_updated':
+        return `Randevu durumu guncellendi`;
+      default:
+        return action.replace(/\./g, ' ');
+    }
+  }
+
+  async adminUpdateUserProfile(
+    userId: string,
+    input: UpdateUserProfileInput,
+  ): Promise<boolean> {
+    return this.databaseService.transaction(async (tx) => {
+      const updates: string[] = [];
+      const values: unknown[] = [];
+
+      if (input.name !== undefined) {
+        values.push(input.name);
+        updates.push(`name = $${values.length}`);
+      }
+
+      if (input.phone !== undefined) {
+        values.push(input.phone);
+        updates.push(`phone = $${values.length}`);
+      }
+
+      if (updates.length === 0) {
+        return true;
+      }
+
+      const setClause = updates.join(', ');
+      values.push(userId);
+      const idParam = `$${values.length}`;
+
+      const platformResult = await tx.query(
+        `UPDATE platform_admins SET ${setClause}, updated_at = NOW() WHERE id = ${idParam}`,
+        values,
+      );
+
+      if (platformResult.rowCount && platformResult.rowCount > 0) {
+        return true;
+      }
+
+      const personnelResult = await tx.query(
+        `UPDATE personnel SET ${setClause}, updated_at = NOW() WHERE id = ${idParam}`,
+        values,
+      );
+
+      return !!(personnelResult.rowCount && personnelResult.rowCount > 0);
+    });
+  }
+
+  async updateManagedEmployee(
+    id: string,
+    input: UpdateManagedEmployeeInput & { passwordHash?: string | null },
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<User | null> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+
+    if (input.name !== undefined) {
+      values.push(input.name);
+      updates.push(`name = $${values.length}`);
+    }
+
+    if (input.email !== undefined) {
+      values.push(input.email);
+      updates.push(`email = $${values.length}`);
+    }
+
+    if (input.phone !== undefined) {
+      values.push(input.phone);
+      updates.push(`phone = $${values.length}`);
+    }
+
+    if (input.role !== undefined) {
+      values.push(input.role);
+      updates.push(`role = $${values.length}`);
+    }
+
+    if (input.passwordHash !== undefined) {
+      values.push(input.passwordHash);
+      updates.push(`password_hash = $${values.length}`);
+    }
+
+    if (input.mustChangePassword !== undefined) {
+      values.push(input.mustChangePassword);
+      updates.push(`must_change_password = $${values.length}`);
+    }
+
+    if (updates.length === 0) {
+      return this.findByPrincipal(PrincipalKind.PERSONNEL, id);
+    }
+
+    values.push(id);
+
+    const result = await executor.query<UserRow>({
+      name: 'user.update-managed-employee',
+      text: `
+        UPDATE personnel p
+        SET ${updates.join(', ')},
+            updated_at = NOW()
+        WHERE p.id = $${values.length}
+        RETURNING
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          NULL::varchar(128) AS firebase_uid,
+          p.role,
+          p.must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
+      `,
+      values,
+    });
+
+    return this.mapRow(result.rows[0]);
   }
 
   async getAdminOverview(): Promise<AdminUserOverview> {
@@ -222,8 +656,7 @@ export class UserRepository {
             ${this.getAdminStatusSql()} AS admin_status,
             u.created_at
           ${this.getAdminUserFromClause()}
-          WHERE u.role <> 'customer'
-            AND (u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)
+          WHERE (u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)
         )
         SELECT
           COUNT(*)::int AS total_users,
@@ -264,8 +697,7 @@ export class UserRepository {
             COALESCE(staff_assignment.salon_id, owner_salon.salon_id) AS id,
             COALESCE(staff_salon.name, owner_salon.salon_name, 'USTURA Merkez') AS name
           ${this.getAdminUserFromClause()}
-          WHERE u.role <> 'customer'
-            AND (u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)
+          WHERE (u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)
             AND COALESCE(staff_assignment.salon_id, owner_salon.salon_id) IS NOT NULL
           ORDER BY name ASC
         `,
@@ -278,8 +710,7 @@ export class UserRepository {
           SELECT DISTINCT
             COALESCE(staff_salon.city, owner_salon.salon_city) AS city
           ${this.getAdminUserFromClause()}
-          WHERE u.role <> 'customer'
-            AND (u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)
+          WHERE (u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)
             AND COALESCE(staff_salon.city, owner_salon.salon_city) IS NOT NULL
           ORDER BY city ASC
         `,
@@ -288,7 +719,9 @@ export class UserRepository {
     ]);
 
     return {
-      salons: salonResult.rows.map((row) => this.mapAdminFilterOptionRow(row) as AdminUserFilterOption),
+      salons: salonResult.rows.map(
+        (row) => this.mapAdminFilterOptionRow(row) as AdminUserFilterOption,
+      ),
       cities: cityResult.rows.map((row) => row.city),
     };
   }
@@ -297,16 +730,90 @@ export class UserRepository {
     input: CreateUserRecordInput,
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<User> {
+    if (input.role === Role.SUPER_ADMIN) {
+      const result = await executor.query<UserRow>({
+        name: 'user.create-platform-admin',
+        text: `
+          INSERT INTO platform_admins (
+            name,
+            email,
+            phone,
+            password_hash
+          )
+          VALUES ($1, $2, $3, $4)
+          RETURNING
+            id,
+            name,
+            email,
+            phone,
+            password_hash,
+            NULL::varchar(128) AS firebase_uid,
+            '${Role.SUPER_ADMIN}'::varchar(20) AS role,
+            FALSE::boolean AS must_change_password,
+            is_active,
+            created_at,
+            updated_at
+        `,
+        values: [
+          input.name,
+          input.email,
+          input.phone,
+          input.passwordHash!.trim(),
+        ],
+      });
+
+      return this.mapRow(result.rows[0]) as User;
+    }
+
+    if (input.role === Role.CUSTOMER) {
+      const result = await executor.query<UserRow>({
+        name: 'user.create-customer',
+        text: `
+          INSERT INTO customers (
+            name,
+            email,
+            phone,
+            password_hash,
+            firebase_uid
+          )
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING
+            id,
+            name,
+            email,
+            phone,
+            password_hash,
+            firebase_uid,
+            '${Role.CUSTOMER}'::varchar(20) AS role,
+            FALSE::boolean AS must_change_password,
+            is_active,
+            created_at,
+            updated_at
+        `,
+        values: [
+          input.name,
+          input.email,
+          input.phone,
+          input.passwordHash ?? null,
+          input.firebaseUid ?? null,
+        ],
+      });
+
+      return this.mapRow(result.rows[0]) as User;
+    }
+
+    const mustChangePassword = input.mustChangePassword === true;
+
     const result = await executor.query<UserRow>({
-      name: 'user.create',
+      name: 'user.create-personnel',
       text: `
-        INSERT INTO users (
+        INSERT INTO personnel (
           name,
           email,
           phone,
           password_hash,
-          firebase_uid,
-          role
+          role,
+          must_change_password
         )
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING
@@ -315,8 +822,9 @@ export class UserRepository {
           email,
           phone,
           password_hash,
-          firebase_uid,
+          NULL::varchar(128) AS firebase_uid,
           role,
+          must_change_password,
           is_active,
           created_at,
           updated_at
@@ -326,8 +834,8 @@ export class UserRepository {
         input.email,
         input.phone,
         input.passwordHash ?? null,
-        input.firebaseUid ?? null,
         input.role,
+        mustChangePassword,
       ],
     });
 
@@ -335,6 +843,7 @@ export class UserRepository {
   }
 
   async updateProfile(
+    kind: PrincipalKind,
     id: string,
     input: UpdateUserProfileInput,
     executor: SqlQueryExecutor = this.databaseService,
@@ -353,27 +862,41 @@ export class UserRepository {
     }
 
     if (updates.length === 0) {
-      return this.findById(id);
+      return this.findByPrincipal(kind, id);
     }
+
+    const table = this.tableForPrincipalKind(kind);
+    const roleSql =
+      kind === PrincipalKind.PLATFORM_ADMIN
+        ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
+        : kind === PrincipalKind.CUSTOMER
+          ? `'${Role.CUSTOMER}'::varchar(20) AS role`
+          : 'p.role';
+
+    const selectFirebase =
+      kind === PrincipalKind.CUSTOMER
+        ? 'p.firebase_uid'
+        : 'NULL::varchar(128) AS firebase_uid';
 
     values.push(id);
 
     const result = await executor.query<UserRow>({
       text: `
-        UPDATE users
+        UPDATE ${table} p
         SET ${updates.join(', ')}
-        WHERE id = $${values.length}
+        WHERE p.id = $${values.length}
         RETURNING
-          id,
-          name,
-          email,
-          phone,
-          password_hash,
-          firebase_uid,
-          role,
-          is_active,
-          created_at,
-          updated_at
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          ${selectFirebase},
+          ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
       `,
       values,
     });
@@ -382,26 +905,40 @@ export class UserRepository {
   }
 
   async deactivate(
+    kind: PrincipalKind,
     id: string,
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<User | null> {
+    const table = this.tableForPrincipalKind(kind);
+    const roleSql =
+      kind === PrincipalKind.PLATFORM_ADMIN
+        ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
+        : kind === PrincipalKind.CUSTOMER
+          ? `'${Role.CUSTOMER}'::varchar(20) AS role`
+          : 'p.role';
+
+    const selectFirebase =
+      kind === PrincipalKind.CUSTOMER
+        ? 'p.firebase_uid'
+        : 'NULL::varchar(128) AS firebase_uid';
+
     const result = await executor.query<UserRow>({
-      name: 'user.deactivate',
       text: `
-        UPDATE users
+        UPDATE ${table} p
         SET is_active = FALSE
-        WHERE id = $1
+        WHERE p.id = $1
         RETURNING
-          id,
-          name,
-          email,
-          phone,
-          password_hash,
-          firebase_uid,
-          role,
-          is_active,
-          created_at,
-          updated_at
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          ${selectFirebase},
+          ${roleSql},
+          ${this.mustChangePasswordSelect(kind)} AS must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
       `,
       values: [id],
     });
@@ -417,22 +954,86 @@ export class UserRepository {
     const result = await executor.query<UserRow>({
       name: 'user.link-firebase-identity',
       text: `
-        UPDATE users
+        UPDATE customers p
         SET firebase_uid = $1
-        WHERE id = $2
+        WHERE p.id = $2
         RETURNING
-          id,
-          name,
-          email,
-          phone,
-          password_hash,
-          firebase_uid,
-          role,
-          is_active,
-          created_at,
-          updated_at
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          p.firebase_uid,
+          '${Role.CUSTOMER}'::varchar(20) AS role,
+          FALSE::boolean AS must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
       `,
       values: [firebaseUid, id],
+    });
+
+    return this.mapRow(result.rows[0]);
+  }
+
+  async updatePasswordHashForPrincipal(
+    kind: PrincipalKind,
+    id: string,
+    passwordHash: string,
+    options: {
+      clearMustChangePassword?: boolean;
+      setMustChangePassword?: boolean;
+    },
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<User | null> {
+    const table = this.tableForPrincipalKind(kind);
+    const roleSql =
+      kind === PrincipalKind.PLATFORM_ADMIN
+        ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
+        : kind === PrincipalKind.CUSTOMER
+          ? `'${Role.CUSTOMER}'::varchar(20) AS role`
+          : 'p.role';
+
+    const selectFirebase =
+      kind === PrincipalKind.CUSTOMER
+        ? 'p.firebase_uid'
+        : 'NULL::varchar(128) AS firebase_uid';
+
+    const mustChangeSql =
+      kind === PrincipalKind.PERSONNEL && options.clearMustChangePassword
+        ? 'FALSE::boolean AS must_change_password'
+        : kind === PrincipalKind.PERSONNEL && options.setMustChangePassword
+          ? 'TRUE::boolean AS must_change_password'
+          : kind === PrincipalKind.PERSONNEL
+            ? 'p.must_change_password'
+            : 'FALSE::boolean AS must_change_password';
+
+    const setClause =
+      kind === PrincipalKind.PERSONNEL && options.clearMustChangePassword
+        ? 'password_hash = $2, must_change_password = FALSE'
+        : kind === PrincipalKind.PERSONNEL && options.setMustChangePassword
+          ? 'password_hash = $2, must_change_password = TRUE'
+          : 'password_hash = $2';
+
+    const result = await executor.query<UserRow>({
+      text: `
+        UPDATE ${table} p
+        SET ${setClause}
+        WHERE p.id = $1
+        RETURNING
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          ${selectFirebase},
+          ${roleSql},
+          ${mustChangeSql},
+          p.is_active,
+          p.created_at,
+          p.updated_at
+      `,
+      values: [id, passwordHash],
     });
 
     return this.mapRow(result.rows[0]);
@@ -452,6 +1053,7 @@ export class UserRepository {
       firebaseUid: row.firebase_uid,
       role: row.role,
       isActive: row.is_active,
+      mustChangePassword: Boolean(row.must_change_password),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -499,7 +1101,6 @@ export class UserRepository {
 
   private buildAdminFilters(filters: FindAdminUsersFilters) {
     const clauses: string[] = [
-      `u.role <> 'customer'`,
       `(u.role IN ('super_admin', 'owner') OR staff_assignment.staff_id IS NOT NULL)`,
     ];
     const values: unknown[] = [];
@@ -607,7 +1208,29 @@ export class UserRepository {
 
   private getAdminUserFromClause() {
     return `
-      FROM users u
+      FROM (
+        SELECT
+          id,
+          name,
+          email,
+          phone,
+          role,
+          is_active,
+          created_at,
+          updated_at
+        FROM personnel
+        UNION ALL
+        SELECT
+          id,
+          name,
+          email,
+          phone,
+          'super_admin'::varchar(20) AS role,
+          is_active,
+          created_at,
+          updated_at
+        FROM platform_admins
+      ) u
       LEFT JOIN staff_assignment ON staff_assignment.user_id = u.id
       LEFT JOIN salons staff_salon ON staff_salon.id = staff_assignment.salon_id
       LEFT JOIN owner_salon ON owner_salon.owner_id = u.id
@@ -659,6 +1282,7 @@ interface UserRow extends QueryResultRow {
   password_hash: string | null;
   firebase_uid: string | null;
   role: User['role'];
+  must_change_password?: boolean | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;

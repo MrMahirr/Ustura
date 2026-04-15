@@ -52,6 +52,7 @@ export default function SuperAdminNotifications() {
             isWide={isWide}
             overview={mgmt.overview}
             onMarkAllRead={mgmt.markAllAsRead}
+            isMarkingAllRead={mgmt.isMarkingAllRead}
             theme={adminTheme}
           />
 

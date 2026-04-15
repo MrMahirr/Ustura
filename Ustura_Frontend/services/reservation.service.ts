@@ -1,6 +1,16 @@
 import { apiRequest } from '@/services/api';
 
-export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled';
+export type ReservationStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'cancelled'
+  | 'completed'
+  | 'no_show';
+
+export type OperationalReservationStatus =
+  | 'confirmed'
+  | 'completed'
+  | 'no_show';
 
 export interface ReservationRecord {
   id: string;
@@ -11,6 +21,10 @@ export interface ReservationRecord {
   slotEnd: string;
   status: ReservationStatus;
   notes: string | null;
+  cancelledAt: string | null;
+  cancelledByUserId: string | null;
+  statusChangedAt: string | null;
+  statusChangedByUserId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -69,6 +83,18 @@ export async function getSalonReservations(salonId: string) {
   return apiRequest<ReservationRecord[]>({
     path: `/reservations/salon/${salonId}`,
     auth: true,
+  });
+}
+
+export async function updateReservationStatus(
+  reservationId: string,
+  status: OperationalReservationStatus,
+) {
+  return apiRequest<ReservationRecord, { status: OperationalReservationStatus }>({
+    path: `/reservations/${reservationId}/status`,
+    method: 'PATCH',
+    auth: true,
+    body: { status },
   });
 }
 

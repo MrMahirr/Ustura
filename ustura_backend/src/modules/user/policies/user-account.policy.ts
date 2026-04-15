@@ -40,9 +40,7 @@ export class UserAccountPolicy {
     }
   }
 
-  assertCreateUserRequirements(
-    context: CreateUserRequirementContext,
-  ): void {
+  assertCreateUserRequirements(context: CreateUserRequirementContext): void {
     const {
       role,
       hasPassword,

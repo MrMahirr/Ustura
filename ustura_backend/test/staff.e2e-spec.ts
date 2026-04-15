@@ -11,10 +11,7 @@ import { StaffSelfController } from '../src/modules/staff/staff-self.controller'
 import { staffAlreadyAssignedError } from '../src/modules/staff/errors/staff.errors';
 import { StaffService } from '../src/modules/staff/staff.service';
 import { createContractTestApp } from './helpers/create-contract-test-app';
-import {
-  TEST_JWT_SECRET,
-  TestJwtStrategy,
-} from './helpers/test-jwt.strategy';
+import { TEST_JWT_SECRET, TestJwtStrategy } from './helpers/test-jwt.strategy';
 
 describe('StaffController (e2e)', () => {
   let app: INestApplication;

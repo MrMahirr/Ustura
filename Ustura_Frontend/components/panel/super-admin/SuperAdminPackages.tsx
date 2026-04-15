@@ -12,7 +12,9 @@ import PackageStatsRow from '@/components/panel/super-admin/packages/PackageStat
 import SubscriptionListSection from '@/components/panel/super-admin/packages/SubscriptionListSection';
 import { packageClassNames } from '@/components/panel/super-admin/packages/presentation';
 import { usePackageManagement } from '@/components/panel/super-admin/packages/use-package-management';
+import type { SubscriptionRecord } from '@/components/panel/super-admin/packages/types';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
+import { confirmDestructive, showErrorFlash } from '@/utils/flash';
 
 export default function SuperAdminPackages() {
   const { width } = useWindowDimensions();
@@ -21,6 +23,57 @@ export default function SuperAdminPackages() {
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
   const [isAllSubscriptionsModalVisible, setIsAllSubscriptionsModalVisible] = useState(false);
+
+  const handleCancelSubscription = React.useCallback(
+    async (sub: SubscriptionRecord) => {
+      if (!sub.canCancel) {
+        return;
+      }
+
+      const msg = `"${sub.salonName}" salonunun "${sub.packageName}" aboneligini iptal etmek istiyor musunuz?`;
+      const ok = await confirmDestructive('Aboneligi iptal et', msg);
+
+      if (!ok) {
+        return;
+      }
+
+      const result = await packageManagement.cancelSubscription(sub.id);
+      if (!result.ok) {
+        showErrorFlash('Hata', result.message);
+      }
+    },
+    [packageManagement],
+  );
+
+  const handleDeletePackage = React.useCallback(
+    async (packageId: string) => {
+      const pkg = packageManagement.packages.find((p) => p.id === packageId);
+      if (pkg && pkg.linkedSubscriptionCount > 0) {
+        showErrorFlash(
+          'Hata',
+          'Bu pakete aktif veya beklemede abonelik var. Paket silinemez; once aboneligi sonlandirin veya baska pakete alin.',
+        );
+        return;
+      }
+
+      const name = pkg?.name ?? 'Bu paket';
+      const msg = `"${name}" paketi kalici olarak silinecek. Bu islem geri alinamaz. Devam edilsin mi?`;
+      const ok = await confirmDestructive('Paketi sil', msg);
+
+      if (!ok) {
+        return;
+      }
+
+      const result = await packageManagement.deletePackage(packageId);
+      if (!result.ok) {
+        showErrorFlash('Hata', result.message);
+        return;
+      }
+
+      setEditingPackageId((current) => (current === packageId ? null : current));
+    },
+    [packageManagement],
+  );
 
   const isWide = width >= 1100;
   const useDesktopTable = width >= 1180;
@@ -88,12 +141,17 @@ export default function SuperAdminPackages() {
                 isActive: nextIsActive,
               });
             }}
+            onDeletePackage={(pkgId) => {
+              void handleDeletePackage(pkgId);
+            }}
           />
 
           <SubscriptionListSection
             subscriptions={packageManagement.subscriptions}
             useDesktopTable={useDesktopTable}
             onViewAll={() => setIsAllSubscriptionsModalVisible(true)}
+            onCancelSubscription={handleCancelSubscription}
+            cancelSubscriptionDisabled={packageManagement.isMutating}
           />
         </View>
       </ScrollView>
@@ -118,6 +176,8 @@ export default function SuperAdminPackages() {
         visible={isAllSubscriptionsModalVisible}
         onClose={() => setIsAllSubscriptionsModalVisible(false)}
         subscriptions={packageManagement.subscriptions}
+        onCancelSubscription={handleCancelSubscription}
+        cancelSubscriptionDisabled={packageManagement.isMutating}
       />
     </View>
   );

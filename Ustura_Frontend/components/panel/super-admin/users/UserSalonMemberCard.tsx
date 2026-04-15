@@ -14,10 +14,12 @@ export default function UserSalonMemberCard({
   user,
   basis,
   onPress,
+  onMenuPress,
 }: {
   user: UserRecord;
   basis: string;
   onPress?: () => void;
+  onMenuPress?: () => void;
 }) {
   const adminTheme = useSuperAdminTheme();
   const statusPalette = getStatusPalette(user.status, adminTheme);
@@ -69,7 +71,10 @@ export default function UserSalonMemberCard({
             </View>
 
             <Pressable
-              onPress={(event) => event.stopPropagation()}
+              onPress={(event) => {
+                event.stopPropagation();
+                onMenuPress?.();
+              }}
               accessibilityRole="button"
               accessibilityLabel={`${user.name} diger islemler`}
               className={userClassNames.memberMenuButton}

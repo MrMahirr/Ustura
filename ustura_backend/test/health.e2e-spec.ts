@@ -133,7 +133,9 @@ describe('HealthController (e2e)', () => {
   });
 
   it('GET /api/health/ready returns 503 when PostgreSQL is unavailable', async () => {
-    databaseService.query.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+    databaseService.query.mockRejectedValueOnce(
+      new Error('connect ECONNREFUSED'),
+    );
 
     await request(app.getHttpServer())
       .get('/api/health/ready')

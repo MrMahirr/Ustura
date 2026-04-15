@@ -18,8 +18,16 @@ export default function CustomerBookingStatusBadge({
   const success = useThemeColor({}, 'success');
   const error = useThemeColor({}, 'error');
 
-  const toneColor =
-    status === 'upcoming' ? primary : status === 'completed' ? success : error;
+  const warning = useThemeColor({}, 'warning');
+
+  const toneMap: Record<string, string> = {
+    pending: warning,
+    confirmed: primary,
+    completed: success,
+    cancelled: error,
+    no_show: error,
+  };
+  const toneColor = toneMap[status] ?? primary;
 
   return (
     <View

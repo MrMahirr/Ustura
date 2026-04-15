@@ -160,6 +160,7 @@ export function useUserManagement() {
   const [cityOptions, setCityOptions] = React.useState<UserFilterOption[]>([{ label: 'Tum Sehirler' }]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [listRevision, setListRevision] = React.useState(0);
   const deferredQuery = React.useDeferredValue(query);
 
   const selectedRole = getSelectedOption(roleOptions, roleIndex);
@@ -228,7 +229,14 @@ export function useUserManagement() {
     return () => {
       isMounted = false;
     };
-  }, [deferredQuery, selectedCity.value, selectedRole.value, selectedSalon.value, selectedStatus.value]);
+  }, [
+    deferredQuery,
+    selectedCity.value,
+    selectedRole.value,
+    selectedSalon.value,
+    selectedStatus.value,
+    listRevision,
+  ]);
 
   React.useEffect(() => {
     if (roleIndex >= roleOptions.length) {
@@ -263,6 +271,26 @@ export function useUserManagement() {
   const startRow = users.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const endRow = Math.min(page * PAGE_SIZE, users.length);
 
+  const selectRole = React.useCallback((value: string | undefined) => {
+    const idx = roleOptions.findIndex((o) => o.value === value);
+    setRoleIndex(idx >= 0 ? idx : 0);
+  }, [roleOptions]);
+
+  const selectStatus = React.useCallback((value: string | undefined) => {
+    const idx = statusOptions.findIndex((o) => o.value === value);
+    setStatusIndex(idx >= 0 ? idx : 0);
+  }, [statusOptions]);
+
+  const selectSalon = React.useCallback((value: string | undefined) => {
+    const idx = salonOptions.findIndex((o) => o.value === value);
+    setSalonIndex(idx >= 0 ? idx : 0);
+  }, [salonOptions]);
+
+  const selectCity = React.useCallback((value: string | undefined) => {
+    const idx = cityOptions.findIndex((o) => o.value === value);
+    setCityIndex(idx >= 0 ? idx : 0);
+  }, [cityOptions]);
+
   return {
     query,
     setQuery,
@@ -277,21 +305,30 @@ export function useUserManagement() {
     startRow,
     endRow,
     selectedRole: selectedRole.label,
+    selectedRoleValue: selectedRole.value,
     selectedStatus: selectedStatus.label,
+    selectedStatusValue: selectedStatus.value,
     selectedSalon: selectedSalon.label,
+    selectedSalonValue: selectedSalon.value,
     selectedCity: selectedCity.label,
+    selectedCityValue: selectedCity.value,
+    roleOptions,
+    statusOptions,
+    salonOptions,
+    cityOptions,
     overview,
     isLoading,
     error,
-    cycleRole: () => setRoleIndex((current) => (current + 1) % roleOptions.length),
-    cycleStatus: () => setStatusIndex((current) => (current + 1) % statusOptions.length),
-    cycleSalon: () => setSalonIndex((current) => (current + 1) % salonOptions.length),
-    cycleCity: () => setCityIndex((current) => (current + 1) % cityOptions.length),
+    selectRole,
+    selectStatus,
+    selectSalon,
+    selectCity,
     resetFilters: () => {
       setRoleIndex(0);
       setStatusIndex(0);
       setSalonIndex(0);
       setCityIndex(0);
     },
+    refreshUsers: () => setListRevision((current) => current + 1),
   };
 }

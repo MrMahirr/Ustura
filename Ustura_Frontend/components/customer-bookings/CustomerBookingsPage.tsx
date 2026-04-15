@@ -1,9 +1,10 @@
 import React from 'react';
-import { Alert, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import Footer from '@/components/landing/Footer';
 import Navbar from '@/components/landing/Navbar';
+import CustomerBookingDetailsModal from '@/components/customer-bookings/CustomerBookingDetailsModal';
 import CustomerBookingsHero from '@/components/customer-bookings/CustomerBookingsHero';
 import CustomerBookingsHighlightCard from '@/components/customer-bookings/CustomerBookingsHighlightCard';
 import CustomerBookingsListItem from '@/components/customer-bookings/CustomerBookingsListItem';
@@ -17,16 +18,7 @@ import { useCustomerBookings } from '@/components/customer-bookings/use-customer
 import { getLandingLayout } from '@/components/landing/layout';
 import Button from '@/components/ui/Button';
 import { useThemeColor } from '@/hooks/use-theme-color';
-
-function buildBookingDetailsMessage(booking: CustomerBookingRecord) {
-  return [
-    `Salon: ${booking.salonName}`,
-    `Adres: ${booking.address}`,
-    `Berber: ${booking.barberName}`,
-    `Hizmet: ${booking.serviceName}`,
-    `Tarih: ${formatCustomerBookingDateTime(booking.startsAt)}`,
-  ].join('\n');
-}
+import { showErrorFlash, showSuccessFlash } from '@/utils/flash';
 
 export default function CustomerBookingsPage() {
   const router = useRouter();
@@ -40,57 +32,46 @@ export default function CustomerBookingsPage() {
     activeTab,
     visibleBookings,
     highlightedBooking,
+    selectedBooking,
     tabCounts,
     isLoading,
     error,
     reload,
     setActiveTab,
+    openBookingDetails,
+    closeBookingDetails,
     cancelBooking,
   } = useCustomerBookings();
+  const [cancellingBookingId, setCancellingBookingId] = React.useState<string | null>(null);
 
   const handleCreateBooking = React.useCallback(() => {
     router.push('/(public)/kuaforler');
   }, [router]);
 
   const handleViewDetails = React.useCallback((booking: CustomerBookingRecord) => {
-    const message = buildBookingDetailsMessage(booking);
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert(`${CUSTOMER_BOOKINGS_COPY.detailsPreviewTitle}\n\n${message}`);
-      return;
-    }
-
-    Alert.alert(CUSTOMER_BOOKINGS_COPY.detailsPreviewTitle, message);
-  }, []);
+    openBookingDetails(booking.id);
+  }, [openBookingDetails]);
 
   const handleCancel = React.useCallback(
     async (booking: CustomerBookingRecord) => {
       try {
+        setCancellingBookingId(booking.id);
         await cancelBooking(booking.id);
+        closeBookingDetails();
 
         const cancelMessage = `${booking.salonName} icin ${formatCustomerBookingDateTime(booking.startsAt)} tarihli randevu iptal edildi.`;
-
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.alert(`${CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle}\n\n${cancelMessage}`);
-          return;
-        }
-
-        Alert.alert(CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle, cancelMessage);
+        showSuccessFlash(CUSTOMER_BOOKINGS_COPY.cancelPreviewTitle, cancelMessage);
       } catch (cancelError) {
         const message =
           cancelError instanceof Error
             ? cancelError.message
             : 'Randevu iptal edilemedi.';
-
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.alert(`Iptal Hatasi\n\n${message}`);
-          return;
-        }
-
-        Alert.alert('Iptal Hatasi', message);
+        showErrorFlash('Iptal Hatasi', message);
+      } finally {
+        setCancellingBookingId(null);
       }
     },
-    [cancelBooking]
+    [cancelBooking, closeBookingDetails]
   );
 
   return (
@@ -179,6 +160,15 @@ export default function CustomerBookingsPage() {
 
         <Footer />
       </ScrollView>
+
+      <CustomerBookingDetailsModal
+        booking={selectedBooking}
+        visible={selectedBooking != null}
+        isCancelling={selectedBooking != null && cancellingBookingId === selectedBooking.id}
+        onClose={closeBookingDetails}
+        onCancel={handleCancel}
+        onRepeatBooking={handleCreateBooking}
+      />
     </>
   );
 }

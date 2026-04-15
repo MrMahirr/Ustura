@@ -3,6 +3,7 @@ import { QueryResultRow } from 'pg';
 import { DatabaseService } from '../../../database/database.service';
 import { SqlQueryExecutor } from '../../../database/database.types';
 import {
+  AdminSalonDetail,
   AdminSalonOverview,
   AdminSalonSummary,
   CreateSalonInput,
@@ -34,6 +35,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -56,7 +58,6 @@ export class SalonRepository {
     const offset = (page - 1) * pageSize;
 
     const countResult = await this.databaseService.query<TotalCountRow>({
-      name: 'salon.find-public-page-count',
       text: `
         SELECT COUNT(*)::int AS total_count
         FROM salons
@@ -84,7 +85,6 @@ export class SalonRepository {
 
     const paginatedValues = [...values, pageSize, offset];
     const result = await this.databaseService.query<SalonRow>({
-      name: 'salon.find-public-page',
       text: `
         SELECT
           id,
@@ -94,6 +94,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -128,11 +129,10 @@ export class SalonRepository {
     const offset = (page - 1) * pageSize;
 
     const countResult = await this.databaseService.query<TotalCountRow>({
-      name: 'salon.find-admin-page-count',
       text: `
         SELECT COUNT(*)::int AS total_count
         FROM salons s
-        INNER JOIN users u ON u.id = s.owner_id
+        INNER JOIN personnel u ON u.id = s.owner_id
         ${whereClause}
       `,
       values,
@@ -157,7 +157,6 @@ export class SalonRepository {
 
     const paginatedValues = [...values, pageSize, offset];
     const result = await this.databaseService.query<AdminSalonRow>({
-      name: 'salon.find-admin-page',
       text: `
         SELECT
           s.id,
@@ -169,11 +168,12 @@ export class SalonRepository {
           s.city,
           s.district,
           s.photo_url,
+          s.gallery_urls,
           s.is_active,
           s.created_at,
           s.updated_at
         FROM salons s
-        INNER JOIN users u ON u.id = s.owner_id
+        INNER JOIN personnel u ON u.id = s.owner_id
         ${whereClause}
         ORDER BY ${this.getAdminSortClause(sort)}
         LIMIT $${paginatedValues.length - 1}
@@ -183,7 +183,9 @@ export class SalonRepository {
     });
 
     return {
-      items: result.rows.map((row) => this.mapAdminRow(row) as AdminSalonSummary),
+      items: result.rows.map(
+        (row) => this.mapAdminRow(row) as AdminSalonSummary,
+      ),
       pagination: {
         page,
         pageSize,
@@ -193,6 +195,122 @@ export class SalonRepository {
         hasPreviousPage: page > 1,
       },
     };
+  }
+
+  async findAdminSummaryById(id: string): Promise<AdminSalonSummary | null> {
+    const result = await this.databaseService.query<AdminSalonRow>({
+      name: 'salon.find-admin-summary-by-id',
+      text: `
+        SELECT
+          s.id,
+          s.owner_id,
+          u.name AS owner_name,
+          u.email AS owner_email,
+          s.name,
+          s.address,
+          s.city,
+          s.district,
+          s.photo_url,
+          s.gallery_urls,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM salons s
+        INNER JOIN personnel u ON u.id = s.owner_id
+        WHERE s.id = $1
+        LIMIT 1
+      `,
+      values: [id],
+    });
+
+    return this.mapAdminRow(result.rows[0]);
+  }
+
+  async findAdminDetailById(id: string): Promise<AdminSalonDetail | null> {
+    const result = await this.databaseService.query<AdminSalonDetailRow>({
+      name: 'salon.find-admin-detail-by-id',
+      text: `
+        SELECT
+          s.id,
+          s.owner_id,
+          u.name AS owner_name,
+          u.email AS owner_email,
+          s.name,
+          s.address,
+          s.city,
+          s.district,
+          s.photo_url,
+          s.gallery_urls,
+          s.working_hours,
+          s.is_active,
+          s.created_at,
+          s.updated_at
+        FROM salons s
+        INNER JOIN personnel u ON u.id = s.owner_id
+        WHERE s.id = $1
+        LIMIT 1
+      `,
+      values: [id],
+    });
+
+    return this.mapAdminDetailRow(result.rows[0]);
+  }
+
+  async deleteById(
+    id: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<boolean> {
+    const result = await executor.query<{ id: string }>({
+      name: 'salon.delete-by-id',
+      text: `
+        DELETE FROM salons
+        WHERE id = $1
+        RETURNING id
+      `,
+      values: [id],
+    });
+
+    return (result.rows?.length ?? 0) > 0;
+  }
+
+  /**
+   * Super-admin salon silme: once rezervasyonlar (staff FK), sonra personel,
+   * abonelikler, owner_applications referansi, en son salon.
+   * Tek DELETE salons ... CASCADE bazen staff/rezervasyon sirasinda 23503 uretebilir.
+   */
+  async deleteSalonWithDependents(
+    id: string,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<boolean> {
+    await executor.query({
+      name: 'salon.delete-reservations-for-salon',
+      text: `DELETE FROM reservations WHERE salon_id = $1`,
+      values: [id],
+    });
+
+    await executor.query({
+      name: 'salon.delete-staff-for-salon',
+      text: `DELETE FROM staff WHERE salon_id = $1`,
+      values: [id],
+    });
+
+    await executor.query({
+      name: 'salon.delete-subscriptions-for-salon',
+      text: `DELETE FROM subscriptions WHERE salon_id = $1`,
+      values: [id],
+    });
+
+    await executor.query({
+      name: 'salon.clear-approved-salon-on-applications',
+      text: `
+        UPDATE owner_applications
+        SET approved_salon_id = NULL
+        WHERE approved_salon_id = $1
+      `,
+      values: [id],
+    });
+
+    return this.deleteById(id, executor);
   }
 
   async findAdminDistinctCities(): Promise<string[]> {
@@ -262,6 +380,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -297,9 +416,10 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING
           id,
           owner_id,
@@ -308,6 +428,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -320,6 +441,7 @@ export class SalonRepository {
         input.city,
         input.district ?? null,
         input.photoUrl ?? null,
+        JSON.stringify(input.galleryUrls ?? []),
         input.workingHours,
       ],
     });
@@ -360,6 +482,11 @@ export class SalonRepository {
       updates.push(`photo_url = $${values.length}`);
     }
 
+    if (input.galleryUrls !== undefined) {
+      values.push(JSON.stringify(input.galleryUrls));
+      updates.push(`gallery_urls = $${values.length}`);
+    }
+
     if (input.workingHours !== undefined) {
       values.push(input.workingHours);
       updates.push(`working_hours = $${values.length}`);
@@ -389,6 +516,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -426,6 +554,7 @@ export class SalonRepository {
       city: row.city,
       district: row.district,
       photoUrl: row.photo_url,
+      galleryUrls: row.gallery_urls ?? [],
       workingHours: row.working_hours,
       isActive: row.is_active,
       createdAt: row.created_at,
@@ -448,9 +577,28 @@ export class SalonRepository {
       city: row.city,
       district: row.district,
       photoUrl: row.photo_url,
+      galleryUrls: row.gallery_urls ?? [],
       isActive: row.is_active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+    };
+  }
+
+  private mapAdminDetailRow(
+    row?: AdminSalonDetailRow,
+  ): AdminSalonDetail | null {
+    if (!row) {
+      return null;
+    }
+
+    const base = this.mapAdminRow(row);
+    if (!base) {
+      return null;
+    }
+
+    return {
+      ...base,
+      workingHours: row.working_hours,
     };
   }
 
@@ -545,6 +693,7 @@ interface SalonRow extends QueryResultRow {
   city: string;
   district: string | null;
   photo_url: string | null;
+  gallery_urls: string[] | null;
   working_hours: WorkingHours;
   is_active: boolean;
   created_at: Date;
@@ -569,9 +718,14 @@ interface AdminSalonRow extends QueryResultRow {
   city: string;
   district: string | null;
   photo_url: string | null;
+  gallery_urls: string[] | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+interface AdminSalonDetailRow extends AdminSalonRow {
+  working_hours: WorkingHours;
 }
 
 interface AdminSalonOverviewRow extends QueryResultRow {

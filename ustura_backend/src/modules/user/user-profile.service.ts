@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
   phoneAlreadyExistsError,
@@ -15,8 +16,11 @@ export class UserProfileService {
     private readonly userAccountPolicy: UserAccountPolicy,
   ) {}
 
-  async getProfileById(id: string): Promise<UserProfile> {
-    const user = await this.userRepository.findById(id);
+  async getProfileByPrincipal(
+    kind: PrincipalKind,
+    id: string,
+  ): Promise<UserProfile> {
+    const user = await this.userRepository.findByPrincipal(kind, id);
 
     if (!user) {
       throw userNotFoundError();
@@ -25,8 +29,12 @@ export class UserProfileService {
     return this.toProfile(user);
   }
 
-  async updateProfile(id: string, input: UpdateUserDto): Promise<UserProfile> {
-    const user = await this.userRepository.findById(id);
+  async updateProfile(
+    kind: PrincipalKind,
+    id: string,
+    input: UpdateUserDto,
+  ): Promise<UserProfile> {
+    const user = await this.userRepository.findByPrincipal(kind, id);
 
     if (!user) {
       throw userNotFoundError();
@@ -36,8 +44,9 @@ export class UserProfileService {
     this.userAccountPolicy.assertProfileUpdateRequirements(normalizedInput);
 
     if (normalizedInput.phone && normalizedInput.phone !== user.phone) {
-      const userWithPhone = await this.userRepository.findByPhone(
+      const userWithPhone = await this.userRepository.findByPhoneForPrincipal(
         normalizedInput.phone,
+        kind,
       );
 
       if (userWithPhone && userWithPhone.id !== id) {
@@ -49,7 +58,11 @@ export class UserProfileService {
       return this.toProfile(user);
     }
 
-    const updatedUser = await this.userRepository.updateProfile(id, normalizedInput);
+    const updatedUser = await this.userRepository.updateProfile(
+      kind,
+      id,
+      normalizedInput,
+    );
 
     if (!updatedUser) {
       throw userNotFoundError();
@@ -80,6 +93,7 @@ export class UserProfileService {
       phone: user.phone,
       role: user.role,
       isActive: user.isActive,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

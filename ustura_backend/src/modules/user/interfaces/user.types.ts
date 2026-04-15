@@ -10,6 +10,8 @@ export interface User {
   firebaseUid: string | null;
   role: Role;
   isActive: boolean;
+  /** Personnel: true until user sets a new password (e.g. auto-provisioned staff). */
+  mustChangePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +34,8 @@ export interface CreateEmployeeInput {
   phone: string;
   passwordHash: string;
   role: Role.BARBER | Role.RECEPTIONIST;
+  /** When true, user must change password before other authenticated actions. */
+  mustChangePassword?: boolean;
 }
 
 export interface CreateOwnerInput {
@@ -39,6 +43,7 @@ export interface CreateOwnerInput {
   email: string;
   phone: string;
   passwordHash: string;
+  mustChangePassword?: boolean;
 }
 
 export interface CreateUserRecordInput {
@@ -50,11 +55,21 @@ export interface CreateUserRecordInput {
   allowPasswordless?: boolean;
   allowEmptyPhone?: boolean;
   role: Role;
+  mustChangePassword?: boolean;
 }
 
 export interface UpdateUserProfileInput {
   name?: string;
   phone?: string;
+}
+
+export interface UpdateManagedEmployeeInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  role?: Role.BARBER | Role.RECEPTIONIST;
+  mustChangePassword?: boolean;
 }
 
 export type AdminUserRole = 'manager' | 'owner' | 'employee';
@@ -115,4 +130,43 @@ export interface FindAdminUsersFilters {
   status?: AdminUserStatus;
   salonId?: string;
   city?: string;
+}
+
+export interface AdminUserReservation {
+  id: string;
+  customerName: string;
+  slotStart: Date;
+  slotEnd: Date;
+  status: string;
+  notes: string | null;
+}
+
+export interface AdminUserActivityEntry {
+  id: string;
+  action: string;
+  entityType: string;
+  detail: string | null;
+  createdAt: Date;
+}
+
+export interface AdminUserStats {
+  totalReservations: number;
+  completedReservations: number;
+  cancelledReservations: number;
+  last30DaysReservations: number;
+  averagePerDay: number;
+}
+
+export interface AdminUserWorkingDay {
+  day: string;
+  open: string | null;
+  close: string | null;
+}
+
+export interface AdminUserDetailResponse {
+  user: AdminUserSummary;
+  stats: AdminUserStats;
+  recentReservations: AdminUserReservation[];
+  recentActivity: AdminUserActivityEntry[];
+  workingHours: AdminUserWorkingDay[];
 }

@@ -32,10 +32,19 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.OWNER)
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.OWNER,
+    Role.BARBER,
+    Role.RECEPTIONIST,
+    Role.CUSTOMER,
+  )
   @Get()
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'List notifications (super admin / owner)' })
+  @ApiOperation({
+    summary:
+      'List notifications for the current user (super admin may list all or filter by recipientId)',
+  })
   @ApiOkResponse({ type: NotificationListResponseDto })
   async list(
     @CurrentUser() currentUser: JwtPayload,
@@ -45,22 +54,40 @@ export class NotificationController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.OWNER)
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.OWNER,
+    Role.BARBER,
+    Role.RECEPTIONIST,
+    Role.CUSTOMER,
+  )
   @Patch(':id/read')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Mark a notification as read' })
   @ApiOkResponse({ type: NotificationResponseDto })
-  async markAsRead(@Param('id') id: string) {
-    return this.notificationService.markAsRead(id);
+  async markAsRead(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    return this.notificationService.markAsRead(currentUser, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.OWNER)
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.OWNER,
+    Role.BARBER,
+    Role.RECEPTIONIST,
+    Role.CUSTOMER,
+  )
   @Post('read-all')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Mark all notifications as read' })
-  async markAllAsRead() {
-    const count = await this.notificationService.markAllAsRead();
+  @ApiOperation({
+    summary:
+      'Mark notifications as read (current user only; super admin marks all platform notifications)',
+  })
+  async markAllAsRead(@CurrentUser() currentUser: JwtPayload) {
+    const count = await this.notificationService.markAllAsRead(currentUser);
     return { markedCount: count };
   }
 }

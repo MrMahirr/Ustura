@@ -6,6 +6,7 @@ export interface AuditLogRecord {
   id: string;
   actorUserId: string | null;
   actorRole: Role | null;
+  actorName: string | null;
   action: AuditLogAction;
   entityType: AuditLogEntityType;
   entityId: string | null;
@@ -28,4 +29,13 @@ export interface ListAuditLogsFilters {
   entityType?: AuditLogEntityType;
   entityId?: string;
   limit: number;
+  page: number;
+}
+
+export interface AuditLogListResult {
+  items: AuditLogRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }

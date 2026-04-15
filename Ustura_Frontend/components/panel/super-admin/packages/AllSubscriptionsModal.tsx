@@ -16,12 +16,16 @@ interface AllSubscriptionsModalProps {
   visible: boolean;
   onClose: () => void;
   subscriptions: SubscriptionRecord[];
+  onCancelSubscription?: (subscription: SubscriptionRecord) => void;
+  cancelSubscriptionDisabled?: boolean;
 }
 
 export default function AllSubscriptionsModal({
   visible,
   onClose,
   subscriptions,
+  onCancelSubscription,
+  cancelSubscriptionDisabled,
 }: AllSubscriptionsModalProps) {
   const adminTheme = useSuperAdminTheme();
   const { width } = useWindowDimensions();
@@ -146,7 +150,13 @@ export default function AllSubscriptionsModal({
                 </Text>
                 <Text
                   className={packageClassNames.headerText}
-                  style={{ flex: 0.5, color: hexToRgba(adminTheme.onSurfaceVariant, 0.7), textAlign: 'right', fontFamily: 'Manrope-Bold' }}>
+                  style={{
+                    flex: 1,
+                    minWidth: 108,
+                    color: hexToRgba(adminTheme.onSurfaceVariant, 0.7),
+                    textAlign: 'right',
+                    fontFamily: 'Manrope-Bold',
+                  }}>
                   Islem
                 </Text>
               </View>
@@ -161,7 +171,13 @@ export default function AllSubscriptionsModal({
                         ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 }
                         : undefined
                     }>
-                    <SubscriptionRow subscription={sub} />
+                    <SubscriptionRow
+                      subscription={sub}
+                      onCancelSubscription={
+                        onCancelSubscription ? () => onCancelSubscription(sub) : undefined
+                      }
+                      cancelDisabled={cancelSubscriptionDisabled}
+                    />
                   </View>
                 ))}
               </View>
@@ -169,7 +185,14 @@ export default function AllSubscriptionsModal({
         ) : (
            <View className="gap-3">
               {filteredSubscriptions.map((sub) => (
-                <SubscriptionMobileCard key={sub.id} subscription={sub} />
+                <SubscriptionMobileCard
+                  key={sub.id}
+                  subscription={sub}
+                  onCancelSubscription={
+                    onCancelSubscription ? () => onCancelSubscription(sub) : undefined
+                  }
+                  cancelDisabled={cancelSubscriptionDisabled}
+                />
               ))}
            </View>
         )}

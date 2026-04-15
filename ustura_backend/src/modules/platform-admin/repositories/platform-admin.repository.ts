@@ -6,6 +6,7 @@ import type {
   ApproveOwnerApplicationInput,
   CreateOwnerApplicationInput,
   OwnerApplicationRecord,
+  UpdatePendingOwnerApplicationInput,
 } from '../interfaces/platform-admin.types';
 
 @Injectable()
@@ -233,6 +234,68 @@ export class PlatformAdminRepository {
         input.reviewedByUserId,
         input.approvedOwnerUserId,
         input.approvedSalonId,
+      ],
+    });
+
+    return this.mapRow(result.rows[0]);
+  }
+
+  async updatePendingById(
+    id: string,
+    patch: UpdatePendingOwnerApplicationInput,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<OwnerApplicationRecord | null> {
+    const result = await executor.query<OwnerApplicationRow>({
+      name: 'platform-admin.update-pending-owner-application',
+      text: `
+        UPDATE owner_applications
+        SET
+          applicant_name = $2,
+          applicant_email = $3,
+          applicant_phone = $4,
+          salon_name = $5,
+          salon_address = $6,
+          salon_city = $7,
+          salon_district = $8,
+          salon_photo_url = $9,
+          salon_working_hours = $10,
+          notes = $11
+        WHERE id = $1
+          AND status = 'pending'
+        RETURNING
+          id,
+          applicant_name,
+          applicant_email,
+          applicant_phone,
+          password_hash,
+          salon_name,
+          salon_address,
+          salon_city,
+          salon_district,
+          salon_photo_url,
+          salon_working_hours,
+          status,
+          notes,
+          reviewed_at,
+          reviewed_by_user_id,
+          rejection_reason,
+          approved_owner_user_id,
+          approved_salon_id,
+          created_at,
+          updated_at
+      `,
+      values: [
+        id,
+        patch.applicantName,
+        patch.applicantEmail,
+        patch.applicantPhone,
+        patch.salonName,
+        patch.salonAddress,
+        patch.salonCity,
+        patch.salonDistrict,
+        patch.salonPhotoUrl,
+        patch.salonWorkingHours,
+        patch.notes,
       ],
     });
 

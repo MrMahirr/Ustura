@@ -14,11 +14,19 @@ import UserProfileActionButton from './UserProfileActionButton';
 export default function UserProfileHero({
   profile,
   isWide,
+  isDisabled,
   onOpenSalon,
+  onEdit,
+  onDisable,
+  onDelete,
 }: {
   profile: UserProfile;
   isWide: boolean;
+  isDisabled?: boolean;
   onOpenSalon?: () => void;
+  onEdit?: () => void;
+  onDisable?: () => void;
+  onDelete?: () => void;
 }) {
   const adminTheme = useSuperAdminTheme();
   const rolePalette = getRolePalette(profile.user.role, adminTheme);
@@ -103,9 +111,13 @@ export default function UserProfileHero({
       </View>
 
       <View className="flex-row flex-wrap items-center gap-3">
-        <UserProfileActionButton icon="edit" label="Edit" onPress={() => undefined} />
-        <UserProfileActionButton icon="block" label="Disable" onPress={() => undefined} />
-        <UserProfileActionButton icon="delete" label="Delete" variant="danger" onPress={() => undefined} />
+        <UserProfileActionButton icon="edit" label="Duzenle" onPress={onEdit} />
+        <UserProfileActionButton
+          icon={isDisabled ? 'check-circle' : 'block'}
+          label={isDisabled ? 'Aktif Et' : 'Durdur'}
+          onPress={onDisable}
+        />
+        <UserProfileActionButton icon="delete" label="Sil" variant="danger" onPress={onDelete} />
       </View>
     </View>
   );

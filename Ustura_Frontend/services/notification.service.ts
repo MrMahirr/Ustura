@@ -20,6 +20,8 @@ export interface NotificationListResponse {
   page: number;
   pageSize: number;
   totalPages: number;
+  /** Same scope as mark-all; omitted on older API responses. */
+  unreadTotal?: number;
 }
 
 export interface ListNotificationsQuery {

@@ -87,6 +87,22 @@ export interface SubscriptionRow extends QueryResultRow {
   package_tier?: string;
 }
 
+export interface SalonSubscriptionDetail {
+  packageId: string | null;
+  packageName: string | null;
+  packageTier: PackageTier | null;
+  pricePerMonth: number | null;
+  status: SubscriptionStatus | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  reservationCount: number;
+  reservationLimit: number | null;
+  staffCount: number;
+  staffLimit: number | null;
+  salonCount: number;
+  salonLimit: number | null;
+}
+
 export interface PackageApprovalRow extends QueryResultRow {
   id: string;
   salon_id: string;
@@ -109,4 +125,3 @@ export interface PackageApprovalRow extends QueryResultRow {
   staff_count: number;
   reservation_count: number;
 }
-

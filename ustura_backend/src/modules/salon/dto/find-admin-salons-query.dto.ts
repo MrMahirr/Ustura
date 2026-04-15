@@ -29,9 +29,12 @@ export class FindAdminSalonsQueryDto {
   status?: AdminSalonStatusFilter;
 
   @IsOptional()
-  @IsIn(
-    ['newest', 'name_asc', 'name_desc', 'updated_desc'] satisfies AdminSalonSort[],
-  )
+  @IsIn([
+    'newest',
+    'name_asc',
+    'name_desc',
+    'updated_desc',
+  ] satisfies AdminSalonSort[])
   sort: AdminSalonSort = 'newest';
 
   @Type(() => Number)

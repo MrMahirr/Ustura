@@ -4,20 +4,28 @@ import {
   NotificationChannelName,
   NotificationMessage,
 } from './interfaces/notification.types';
+import { NotificationRepository } from './repositories/notification.repository';
 import { NotificationTemplateService } from './templates/notification-template.service';
 
 describe('NotificationService', () => {
   let service: NotificationService;
   let channel: jest.Mocked<NotificationChannel>;
+  let notificationRepository: jest.Mocked<
+    Pick<NotificationRepository, 'create'>
+  >;
 
   beforeEach(() => {
     channel = {
       channel: NotificationChannelName.EMAIL,
       send: jest.fn(),
     };
+    notificationRepository = {
+      create: jest.fn().mockResolvedValue({} as never),
+    };
 
     service = new NotificationService(
       new NotificationTemplateService(),
+      notificationRepository as unknown as NotificationRepository,
       [channel],
     );
   });

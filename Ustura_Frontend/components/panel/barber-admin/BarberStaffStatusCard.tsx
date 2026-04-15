@@ -17,9 +17,8 @@ function getStaffStatePresentation(
 ) {
   if (state === 'busy') {
     return {
-      dotColor: theme.success,
-      titleColor: theme.primary,
-      titleLabel: 'Usta Berber',
+      dotColor: theme.warning,
+      titleColor: theme.warning,
     };
   }
 
@@ -27,14 +26,12 @@ function getStaffStatePresentation(
     return {
       dotColor: theme.success,
       titleColor: theme.primary,
-      titleLabel: 'Kidemli Berber',
     };
   }
 
   return {
     dotColor: theme.surfaceContainerHighest,
     titleColor: hexToRgba(theme.onSurfaceVariant, 0.8),
-    titleLabel: 'Mola Veriyor',
   };
 }
 
@@ -72,18 +69,32 @@ export default function BarberStaffStatusCard({
 
           <View className="mb-4 flex-row items-center gap-4">
             <View className="relative">
-              <Image
-                source={{ uri: staff.imageUrl }}
-                contentFit="cover"
-                style={[
-                  {
+              {staff.imageUrl ? (
+                <Image
+                  source={{ uri: staff.imageUrl }}
+                  contentFit="cover"
+                  style={[
+                    {
+                      width: 56,
+                      height: 56,
+                      borderRadius: 10,
+                    },
+                    Platform.OS === 'web' ? ({ filter: 'grayscale(1)' } as any) : null,
+                  ]}
+                />
+              ) : (
+                <View
+                  style={{
                     width: 56,
                     height: 56,
                     borderRadius: 10,
-                  },
-                  Platform.OS === 'web' ? ({ filter: 'grayscale(1)' } as any) : null,
-                ]}
-              />
+                    backgroundColor: theme.surfaceContainerHighest,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <MaterialIcons name="person" size={28} color={theme.onSurfaceVariant} />
+                </View>
+              )}
               <View
                 className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2"
                 style={{
@@ -104,7 +115,7 @@ export default function BarberStaffStatusCard({
                 numberOfLines={1}
                 className="mt-1 font-body text-[10px] uppercase tracking-[2px]"
                 style={{ color: state.titleColor, fontFamily: 'Manrope-Bold' }}>
-                {staff.title || state.titleLabel}
+                {staff.title}
               </Text>
             </View>
           </View>

@@ -11,10 +11,7 @@ import { PlatformAdminService } from '../src/modules/platform-admin/platform-adm
 import { Role } from '../src/shared/auth/role.enum';
 import type { JwtPayload } from '../src/shared/auth/jwt-payload.interface';
 import { createContractTestApp } from './helpers/create-contract-test-app';
-import {
-  TEST_JWT_SECRET,
-  TestJwtStrategy,
-} from './helpers/test-jwt.strategy';
+import { TEST_JWT_SECRET, TestJwtStrategy } from './helpers/test-jwt.strategy';
 
 describe('PlatformAdminController (e2e)', () => {
   let app: INestApplication;

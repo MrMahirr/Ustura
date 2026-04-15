@@ -25,6 +25,8 @@ export class StaffRepository {
           s.user_id,
           s.salon_id,
           u.name AS display_name,
+          u.email,
+          u.phone,
           s.role,
           s.bio,
           s.photo_url,
@@ -32,7 +34,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.id = $1
         LIMIT 1
       `,
@@ -51,6 +53,8 @@ export class StaffRepository {
           s.user_id,
           s.salon_id,
           u.name AS display_name,
+          u.email,
+          u.phone,
           s.role,
           s.bio,
           s.photo_url,
@@ -58,7 +62,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.salon_id = $1
         ORDER BY s.created_at ASC
       `,
@@ -77,6 +81,8 @@ export class StaffRepository {
           s.user_id,
           s.salon_id,
           u.name AS display_name,
+          u.email,
+          u.phone,
           s.role,
           s.bio,
           s.photo_url,
@@ -84,7 +90,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.salon_id = $1
           AND s.is_active = TRUE
         ORDER BY s.created_at ASC
@@ -104,6 +110,8 @@ export class StaffRepository {
           s.user_id,
           s.salon_id,
           u.name AS display_name,
+          u.email,
+          u.phone,
           s.role,
           s.bio,
           s.photo_url,
@@ -111,7 +119,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.salon_id = $1
           AND s.role = $2
           AND s.is_active = TRUE
@@ -135,6 +143,8 @@ export class StaffRepository {
           s.user_id,
           s.salon_id,
           u.name AS display_name,
+          u.email,
+          u.phone,
           s.role,
           s.bio,
           s.photo_url,
@@ -142,7 +152,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.user_id = $1
           AND s.salon_id = $2
           AND s.is_active = TRUE
@@ -163,6 +173,8 @@ export class StaffRepository {
           s.user_id,
           s.salon_id,
           u.name AS display_name,
+          u.email,
+          u.phone,
           s.role,
           s.bio,
           s.photo_url,
@@ -170,7 +182,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.user_id = $1
           AND s.is_active = TRUE
         ORDER BY s.created_at ASC
@@ -193,6 +205,8 @@ export class StaffRepository {
           s.user_id,
           s.salon_id,
           u.name AS display_name,
+          u.email,
+          u.phone,
           s.role,
           s.bio,
           s.photo_url,
@@ -200,7 +214,7 @@ export class StaffRepository {
           s.created_at,
           s.updated_at
         FROM staff s
-        INNER JOIN users u ON u.id = s.user_id
+        INNER JOIN personnel u ON u.id = s.user_id
         WHERE s.user_id = $1
           AND s.salon_id = $2
         LIMIT 1
@@ -242,7 +256,11 @@ export class StaffRepository {
     return (await this.findById(result.rows[0]?.id, executor)) as StaffMember;
   }
 
-  async update(id: string, input: UpdateStaffInput): Promise<StaffMember | null> {
+  async update(
+    id: string,
+    input: UpdateStaffInput,
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<StaffMember | null> {
     const updates: string[] = [];
     const values: unknown[] = [];
 
@@ -267,12 +285,12 @@ export class StaffRepository {
     }
 
     if (updates.length === 0) {
-      return this.findById(id);
+      return this.findById(id, executor);
     }
 
     values.push(id);
 
-    const result = await this.databaseService.query<StaffIdentityRow>({
+    const result = await executor.query<StaffIdentityRow>({
       text: `
         UPDATE staff
         SET ${updates.join(', ')}
@@ -286,7 +304,7 @@ export class StaffRepository {
       return null;
     }
 
-    return this.findById(result.rows[0].id);
+    return this.findById(result.rows[0].id, executor);
   }
 
   async deactivate(id: string): Promise<StaffMember | null> {
@@ -318,6 +336,8 @@ export class StaffRepository {
       userId: row.user_id,
       salonId: row.salon_id,
       displayName: row.display_name,
+      email: row.email,
+      phone: row.phone,
       role: row.role,
       bio: row.bio,
       photoUrl: row.photo_url,
@@ -333,6 +353,8 @@ interface StaffRow extends QueryResultRow {
   user_id: string;
   salon_id: string;
   display_name: string;
+  email: string;
+  phone: string;
   role: Role.BARBER | Role.RECEPTIONIST;
   bio: string | null;
   photo_url: string | null;

@@ -1,13 +1,20 @@
 import * as bcrypt from 'bcrypt';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { AppConfigService } from '../../config/config.service';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { DatabaseService } from '../../database/database.service';
 import type { SqlQueryExecutor } from '../../database/database.types';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
+import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditLogAction } from '../audit-log/enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../audit-log/enums/audit-log-entity-type.enum';
+import {
+  EMAIL_SERVICE,
+  type EmailServiceContract,
+} from '../email/interfaces/email.types';
+import { generateTemporaryPassword } from '../email/utils/password-generator';
 import {
   SALON_CATALOG_SERVICE,
   type SalonCatalogServiceContract,
@@ -26,13 +33,18 @@ import {
   staffSalonNotFoundError,
   staffUserNotFoundError,
 } from './errors/staff.errors';
-import type { CreateStaffInput, StaffMember, UpdateStaffInput } from './interfaces/staff.types';
+import type {
+  CreateStaffInput,
+  StaffMember,
+  UpdateStaffInput,
+} from './interfaces/staff.types';
 import { StaffPolicy } from './policies/staff.policy';
 import { StaffRepository } from './repositories/staff.repository';
 
 @Injectable()
 export class StaffService {
   private readonly passwordCost = 12;
+  private readonly logger = new Logger(StaffService.name);
 
   constructor(
     private readonly staffRepository: StaffRepository,
@@ -46,6 +58,9 @@ export class StaffService {
     private readonly staffPolicy: StaffPolicy,
     private readonly auditLogService: AuditLogService,
     private readonly domainEventBus: DomainEventBus,
+    @Inject(EMAIL_SERVICE)
+    private readonly emailService: EmailServiceContract,
+    private readonly appConfig: AppConfigService,
   ) {}
 
   async findBySalonId(salonId: string): Promise<StaffMember[]> {
@@ -81,38 +96,65 @@ export class StaffService {
       const user = await this.requireUser(createStaffDto.userId);
       this.staffPolicy.assertCanAssignUserToRole(user, createStaffDto.role);
 
-      return this.createOrReactivateMembership(
-        currentUser,
-        {
-          ...membershipInput,
-          userId: user.id,
-        },
-      );
+      return this.createOrReactivateMembership(currentUser, {
+        ...membershipInput,
+        userId: user.id,
+      });
     }
 
-    return this.databaseService.transaction(async (transaction) => {
-      const employee = createStaffDto.employee!;
-      const passwordHash = await bcrypt.hash(employee.password, this.passwordCost);
-      const user = await this.userProvisioningService.createEmployee(
-        {
-          name: employee.name,
-          email: employee.email,
-          phone: employee.phone,
-          passwordHash,
-          role: createStaffDto.role,
-        },
-        transaction,
-      );
+    const employee = createStaffDto.employee!;
+    const explicitPassword = employee.password?.trim();
+    const provisionalPassword = explicitPassword ?? generateTemporaryPassword();
+    const mustChangePassword = !explicitPassword;
 
-      return this.createOrReactivateMembership(
-        currentUser,
-        {
-          ...membershipInput,
-          userId: user.id,
-        },
-        transaction,
-      );
-    });
+    const staffMember = await this.databaseService.transaction(
+      async (transaction) => {
+        const passwordHash = await bcrypt.hash(
+          provisionalPassword,
+          this.passwordCost,
+        );
+        const user = await this.userProvisioningService.createEmployee(
+          {
+            name: employee.name,
+            email: employee.email,
+            phone: employee.phone,
+            passwordHash,
+            role: createStaffDto.role,
+            mustChangePassword,
+          },
+          transaction,
+        );
+
+        return this.createOrReactivateMembership(
+          currentUser,
+          {
+            ...membershipInput,
+            userId: user.id,
+          },
+          transaction,
+        );
+      },
+    );
+
+    if (mustChangePassword) {
+      const loginUrl = this.buildStaffLoginUrl(employee.email);
+      this.emailService
+        .sendStaffWelcomeEmail({
+          recipientEmail: employee.email,
+          recipientName: employee.name,
+          salonName: salon.name,
+          temporaryPassword: provisionalPassword,
+          loginUrl,
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Staff welcome email failed for ${employee.email}`,
+            err instanceof Error ? err.stack : String(err),
+          ),
+        );
+    }
+
+    return staffMember;
   }
 
   async update(
@@ -126,31 +168,73 @@ export class StaffService {
 
     const existingStaffMember = await this.requireStaffMember(salonId, staffId);
     const nextRole = updateStaffDto.role ?? existingStaffMember.role;
-
-    if (updateStaffDto.role !== undefined || updateStaffDto.isActive === true) {
-      const user = await this.requireUser(existingStaffMember.userId);
-      this.staffPolicy.assertCanAssignUserToRole(user, nextRole);
-    }
-
     const normalizedInput = this.normalizeUpdateInput(updateStaffDto);
+    const normalizedAccountInput = this.normalizeManagedAccountInput(
+      updateStaffDto,
+      nextRole,
+    );
+    const hasStaffChanges = Object.keys(normalizedInput).length > 0;
+    const hasAccountChanges = Object.keys(normalizedAccountInput).length > 0;
 
-    if (Object.keys(normalizedInput).length === 0) {
+    if (!hasStaffChanges && !hasAccountChanges) {
       return existingStaffMember;
     }
 
-    const updatedStaffMember = await this.staffRepository.update(
-      existingStaffMember.id,
-      normalizedInput,
+    const updatedStaffMember = await this.databaseService.transaction(
+      async (transaction) => {
+        if (hasAccountChanges) {
+          await this.userProvisioningService.updateManagedEmployee(
+            existingStaffMember.userId,
+            normalizedAccountInput,
+            transaction,
+          );
+        }
+
+        if (!hasStaffChanges) {
+          return (
+            (await this.staffRepository.findById(
+              existingStaffMember.id,
+              transaction,
+            )) ?? existingStaffMember
+          );
+        }
+
+        const updated = await this.staffRepository.update(
+          existingStaffMember.id,
+          normalizedInput,
+          transaction,
+        );
+
+        if (!updated) {
+          throw staffNotFoundError();
+        }
+
+        return updated;
+      },
     );
 
     if (!updatedStaffMember) {
       throw staffNotFoundError();
     }
 
-    this.recordStaffAudit(currentUser, AuditLogAction.STAFF_UPDATED, updatedStaffMember, {
-      salonId,
-      changes: normalizedInput,
-    });
+    this.recordStaffAudit(
+      currentUser,
+      AuditLogAction.STAFF_UPDATED,
+      updatedStaffMember,
+      {
+        salonId,
+        changes: normalizedInput,
+        accountChanges: hasAccountChanges
+          ? {
+              name: normalizedAccountInput.name !== undefined,
+              email: normalizedAccountInput.email !== undefined,
+              phone: normalizedAccountInput.phone !== undefined,
+              password: normalizedAccountInput.password !== undefined,
+              role: normalizedAccountInput.role !== undefined,
+            }
+          : undefined,
+      },
+    );
 
     return updatedStaffMember;
   }
@@ -305,7 +389,10 @@ export class StaffService {
   }
 
   private async requireUser(userId: string) {
-    const user = await this.userQueryService.findById(userId);
+    const user = await this.userQueryService.findByPrincipal(
+      PrincipalKind.PERSONNEL,
+      userId,
+    );
 
     if (!user) {
       throw staffUserNotFoundError();
@@ -314,7 +401,9 @@ export class StaffService {
     return user;
   }
 
-  private normalizeUpdateInput(updateStaffDto: UpdateStaffDto): UpdateStaffInput {
+  private normalizeUpdateInput(
+    updateStaffDto: UpdateStaffDto,
+  ): UpdateStaffInput {
     const normalizedInput: UpdateStaffInput = {};
 
     if (updateStaffDto.role !== undefined) {
@@ -322,7 +411,8 @@ export class StaffService {
     }
 
     if (updateStaffDto.bio !== undefined) {
-      normalizedInput.bio = this.normalizeOptionalString(updateStaffDto.bio) ?? null;
+      normalizedInput.bio =
+        this.normalizeOptionalString(updateStaffDto.bio) ?? null;
     }
 
     if (updateStaffDto.photoUrl !== undefined) {
@@ -335,6 +425,53 @@ export class StaffService {
     }
 
     return normalizedInput;
+  }
+
+  private normalizeManagedAccountInput(
+    updateStaffDto: UpdateStaffDto,
+    role: StaffMember['role'],
+  ) {
+    const normalizedInput: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+      role?: StaffMember['role'];
+      mustChangePassword?: boolean;
+    } = {};
+
+    const account = updateStaffDto.account;
+
+    if (account?.name !== undefined) {
+      normalizedInput.name = account.name.trim();
+    }
+
+    if (account?.email !== undefined) {
+      normalizedInput.email = account.email.trim().toLowerCase();
+    }
+
+    if (account?.phone !== undefined) {
+      normalizedInput.phone = account.phone.trim();
+    }
+
+    if (account?.password !== undefined) {
+      normalizedInput.password = account.password.trim();
+      normalizedInput.mustChangePassword = true;
+    }
+
+    if (updateStaffDto.role !== undefined) {
+      normalizedInput.role = role;
+    }
+
+    return normalizedInput;
+  }
+
+  private buildStaffLoginUrl(email: string): string {
+    const baseUrl = this.appConfig.frontend.baseUrl.replace(/\/+$/, '');
+    const token = Buffer.from(
+      JSON.stringify({ email, ts: Date.now() }),
+    ).toString('base64url');
+    return `${baseUrl}/personel/giris?token=${token}`;
   }
 
   private normalizeOptionalString(value?: string | null): string | undefined {

@@ -14,10 +14,13 @@ const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 export class SalonWorkingHoursService {
   constructor(private readonly configService: AppConfigService) {}
 
-  normalize(input: Record<string, unknown>, options: {
-    base?: WorkingHours;
-    requireAtLeastOneOpenDay: boolean;
-  }): WorkingHours {
+  normalize(
+    input: Record<string, unknown>,
+    options: {
+      base?: WorkingHours;
+      requireAtLeastOneOpenDay: boolean;
+    },
+  ): WorkingHours {
     if (typeof input !== 'object' || input === null || Array.isArray(input)) {
       throw salonInvalidWorkingHoursError('working_hours must be an object.');
     }
@@ -76,7 +79,11 @@ export class SalonWorkingHoursService {
 
     const entryKeys = Object.keys(value).sort();
 
-    if (entryKeys.length !== 2 || entryKeys[0] !== 'close' || entryKeys[1] !== 'open') {
+    if (
+      entryKeys.length !== 2 ||
+      entryKeys[0] !== 'close' ||
+      entryKeys[1] !== 'open'
+    ) {
       throw salonInvalidWorkingHoursError(
         `working_hours.${day} must only contain open and close fields.`,
       );

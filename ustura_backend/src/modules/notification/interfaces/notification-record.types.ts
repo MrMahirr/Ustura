@@ -1,8 +1,11 @@
+import type { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
+
 export type NotificationTone = 'success' | 'warning' | 'error' | 'primary';
 
 export interface NotificationRecord {
   id: string;
   recipientId: string | null;
+  recipientKind: PrincipalKind;
   key: string;
   title: string;
   body: string;
@@ -14,6 +17,7 @@ export interface NotificationRecord {
 
 export interface CreateNotificationInput {
   recipientId?: string | null;
+  recipientKind: PrincipalKind;
   key: string;
   title: string;
   body: string;

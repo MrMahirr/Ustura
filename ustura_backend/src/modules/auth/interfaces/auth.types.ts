@@ -1,4 +1,5 @@
 import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
+import type { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
 import type { UserProfile } from '../../user/interfaces/user.types';
 
 export interface AuthTokens {
@@ -15,7 +16,8 @@ export interface AuthSessionResponse {
 
 export interface RefreshTokenRecord {
   id: string;
-  userId: string;
+  principalId: string;
+  principalKind: PrincipalKind;
   tokenHash: string;
   expiresAt: Date;
   revoked: boolean;

@@ -1,44 +1,9 @@
 import React from 'react';
-import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { salonClassNames } from '@/components/panel/super-admin/salons/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import { cn } from '@/utils/cn';
-import { hexToRgba } from '@/utils/color';
-
-function HeaderCtaButton() {
-  const adminTheme = useSuperAdminTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      className="rounded-md"
-      style={({ hovered, pressed }) => [
-        { transform: [{ scale: pressed ? 0.985 : hovered ? 1.015 : 1 }] },
-        Platform.OS === 'web'
-          ? ({
-              transition: 'transform 180ms ease, box-shadow 220ms ease',
-              boxShadow: hovered
-                ? `0 18px 36px ${hexToRgba(adminTheme.primary, 0.22)}`
-                : `0 10px 24px ${hexToRgba(adminTheme.primary, 0.14)}`,
-            } as any)
-          : null,
-      ]}>
-      <LinearGradient
-        colors={adminTheme.goldGradient as [string, string]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ minHeight: 54, borderRadius: 8, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <MaterialIcons name="add-business" size={18} color={adminTheme.onPrimary} />
-        <Text className="font-label text-xs uppercase tracking-widest" style={{ color: adminTheme.onPrimary, fontFamily: 'Manrope-Bold' }}>
-          Yeni Salon Ekle
-        </Text>
-      </LinearGradient>
-    </Pressable>
-  );
-}
 
 export default function SalonPageHeader({ isWide }: { isWide: boolean }) {
   const adminTheme = useSuperAdminTheme();
@@ -56,7 +21,6 @@ export default function SalonPageHeader({ isWide }: { isWide: boolean }) {
           Platformdaki salonlari, sahip bilgilerini ve durumlarini gercek zamanli liste uzerinden yonet.
         </Text>
       </View>
-      <HeaderCtaButton />
     </View>
   );
 }

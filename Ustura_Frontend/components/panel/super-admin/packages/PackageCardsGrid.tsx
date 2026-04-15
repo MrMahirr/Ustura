@@ -8,12 +8,14 @@ interface PackageCardsGridProps {
   packages: PackageDefinition[];
   onEditPackage: (pkgId: string) => void;
   onTogglePackageState: (pkgId: string, nextIsActive: boolean) => void;
+  onDeletePackage: (pkgId: string) => void;
 }
 
 export default function PackageCardsGrid({
   packages,
   onEditPackage,
   onTogglePackageState,
+  onDeletePackage,
 }: PackageCardsGridProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1100;
@@ -30,6 +32,7 @@ export default function PackageCardsGrid({
           onToggleActive={(nextIsActive) =>
             onTogglePackageState(pkg.id, nextIsActive)
           }
+          onDelete={() => onDeletePackage(pkg.id)}
         />
       ))}
     </View>

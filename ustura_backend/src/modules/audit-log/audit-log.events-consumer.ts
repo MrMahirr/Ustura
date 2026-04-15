@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { AuditLogAction } from './enums/audit-log-action.enum';
 import { AuditLogEntityType } from './enums/audit-log-entity-type.enum';

@@ -1,3 +1,21 @@
+export const SALON_PROFILE_COPY = {
+  editSectionTitle: 'Salon Bilgilerini Duzenle',
+  editSectionHint: 'Degisiklikleri kaydettikten sonra liste ve detay otomatik guncellenir.',
+  fieldName: 'Salon adi',
+  fieldAddress: 'Adres',
+  fieldCity: 'Sehir',
+  fieldDistrict: 'Ilce',
+  fieldPhotoUrl: 'Gorsel URL',
+  fieldActive: 'Salon aktif (listelerde ve randevularda gorunur)',
+  save: 'Degisiklikleri Kaydet',
+  saving: 'Kaydediliyor...',
+  dangerTitle: 'Tehlikeli Bolge',
+  dangerDescription:
+    'Salonu silmek; bagli personel, randevu ve abonelik verilerini kalici olarak kaldirir. Bu islem geri alinamaz.',
+  deleteSalon: 'Salonu Sil',
+  deleting: 'Siliniyor...',
+} as const;
+
 export const salonProfileClassNames = {
   page: 'relative flex-1 overflow-hidden',
   content: 'w-full max-w-[1640px] self-center gap-7',

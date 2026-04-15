@@ -9,6 +9,7 @@ import { hexToRgba } from '@/utils/color';
 import SalonMobileCard from './SalonMobileCard';
 import SalonRow from './SalonRow';
 import type { SalonListItem } from './types';
+import type { SalonRowActionKind } from './utils';
 
 interface SalonListSectionProps {
   salons: SalonListItem[];
@@ -23,6 +24,7 @@ interface SalonListSectionProps {
   onPageChange: (page: number) => void;
   onRetry: () => void;
   onOpenSalon: (salonId: string) => void;
+  onSalonAction?: (salonId: string, salonName: string, kind: SalonRowActionKind) => void;
 }
 
 function EmptyState() {
@@ -131,7 +133,15 @@ function ErrorState({
   );
 }
 
-function DesktopTable({ salons, onOpenSalon }: { salons: SalonListItem[]; onOpenSalon: (salonId: string) => void }) {
+function DesktopTable({
+  salons,
+  onOpenSalon,
+  onSalonAction,
+}: {
+  salons: SalonListItem[];
+  onOpenSalon: (salonId: string) => void;
+  onSalonAction?: (salonId: string, salonName: string, kind: SalonRowActionKind) => void;
+}) {
   const adminTheme = useSuperAdminTheme();
 
   return (
@@ -159,7 +169,11 @@ function DesktopTable({ salons, onOpenSalon }: { salons: SalonListItem[]; onOpen
       <View>
         {salons.map((salon, index) => (
           <View key={salon.id} style={index < salons.length - 1 ? { borderBottomColor: adminTheme.borderSubtle, borderBottomWidth: 1 } : undefined}>
-            <SalonRow salon={salon} onPress={() => onOpenSalon(salon.id)} />
+            <SalonRow
+              salon={salon}
+              onOpenDetail={() => onOpenSalon(salon.id)}
+              onAction={onSalonAction ? (kind) => onSalonAction(salon.id, salon.name, kind) : undefined}
+            />
           </View>
         ))}
       </View>
@@ -268,6 +282,7 @@ export default function SalonListSection({
   onPageChange,
   onRetry,
   onOpenSalon,
+  onSalonAction,
 }: SalonListSectionProps) {
   const adminTheme = useSuperAdminTheme();
 
@@ -288,11 +303,16 @@ export default function SalonListSection({
       ) : salons.length === 0 ? (
         <EmptyState />
       ) : useDesktopTable ? (
-        <DesktopTable salons={salons} onOpenSalon={onOpenSalon} />
+        <DesktopTable salons={salons} onOpenSalon={onOpenSalon} onSalonAction={onSalonAction} />
       ) : (
         <View className="gap-[14px] p-4">
           {salons.map((salon) => (
-            <SalonMobileCard key={salon.id} salon={salon} onPress={() => onOpenSalon(salon.id)} />
+            <SalonMobileCard
+              key={salon.id}
+              salon={salon}
+              onOpenDetail={() => onOpenSalon(salon.id)}
+              onAction={onSalonAction ? (kind) => onSalonAction(salon.id, salon.name, kind) : undefined}
+            />
           ))}
         </View>
       )}

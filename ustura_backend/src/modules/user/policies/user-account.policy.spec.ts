@@ -18,6 +18,7 @@ function createUser(overrides: Partial<User> = {}): User {
     firebaseUid: null,
     role: Role.CUSTOMER,
     isActive: true,
+    mustChangePassword: false,
     createdAt: new Date('2026-04-09T00:00:00.000Z'),
     updatedAt: new Date('2026-04-09T00:00:00.000Z'),
     ...overrides,
@@ -31,7 +32,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -131,6 +136,8 @@ describe('UserAccountPolicy', () => {
     }
 
     expect(capturedError).toBeInstanceOf(BadRequestException);
-    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.PHONE_REQUIRED);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.PHONE_REQUIRED,
+    );
   });
 });

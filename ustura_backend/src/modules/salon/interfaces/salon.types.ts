@@ -27,6 +27,7 @@ export interface Salon {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   workingHours: WorkingHours;
   isActive: boolean;
   createdAt: Date;
@@ -46,7 +47,11 @@ export interface FindPaginatedSalonsFilters extends FindSalonsFilters {
 }
 
 export type AdminSalonStatusFilter = 'active' | 'inactive';
-export type AdminSalonSort = 'newest' | 'name_asc' | 'name_desc' | 'updated_desc';
+export type AdminSalonSort =
+  | 'newest'
+  | 'name_asc'
+  | 'name_desc'
+  | 'updated_desc';
 
 export interface FindAdminSalonsFilters {
   search?: string;
@@ -81,9 +86,14 @@ export interface AdminSalonSummary {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface AdminSalonDetail extends AdminSalonSummary {
+  workingHours: WorkingHours;
 }
 
 export interface AdminSalonOverview {
@@ -107,6 +117,7 @@ export interface CreateSalonInput {
   city: string;
   district?: string | null;
   photoUrl?: string | null;
+  galleryUrls?: string[];
   workingHours: WorkingHours;
 }
 
@@ -116,11 +127,14 @@ export interface CreateOwnedSalonDraft {
   city: string;
   district?: string | null;
   photoUrl?: string | null;
+  galleryUrls?: string[];
   workingHours: Record<string, unknown>;
 }
 
-export interface PreparedOwnedSalonInput
-  extends Omit<CreateSalonInput, 'ownerId'> {}
+export interface PreparedOwnedSalonInput extends Omit<
+  CreateSalonInput,
+  'ownerId'
+> {}
 
 export interface UpdateSalonInput {
   name?: string;
@@ -128,6 +142,7 @@ export interface UpdateSalonInput {
   city?: string;
   district?: string | null;
   photoUrl?: string | null;
+  galleryUrls?: string[];
   workingHours?: WorkingHours;
   isActive?: boolean;
 }
@@ -138,6 +153,7 @@ export interface SalonPublicSummary {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
 }
 
 export interface SalonPublicDetail extends SalonPublicSummary {
@@ -151,6 +167,7 @@ export interface OwnedSalonSummary {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   isActive: boolean;
   updatedAt: Date;
 }

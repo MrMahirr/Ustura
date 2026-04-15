@@ -11,12 +11,50 @@ import UserOverviewBar from '@/components/panel/super-admin/users/UserOverviewBa
 import UserPageHeader from '@/components/panel/super-admin/users/UserPageHeader';
 import { userClassNames } from '@/components/panel/super-admin/users/presentation';
 import { useUserManagement } from '@/components/panel/super-admin/users/use-user-management';
+import type { UserActionIconName } from '@/components/panel/super-admin/users/utils';
 import { buildPanelSalonDetailRoute, buildPanelUserDetailRoute } from '@/constants/routes';
+import { useAuth } from '@/hooks/use-auth';
+import { UserService } from '@/services/user.service';
+import { showErrorFlash, showWarningFlash } from '@/utils/flash';
 
 export default function SuperAdminUsers() {
   const { width } = useWindowDimensions();
   const adminTheme = useSuperAdminTheme();
   const userManagement = useUserManagement();
+  const { user: authUser } = useAuth();
+
+  const handleUserRowAction = async (userId: string, icon: UserActionIconName) => {
+    if (icon === 'block') {
+      if (authUser?.id === userId) {
+        showWarningFlash('Islem yapilamadi', 'Kendi hesabinizi bu ekrandan durduramazsiniz.');
+        return;
+      }
+
+      try {
+        await UserService.patchAdminUserStatus(userId, false);
+        userManagement.refreshUsers();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Kullanici durdurulamadi.';
+        showErrorFlash('Hata', message);
+      }
+
+      return;
+    }
+
+    if (icon === 'restore') {
+      try {
+        await UserService.patchAdminUserStatus(userId, true);
+        userManagement.refreshUsers();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Kullanici yeniden acilamadi.';
+        showErrorFlash('Hata', message);
+      }
+
+      return;
+    }
+
+    router.push(buildPanelUserDetailRoute(userId));
+  };
 
   const isWide = width >= 1080;
   const useDesktopTable = width >= 1180;
@@ -56,13 +94,21 @@ export default function SuperAdminUsers() {
 
           <UserFilters
             selectedRole={userManagement.selectedRole}
+            selectedRoleValue={userManagement.selectedRoleValue}
+            roleOptions={userManagement.roleOptions}
+            onSelectRole={userManagement.selectRole}
             selectedStatus={userManagement.selectedStatus}
+            selectedStatusValue={userManagement.selectedStatusValue}
+            statusOptions={userManagement.statusOptions}
+            onSelectStatus={userManagement.selectStatus}
             selectedSalon={userManagement.selectedSalon}
+            selectedSalonValue={userManagement.selectedSalonValue}
+            salonOptions={userManagement.salonOptions}
+            onSelectSalon={userManagement.selectSalon}
             selectedCity={userManagement.selectedCity}
-            onCycleRole={userManagement.cycleRole}
-            onCycleStatus={userManagement.cycleStatus}
-            onCycleSalon={userManagement.cycleSalon}
-            onCycleCity={userManagement.cycleCity}
+            selectedCityValue={userManagement.selectedCityValue}
+            cityOptions={userManagement.cityOptions}
+            onSelectCity={userManagement.selectCity}
             onReset={userManagement.resetFilters}
           />
 
@@ -81,6 +127,7 @@ export default function SuperAdminUsers() {
             onPageChange={userManagement.setPage}
             onOpenSalon={(salonId) => router.push(buildPanelSalonDetailRoute(salonId))}
             onOpenUser={(userId) => router.push(buildPanelUserDetailRoute(userId))}
+            onUserRowAction={handleUserRowAction}
             onAddUser={() => undefined}
           />
 

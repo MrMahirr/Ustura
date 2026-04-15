@@ -7,6 +7,7 @@ import {
 import { SalonController } from './salon.controller';
 import { SalonPolicy } from './policies/salon.policy';
 import { SalonManagementService } from './salon-management.service';
+import { SalonMediaService } from './salon-media.service';
 import { SalonOwnershipService } from './salon-ownership.service';
 import { SalonProjectionService } from './salon-projection.service';
 import { SalonQueryService } from './salon-query.service';
@@ -21,6 +22,7 @@ import { SalonRepository } from './repositories/salon.repository';
     SalonService,
     SalonQueryService,
     SalonManagementService,
+    SalonMediaService,
     SalonWorkingHoursService,
     SalonProjectionService,
     SalonOwnershipService,
@@ -35,6 +37,11 @@ import { SalonRepository } from './repositories/salon.repository';
       useExisting: SalonManagementService,
     },
   ],
-  exports: [SALON_CATALOG_SERVICE, SALON_OWNER_PROVISIONING_SERVICE, SalonService],
+  exports: [
+    SALON_CATALOG_SERVICE,
+    SALON_OWNER_PROVISIONING_SERVICE,
+    SalonOwnershipService,
+    SalonService,
+  ],
 })
 export class SalonModule {}

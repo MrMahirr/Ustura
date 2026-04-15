@@ -45,3 +45,16 @@ export interface ApproveOwnerApplicationInput {
   approvedOwnerUserId: string;
   approvedSalonId: string;
 }
+
+export interface UpdatePendingOwnerApplicationInput {
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  salonName: string;
+  salonAddress: string;
+  salonCity: string;
+  salonDistrict: string | null;
+  salonPhotoUrl: string | null;
+  salonWorkingHours: OwnerApplicationRecord['salonWorkingHours'];
+  notes: string | null;
+}

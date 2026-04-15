@@ -13,6 +13,9 @@ export class AuditLogResponseDto {
   @ApiProperty({ enum: Role, nullable: true })
   actorRole: Role | null;
 
+  @ApiProperty({ nullable: true })
+  actorName: string | null;
+
   @ApiProperty({ enum: AuditLogAction })
   action: AuditLogAction;
 
@@ -27,4 +30,21 @@ export class AuditLogResponseDto {
 
   @ApiProperty()
   createdAt: Date;
+}
+
+export class AuditLogListResponseDto {
+  @ApiProperty({ type: [AuditLogResponseDto] })
+  items: AuditLogResponseDto[];
+
+  @ApiProperty()
+  total: number;
+
+  @ApiProperty()
+  page: number;
+
+  @ApiProperty()
+  pageSize: number;
+
+  @ApiProperty()
+  totalPages: number;
 }

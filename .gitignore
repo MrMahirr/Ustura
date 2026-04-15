@@ -21,6 +21,7 @@ Thumbs.db
 /ustura_backend/.env.development.local
 /ustura_backend/.env.test.local
 /ustura_backend/.env.production.local
+/ustura_backend/uploads/
 
 # Frontend
 /Ustura_Frontend/node_modules/
