@@ -37,6 +37,12 @@ export interface UserProvisioningServiceContract {
     input: CreateOwnerInput,
     executor?: SqlQueryExecutor,
   ): Promise<User>;
+  resetPersonnelPassword(
+    id: string,
+    password: string,
+    options?: { mustChangePassword?: boolean },
+    executor?: SqlQueryExecutor,
+  ): Promise<User>;
   changeOwnPassword(
     kind: PrincipalKind,
     id: string,

@@ -43,6 +43,7 @@ export interface CreateOwnerInput {
   email: string;
   phone: string;
   passwordHash: string;
+  mustChangePassword?: boolean;
 }
 
 export interface CreateUserRecordInput {

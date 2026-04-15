@@ -122,7 +122,7 @@ export class PlatformAdminService {
   ): Promise<OwnerApplication> {
     this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
 
-    let temporaryPassword: string | null = null;
+    const temporaryPassword = generateTemporaryPassword();
 
     const approvedApplication = await this.databaseService.transaction(
       async (transaction) => {
@@ -148,7 +148,6 @@ export class PlatformAdminService {
         let owner: User;
 
         if (!existingPersonnel) {
-          temporaryPassword = generateTemporaryPassword();
           const temporaryPasswordHash = await bcrypt.hash(
             temporaryPassword,
             this.passwordCost,
@@ -159,6 +158,7 @@ export class PlatformAdminService {
               email: application.applicantEmail,
               phone: application.applicantPhone,
               passwordHash: temporaryPasswordHash,
+              mustChangePassword: true,
             },
             transaction,
           );
@@ -166,7 +166,12 @@ export class PlatformAdminService {
           if (!existingPersonnel.isActive) {
             throw ownerApplicationApplicantOwnerInactiveError();
           }
-          owner = existingPersonnel;
+          owner = await this.userProvisioningService.resetPersonnelPassword(
+            existingPersonnel.id,
+            temporaryPassword,
+            { mustChangePassword: true },
+            transaction,
+          );
         } else {
           throw ownerApplicationApplicantEmailUsedByStaffError();
         }
@@ -229,9 +234,7 @@ export class PlatformAdminService {
         recipientName: approvedApplication.applicantName,
         salonName: approvedApplication.salonName,
         loginUrl,
-        ...(temporaryPassword !== null
-          ? { temporaryPassword }
-          : { isExistingOwnerAccount: true }),
+        temporaryPassword,
       })
       .catch((err) =>
         this.logger.error(
@@ -374,7 +377,8 @@ export class PlatformAdminService {
   private toOwnerApplication(
     application: OwnerApplicationRecord,
   ): OwnerApplication {
-    const { passwordHash: _passwordHash, ...ownerApplication } = application;
+    const { passwordHash, ...ownerApplication } = application;
+    void passwordHash;
     return ownerApplication;
   }
 }

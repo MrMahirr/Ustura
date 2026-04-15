@@ -274,6 +274,34 @@ export class UserService
     );
   }
 
+  async resetPersonnelPassword(
+    id: string,
+    password: string,
+    options?: { mustChangePassword?: boolean },
+    executor?: SqlQueryExecutor,
+  ): Promise<User> {
+    const normalizedPassword = password.trim();
+    const passwordHash = await bcrypt.hash(
+      normalizedPassword,
+      this.passwordCost,
+    );
+    const updated = await this.userRepository.updatePasswordHashForPrincipal(
+      PrincipalKind.PERSONNEL,
+      id,
+      passwordHash,
+      {
+        setMustChangePassword: options?.mustChangePassword === true,
+      },
+      executor,
+    );
+
+    if (!updated) {
+      throw userNotFoundError();
+    }
+
+    return updated;
+  }
+
   async deactivateUser(kind: PrincipalKind, id: string): Promise<UserProfile> {
     const user = await this.userRepository.deactivate(kind, id);
 

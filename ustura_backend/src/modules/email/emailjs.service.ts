@@ -8,6 +8,18 @@ import type {
   StaffWelcomeEmailParams,
 } from './interfaces/email.types';
 
+interface EmailJsClient {
+  init: (options: { publicKey: string; privateKey: string }) => void;
+  send: (
+    serviceId: string,
+    templateId: string,
+    templateParams: Record<string, unknown>,
+    options: { publicKey: string; privateKey: string },
+  ) => Promise<{ status: number; text: string }>;
+}
+
+const emailJsClient = emailjs as unknown as EmailJsClient;
+
 const EMAILJS_NON_BROWSER_SECURITY_URL =
   'https://dashboard.emailjs.com/admin/account/security';
 
@@ -71,7 +83,7 @@ export class EmailJsService implements EmailServiceContract {
         'EmailJS is not fully configured — emails will be logged instead of sent.',
       );
     } else {
-      emailjs.init({
+      emailJsClient.init({
         publicKey: this.config.emailJs.publicKey,
         privateKey: this.config.emailJs.privateKey,
       });
@@ -102,6 +114,7 @@ export class EmailJsService implements EmailServiceContract {
       user_name: params.recipientName,
       salon_name: params.salonName,
       temporary_password: params.temporaryPassword ?? '',
+      temporaryPassword: params.temporaryPassword ?? '',
       login_url: params.loginUrl,
       is_existing_owner_account: params.isExistingOwnerAccount === true,
     };
@@ -114,7 +127,7 @@ export class EmailJsService implements EmailServiceContract {
     }
 
     try {
-      const response = await emailjs.send(
+      const response = await emailJsClient.send(
         this.config.emailJs.serviceId,
         this.config.emailJs.templateApproval,
         templateParams,
@@ -166,6 +179,7 @@ export class EmailJsService implements EmailServiceContract {
       user_name: params.recipientName,
       salon_name: params.salonName,
       temporary_password: params.temporaryPassword,
+      temporaryPassword: params.temporaryPassword,
       login_url: params.loginUrl,
     };
 
@@ -177,7 +191,7 @@ export class EmailJsService implements EmailServiceContract {
     }
 
     try {
-      const response = await emailjs.send(
+      const response = await emailJsClient.send(
         this.config.emailJs.serviceId,
         this.config.emailJs.templateStaffWelcome,
         templateParams,

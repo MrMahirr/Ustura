@@ -980,7 +980,10 @@ export class UserRepository {
     kind: PrincipalKind,
     id: string,
     passwordHash: string,
-    options: { clearMustChangePassword: boolean },
+    options: {
+      clearMustChangePassword?: boolean;
+      setMustChangePassword?: boolean;
+    },
     executor: SqlQueryExecutor = this.databaseService,
   ): Promise<User | null> {
     const table = this.tableForPrincipalKind(kind);
@@ -999,14 +1002,18 @@ export class UserRepository {
     const mustChangeSql =
       kind === PrincipalKind.PERSONNEL && options.clearMustChangePassword
         ? 'FALSE::boolean AS must_change_password'
-        : kind === PrincipalKind.PERSONNEL
-          ? 'p.must_change_password'
-          : 'FALSE::boolean AS must_change_password';
+        : kind === PrincipalKind.PERSONNEL && options.setMustChangePassword
+          ? 'TRUE::boolean AS must_change_password'
+          : kind === PrincipalKind.PERSONNEL
+            ? 'p.must_change_password'
+            : 'FALSE::boolean AS must_change_password';
 
     const setClause =
       kind === PrincipalKind.PERSONNEL && options.clearMustChangePassword
         ? 'password_hash = $2, must_change_password = FALSE'
-        : 'password_hash = $2';
+        : kind === PrincipalKind.PERSONNEL && options.setMustChangePassword
+          ? 'password_hash = $2, must_change_password = TRUE'
+          : 'password_hash = $2';
 
     const result = await executor.query<UserRow>({
       text: `
