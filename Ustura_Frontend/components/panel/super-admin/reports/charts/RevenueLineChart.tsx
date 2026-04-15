@@ -1,10 +1,12 @@
 import { Platform } from 'react-native';
+import RevenueLineChartNative from './RevenueLineChart.native';
+import RevenueLineChartWeb from './RevenueLineChart.web';
 
 export type { RevenueLineChartProps } from './RevenueLineChart.native';
 
 const RevenueLineChart =
   Platform.OS === 'web'
-    ? require('./RevenueLineChart.web').default
-    : require('./RevenueLineChart.native').default;
+    ? RevenueLineChartWeb
+    : RevenueLineChartNative;
 
 export default RevenueLineChart;

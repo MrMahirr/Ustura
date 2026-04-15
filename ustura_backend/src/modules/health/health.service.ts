@@ -139,6 +139,17 @@ const REQUIRED_REFRESH_TOKEN_INDEXES = [
   'idx_refresh_tokens_principal',
 ] as const;
 
+interface RequiredColumnSpec {
+  name: string;
+  isNullable: 'YES' | 'NO';
+}
+
+interface RequiredIdentityTableSpec {
+  table: string;
+  columns: readonly RequiredColumnSpec[];
+  indexes: readonly string[];
+}
+
 @Injectable()
 export class HealthService {
   constructor(
@@ -297,7 +308,7 @@ export class HealthService {
 
   private async checkUsersTableSchema(): Promise<HealthCheckResult> {
     try {
-      for (const spec of REQUIRED_IDENTITY_TABLES) {
+      for (const spec of REQUIRED_IDENTITY_TABLES as readonly RequiredIdentityTableSpec[]) {
         const result =
           await this.databaseService.query<InformationSchemaColumnRow>({
             name: `health.identity-table-columns-${spec.table}`,
@@ -608,7 +619,12 @@ export class HealthService {
       return `${message} ${cause.message}`;
     }
 
-    if (cause) {
+    if (
+      typeof cause === 'string' ||
+      typeof cause === 'number' ||
+      typeof cause === 'boolean' ||
+      typeof cause === 'bigint'
+    ) {
       return `${message} ${String(cause)}`;
     }
 

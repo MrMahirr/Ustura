@@ -22,8 +22,10 @@ export class CreateEmployeeAccountDto {
 
   /** Bos veya verilmezse sunucu gecici sifre uretir ve e-posta gonderir. */
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  @Transform(({ value }: { value: unknown }): string | undefined =>
+    typeof value === 'string' && value.trim() === ''
+      ? undefined
+      : (value as string),
   )
   @IsString()
   @MinLength(8)
