@@ -11,10 +11,13 @@ import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
 import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
+import type { SalonOwnerProvisioningServiceContract } from '../salon/interfaces/salon.contracts';
 import type { Salon } from '../salon/interfaces/salon.types';
-import { SalonService } from '../salon/salon.service';
+import type {
+  UserProvisioningServiceContract,
+  UserQueryServiceContract,
+} from '../user/interfaces/user.contracts';
 import type { User } from '../user/interfaces/user.types';
-import { UserService } from '../user/user.service';
 import { UpdateOwnerApplicationDto } from './dto/update-owner-application.dto';
 import { OwnerApplicationStatus } from './enums/owner-application-status.enum';
 import type { OwnerApplicationRecord } from './interfaces/platform-admin.types';
@@ -125,11 +128,19 @@ describe('PlatformAdminService', () => {
   let repository: jest.Mocked<PlatformAdminRepository>;
   let databaseService: jest.Mocked<Pick<DatabaseService, 'transaction'>>;
   let userQueryService: jest.Mocked<
-    Pick<UserService, 'findByEmailForPrincipal'>
+    Pick<UserQueryServiceContract, 'findByEmailForPrincipal'>
   >;
-  let userService: jest.Mocked<Pick<UserService, 'createOwner'>>;
+  let userProvisioningService: jest.Mocked<
+    Pick<
+      UserProvisioningServiceContract,
+      'createOwner' | 'resetPersonnelPassword'
+    >
+  >;
   let salonService: jest.Mocked<
-    Pick<SalonService, 'prepareOwnedSalonInput' | 'createOwnedSalon'>
+    Pick<
+      SalonOwnerProvisioningServiceContract,
+      'prepareOwnedSalonInput' | 'createOwnedSalon'
+    >
   >;
   let domainEventBus: jest.Mocked<Pick<DomainEventBus, 'publish'>>;
 
@@ -149,8 +160,9 @@ describe('PlatformAdminService', () => {
     userQueryService = {
       findByEmailForPrincipal: jest.fn().mockResolvedValue(null),
     };
-    userService = {
+    userProvisioningService = {
       createOwner: jest.fn(),
+      resetPersonnelPassword: jest.fn(),
     };
     salonService = {
       prepareOwnedSalonInput: jest.fn(),
@@ -186,9 +198,9 @@ describe('PlatformAdminService', () => {
       repository,
       new PlatformAdminPolicy(),
       databaseService as DatabaseService,
-      userQueryService as UserService,
-      userService as UserService,
-      salonService as unknown as SalonService,
+      userQueryService as UserQueryServiceContract,
+      userProvisioningService as UserProvisioningServiceContract,
+      salonService as SalonOwnerProvisioningServiceContract,
       domainEventBus as DomainEventBus,
       mockEmailService as any,
       mockAppConfig as any,
@@ -258,7 +270,7 @@ describe('PlatformAdminService', () => {
     const pendingApplication = createOwnerApplication();
     repository.findByIdForUpdate.mockResolvedValue(pendingApplication);
     userQueryService.findByEmailForPrincipal.mockResolvedValue(null);
-    userService.createOwner.mockResolvedValue(createOwner());
+    userProvisioningService.createOwner.mockResolvedValue(createOwner());
     salonService.createOwnedSalon.mockResolvedValue(createSalon());
     repository.markApproved.mockResolvedValue(
       createOwnerApplication({
@@ -279,7 +291,7 @@ describe('PlatformAdminService', () => {
       'owner@example.com',
       PrincipalKind.PERSONNEL,
     );
-    expect(userService.createOwner).toHaveBeenCalled();
+    expect(userProvisioningService.createOwner).toHaveBeenCalled();
     expect(salonService.createOwnedSalon).toHaveBeenCalledWith(
       'owner-1',
       {
@@ -326,6 +338,13 @@ describe('PlatformAdminService', () => {
     });
     repository.findByIdForUpdate.mockResolvedValue(pendingApplication);
     userQueryService.findByEmailForPrincipal.mockResolvedValue(existingOwner);
+    userProvisioningService.resetPersonnelPassword.mockResolvedValue(
+      createOwner({
+        id: 'existing-owner-id',
+        email: 'owner@example.com',
+        mustChangePassword: true,
+      }),
+    );
     salonService.createOwnedSalon.mockResolvedValue(createSalon());
     repository.markApproved.mockResolvedValue(
       createOwnerApplication({
@@ -342,7 +361,13 @@ describe('PlatformAdminService', () => {
       pendingApplication.id,
     );
 
-    expect(userService.createOwner).not.toHaveBeenCalled();
+    expect(userProvisioningService.createOwner).not.toHaveBeenCalled();
+    expect(userProvisioningService.resetPersonnelPassword).toHaveBeenCalledWith(
+      'existing-owner-id',
+      expect.any(String),
+      { mustChangePassword: true },
+      expect.any(Object),
+    );
     expect(salonService.createOwnedSalon).toHaveBeenCalledWith(
       'existing-owner-id',
       expect.any(Object),
@@ -375,7 +400,7 @@ describe('PlatformAdminService', () => {
       ERROR_CODES.PLATFORM_ADMIN
         .OWNER_APPLICATION_APPLICANT_EMAIL_USED_BY_STAFF,
     );
-    expect(userService.createOwner).not.toHaveBeenCalled();
+    expect(userProvisioningService.createOwner).not.toHaveBeenCalled();
   });
 
   it('rejects non-super-admin access at service level', async () => {

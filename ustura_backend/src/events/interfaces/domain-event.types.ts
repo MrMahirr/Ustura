@@ -19,7 +19,7 @@ export interface DomainEvent<
   payload: TPayload;
 }
 
-export interface ReservationCreatedEvent extends DomainEvent<
+export type ReservationCreatedEvent = DomainEvent<
   'reservation.created',
   {
     actorUserId: string;
@@ -36,9 +36,9 @@ export interface ReservationCreatedEvent extends DomainEvent<
     slotStart: string;
     slotEnd: string;
   }
-> {}
+>;
 
-export interface ReservationCancelledEvent extends DomainEvent<
+export type ReservationCancelledEvent = DomainEvent<
   'reservation.cancelled',
   {
     actorUserId: string;
@@ -56,9 +56,9 @@ export interface ReservationCancelledEvent extends DomainEvent<
     slotStart: string;
     slotEnd: string;
   }
-> {}
+>;
 
-export interface ReservationStatusChangedEvent extends DomainEvent<
+export type ReservationStatusChangedEvent = DomainEvent<
   'reservation.status_changed',
   {
     actorUserId: string;
@@ -72,9 +72,9 @@ export interface ReservationStatusChangedEvent extends DomainEvent<
     slotStart: string;
     slotEnd: string;
   }
-> {}
+>;
 
-export interface StaffCreatedEvent extends DomainEvent<
+export type StaffCreatedEvent = DomainEvent<
   'staff.created',
   {
     actorUserId: string;
@@ -84,9 +84,9 @@ export interface StaffCreatedEvent extends DomainEvent<
     salonId: string;
     staffRole: Role.BARBER | Role.RECEPTIONIST;
   }
-> {}
+>;
 
-export interface OwnerApprovedEvent extends DomainEvent<
+export type OwnerApprovedEvent = DomainEvent<
   'owner.approved',
   {
     applicationId: string;
@@ -98,9 +98,9 @@ export interface OwnerApprovedEvent extends DomainEvent<
     approvedOwnerUserId: string | null;
     approvedSalonId: string | null;
   }
-> {}
+>;
 
-export interface AuthLoggedOutEvent extends DomainEvent<
+export type AuthLoggedOutEvent = DomainEvent<
   'auth.logged_out',
   {
     userId: string;
@@ -112,7 +112,7 @@ export interface AuthLoggedOutEvent extends DomainEvent<
     revokedSessionCount: number;
     sourceRefreshTokenId?: string | null;
   }
-> {}
+>;
 
 export type AppDomainEvent =
   | ReservationCreatedEvent

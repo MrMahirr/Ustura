@@ -44,7 +44,9 @@ export class SalonServiceRepository {
     options: { includeInactive?: boolean } = {},
   ): Promise<SalonServiceItem[]> {
     const values: unknown[] = [salonId];
-    const inactiveClause = options.includeInactive ? '' : 'AND is_active = TRUE';
+    const inactiveClause = options.includeInactive
+      ? ''
+      : 'AND is_active = TRUE';
 
     const result = await this.databaseService.query<SalonServiceRow>({
       name: 'salon-service.find-by-salon-id',
@@ -98,7 +100,10 @@ export class SalonServiceRepository {
       ],
     });
 
-    return (await this.findById(result.rows[0]?.id, executor)) as SalonServiceItem;
+    return (await this.findById(
+      result.rows[0]?.id,
+      executor,
+    )) as SalonServiceItem;
   }
 
   async update(

@@ -11,7 +11,7 @@ export class LoggingNotificationChannel implements NotificationChannel {
 
   private readonly logger = new Logger(LoggingNotificationChannel.name);
 
-  async send(message: NotificationMessage): Promise<void> {
+  send(message: NotificationMessage): Promise<void> {
     this.logger.log(
       JSON.stringify({
         channel: this.channel,
@@ -21,5 +21,6 @@ export class LoggingNotificationChannel implements NotificationChannel {
         metadata: message.metadata,
       }),
     );
+    return Promise.resolve();
   }
 }

@@ -42,7 +42,7 @@ export class SlotGateway implements OnGatewayDisconnect<ReservationSocket> {
   ) {
     await this.leaveCurrentRoom(client);
     client.data.slotScope = payload;
-    client.join(this.getRoomName(payload));
+    await Promise.resolve(client.join(this.getRoomName(payload)));
 
     const selections = await this.slotService.getSelections(payload);
     this.server.to(this.getRoomName(payload)).emit('slot:selection.snapshot', {
@@ -158,7 +158,7 @@ export class SlotGateway implements OnGatewayDisconnect<ReservationSocket> {
       });
     }
 
-    client.leave(this.getRoomName(scope));
+    await Promise.resolve(client.leave(this.getRoomName(scope)));
     client.data.slotScope = undefined;
     client.data.selectedSlotStart = undefined;
   }
@@ -203,7 +203,7 @@ export class SlotGateway implements OnGatewayDisconnect<ReservationSocket> {
     const currentScope = client.data.slotScope;
 
     if (!currentScope || this.getRoomName(currentScope) !== roomName) {
-      client.join(roomName);
+      await Promise.resolve(client.join(roomName));
     }
   }
 

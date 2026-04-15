@@ -1,10 +1,12 @@
 import { Platform } from 'react-native';
+import SalonGrowthBarChartNative from './SalonGrowthBarChart.native';
+import SalonGrowthBarChartWeb from './SalonGrowthBarChart.web';
 
 export type { SalonGrowthBarChartProps } from './SalonGrowthBarChart.native';
 
 const SalonGrowthBarChart =
   Platform.OS === 'web'
-    ? require('./SalonGrowthBarChart.web').default
-    : require('./SalonGrowthBarChart.native').default;
+    ? SalonGrowthBarChartWeb
+    : SalonGrowthBarChartNative;
 
 export default SalonGrowthBarChart;

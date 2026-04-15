@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  HttpException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, HttpException } from '@nestjs/common';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { PrincipalKind } from '../../shared/auth/principal-kind.enum';

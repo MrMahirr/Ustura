@@ -62,7 +62,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message: this.resolveHttpExceptionMessage(response, exception.message),
         code: this.resolveHttpExceptionCode(response),
         stack: exception.stack,
-        shouldLog: statusCode >= HttpStatus.INTERNAL_SERVER_ERROR,
+        shouldLog: statusCode >= 500,
       };
     }
 

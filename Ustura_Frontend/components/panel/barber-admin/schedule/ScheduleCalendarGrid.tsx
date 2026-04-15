@@ -48,7 +48,6 @@ export default function ScheduleCalendarGrid({
   onUpdateStatus,
   mutating,
 }: ScheduleCalendarGridProps) {
-  const theme = useBarberAdminTheme();
   const totalSlots = SCHEDULE_END_HOUR - SCHEDULE_START_HOUR;
   const totalHeight = totalSlots * HOUR_SLOT_HEIGHT;
   const hours = Array.from(

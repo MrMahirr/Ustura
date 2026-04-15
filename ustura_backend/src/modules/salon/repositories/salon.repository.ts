@@ -11,7 +11,6 @@ import {
   FindPaginatedSalonsFilters,
   FindSalonsFilters,
   PaginatedResult,
-  PaginatedAdminSalonResult,
   Salon,
   AdminSalonSort,
   UpdateSalonInput,

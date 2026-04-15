@@ -1,10 +1,12 @@
 import { Platform } from 'react-native';
+import PackageDonutChartNative from './PackageDonutChart.native';
+import PackageDonutChartWeb from './PackageDonutChart.web';
 
 export type { PackageDonutChartProps, PackageSlice } from './PackageDonutChart.native';
 
 const PackageDonutChart =
   Platform.OS === 'web'
-    ? require('./PackageDonutChart.web').default
-    : require('./PackageDonutChart.native').default;
+    ? PackageDonutChartWeb
+    : PackageDonutChartNative;
 
 export default PackageDonutChart;

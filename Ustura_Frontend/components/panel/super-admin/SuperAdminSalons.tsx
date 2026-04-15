@@ -25,6 +25,7 @@ export default function SuperAdminSalons() {
   const { width } = useWindowDimensions();
   const adminTheme = useSuperAdminTheme();
   const salonManagement = useSalonManagement();
+  const { reload } = salonManagement;
 
   const isTablet = width >= 768;
   const isWide = width >= 1100;
@@ -50,13 +51,13 @@ export default function SuperAdminSalons() {
           }
           await deleteAdminSalon(salonId);
         }
-        await salonManagement.reload();
+        await reload();
       } catch (error) {
         const msg = error instanceof ApiError ? error.message : 'Islem tamamlanamadi.';
         showErrorFlash('Hata', msg);
       }
     },
-    [salonManagement.reload],
+    [reload],
   );
 
   const overlayStyle =
@@ -110,7 +111,7 @@ export default function SuperAdminSalons() {
             isLoading={salonManagement.isLoading}
             errorMessage={salonManagement.errorMessage}
             onPageChange={salonManagement.setPage}
-            onRetry={salonManagement.reload}
+            onRetry={reload}
             onOpenSalon={(salonId) => router.push(buildPanelSalonDetailRoute(salonId))}
             onSalonAction={handleSalonAction}
           />
@@ -118,7 +119,7 @@ export default function SuperAdminSalons() {
           <SalonInsightsSection
             isTablet={isTablet}
             overview={salonManagement.overview}
-            onRefresh={salonManagement.reload}
+            onRefresh={reload}
           />
         </View>
       </ScrollView>

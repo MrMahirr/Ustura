@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
-import { Package, PackageRow } from '../interfaces/package.types';
+import { Package, PackageRow, PackageTier } from '../interfaces/package.types';
 import { CreatePackageDto } from '../dto/create-package.dto';
 import { UpdatePackageDto } from '../dto/update-package.dto';
 
@@ -68,7 +68,7 @@ export class PackagesRepository {
 
   async update(id: string, input: UpdatePackageDto): Promise<Package | null> {
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
 
     if (input.name !== undefined) {
       values.push(input.name);
@@ -129,7 +129,7 @@ export class PackagesRepository {
     return {
       id: row.id,
       name: row.name,
-      tier: row.tier as any,
+      tier: row.tier as PackageTier,
       tierLabel: row.tier_label,
       pricePerMonth: Number(row.price_per_month),
       features: row.features,

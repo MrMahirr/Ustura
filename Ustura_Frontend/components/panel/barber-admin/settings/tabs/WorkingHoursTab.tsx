@@ -19,7 +19,6 @@ import SettingsSection from '../SettingsSection';
 import {
   getBarberInputStyle,
   getBarberInputWebStyle,
-  getBarberWebTransition,
 } from '../presentation';
 import { DAY_LABELS, DAY_ORDER, type DayKey } from '../types';
 

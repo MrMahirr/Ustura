@@ -30,7 +30,6 @@ export default function SalonCard({
   onBookPress,
 }: SalonCardProps) {
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
-  const surfaceContainerHighest = useThemeColor({}, 'surfaceContainerHighest');
   const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
   const onSurface = useThemeColor({}, 'onSurface');
   const onSurfaceVariant = useThemeColor({}, 'onSurfaceVariant');

@@ -242,11 +242,11 @@ class RedisClientAdapter implements RedisClientLike {
 class InMemoryRedisClient implements RedisClientLike {
   private readonly store = new Map<string, InMemoryEntry>();
 
-  async ping(): Promise<string> {
-    return 'PONG';
+  ping(): Promise<string> {
+    return Promise.resolve('PONG');
   }
 
-  async set(
+  set(
     key: string,
     value: string,
     mode?: 'EX',
@@ -256,7 +256,7 @@ class InMemoryRedisClient implements RedisClientLike {
     this.purgeExpiredKey(key);
 
     if (condition === 'NX' && this.store.has(key)) {
-      return null;
+      return Promise.resolve(null);
     }
 
     const expiresAt =
@@ -269,25 +269,27 @@ class InMemoryRedisClient implements RedisClientLike {
       expiresAt,
     });
 
-    return 'OK';
+    return Promise.resolve('OK');
   }
 
-  async get(key: string): Promise<string | null> {
+  get(key: string): Promise<string | null> {
     this.purgeExpiredKey(key);
-    return this.store.get(key)?.value ?? null;
+    return Promise.resolve(this.store.get(key)?.value ?? null);
   }
 
   async mget(keys: string[]): Promise<(string | null)[]> {
     return Promise.all(keys.map((key) => this.get(key)));
   }
 
-  async keys(pattern: string): Promise<string[]> {
+  keys(pattern: string): Promise<string[]> {
     this.purgeExpiredEntries();
     const regex = new RegExp(
       `^${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*')}$`,
     );
 
-    return [...this.store.keys()].filter((key) => regex.test(key));
+    return Promise.resolve(
+      [...this.store.keys()].filter((key) => regex.test(key)),
+    );
   }
 
   async eval(
@@ -328,8 +330,9 @@ class InMemoryRedisClient implements RedisClientLike {
     return 1;
   }
 
-  async quit(): Promise<void> {
+  quit(): Promise<void> {
     this.store.clear();
+    return Promise.resolve();
   }
 
   private purgeExpiredEntries(): void {

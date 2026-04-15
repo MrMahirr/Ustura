@@ -48,7 +48,6 @@ export default function BarberAdminReservations() {
   }, [schedule]);
 
   const paddingH = width < 768 ? 16 : 32;
-  const isMobile = width < 768;
   const useDesktopTable = width >= 900;
   const showCalendarSidebar = width >= 1080;
 

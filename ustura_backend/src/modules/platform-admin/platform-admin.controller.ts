@@ -17,6 +17,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { AppConfigService } from '../../config/config.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -27,7 +28,6 @@ import { CreateOwnerApplicationDto } from './dto/create-owner-application.dto';
 import { OwnerApplicationResponseDto } from './dto/owner-application-response.dto';
 import { RejectOwnerApplicationDto } from './dto/reject-owner-application.dto';
 import { UpdateOwnerApplicationDto } from './dto/update-owner-application.dto';
-import { AppConfigService } from '../../config/config.service';
 import { PlatformAdminService } from './platform-admin.service';
 
 @ApiTags('platform-admin')
@@ -43,7 +43,7 @@ export class PlatformAdminController {
   @Get('admin/platform-settings')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get platform settings for super admin' })
-  async getPlatformSettings() {
+  getPlatformSettings() {
     return {
       general: {
         platformName: 'Ustura',
@@ -95,10 +95,13 @@ export class PlatformAdminController {
   }
 
   private maskValue(value: string): string {
-    if (value.length <= 6) return '••••••';
+    if (value.length <= 6) {
+      return '******';
+    }
+
     return (
       value.slice(0, 3) +
-      '•'.repeat(Math.min(value.length - 6, 10)) +
+      '*'.repeat(Math.min(value.length - 6, 10)) +
       value.slice(-3)
     );
   }
