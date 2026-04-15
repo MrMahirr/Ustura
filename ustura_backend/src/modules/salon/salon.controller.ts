@@ -168,6 +168,22 @@ export class SalonController {
     return this.salonQueryService.findOwned(currentUser);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER)
+  @Get('owned/:salonId')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get an owned salon detail for the authenticated owner',
+  })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  @ApiOkResponse({ type: OwnedSalonResponseDto })
+  async findOwnedById(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+  ) {
+    return this.salonQueryService.findOwnedById(currentUser, salonId);
+  }
+
   @Get(':salonId')
   @ApiOperation({ summary: 'Get a public active salon detail' })
   @ApiParam({ name: 'salonId', format: 'uuid' })

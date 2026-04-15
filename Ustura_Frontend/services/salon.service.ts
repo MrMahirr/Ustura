@@ -199,7 +199,7 @@ export type OwnedSalonUpdatePayload = {
 
 export async function getOwnedSalonDetail(salonId: string) {
   return apiRequest<SalonRecord>({
-    path: `/salons/${salonId}`,
+    path: `/salons/owned/${salonId}`,
     auth: true,
   });
 }

@@ -7,6 +7,7 @@ import type {
   AdminSalonDetail,
   AdminSalonSummary,
   PaginatedAdminSalonResult,
+  OwnedSalonDetail,
   OwnedSalonSummary,
   PaginatedResult,
   Salon,
@@ -89,6 +90,22 @@ export class SalonQueryService implements SalonCatalogServiceContract {
     return salons.map((salon) =>
       this.salonProjectionService.toOwnedSummary(salon),
     );
+  }
+
+  async findOwnedById(
+    currentUser: JwtPayload,
+    salonId: string,
+  ): Promise<OwnedSalonDetail> {
+    this.salonPolicy.assertCanManage(currentUser);
+
+    const salon = await this.salonRepository.findById(salonId);
+
+    if (!salon) {
+      throw salonNotFoundError();
+    }
+
+    this.salonPolicy.assertCanManageSalon(currentUser, salon);
+    return this.salonProjectionService.toOwnedDetail(salon);
   }
 
   async findPublicById(id: string): Promise<SalonPublicDetail> {
