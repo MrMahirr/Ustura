@@ -131,10 +131,7 @@ export interface CreateOwnedSalonDraft {
   workingHours: Record<string, unknown>;
 }
 
-export interface PreparedOwnedSalonInput extends Omit<
-  CreateSalonInput,
-  'ownerId'
-> {}
+export type PreparedOwnedSalonInput = Omit<CreateSalonInput, 'ownerId'>;
 
 export interface UpdateSalonInput {
   name?: string;

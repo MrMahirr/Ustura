@@ -147,13 +147,6 @@ function mapAuditActionTitle(action: string): string {
   }
 }
 
-function formatCompactCurrency(value: number) {
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)} Bin TL`;
-  }
-  return `${value} TL`;
-}
-
 function buildMetrics(stats: AdminUserStatsResponse): UserProfileMetric[] {
   const completionRate =
     stats.totalReservations > 0

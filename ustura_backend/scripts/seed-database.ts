@@ -12,7 +12,9 @@ function readEnvNumber(name: string, fallback: number): number {
   const rawValue = process.env[name];
   if (!rawValue) return fallback;
   const parsedValue = Number(rawValue);
-  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : fallback;
+  return Number.isInteger(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : fallback;
 }
 
 const client = new Client({
@@ -37,7 +39,7 @@ async function main() {
   console.log('⏳ 1. Kullanıcılar (Users) üretiliyor...');
   const users: { id: string; role: string }[] = [];
   const roles = ['customer', 'barber', 'owner', 'receptionist', 'super_admin'];
-  
+
   for (let i = 0; i < COUNT; i++) {
     // Orantılı rol ataması
     let role = 'customer';
@@ -56,7 +58,7 @@ async function main() {
         faker.phone.number({ style: 'national' }).slice(0, 20),
         passwordHash,
         role,
-      ]
+      ],
     );
     users.push(result.rows[0]);
   }
@@ -90,7 +92,7 @@ async function main() {
         faker.location.county(),
         faker.image.url(),
         workingHours, // node-pg otomatik olarak json stringify yapar
-      ]
+      ],
     );
     salons.push(result.rows[0].id);
   }
@@ -100,40 +102,42 @@ async function main() {
   const staff: string[] = [];
   for (let i = 0; i < COUNT; i++) {
     // Unique user + salon ikilisi saglamak icin basit atama yapiyoruz
-    const barberIndex = i % barbers.length; 
+    const barberIndex = i % barbers.length;
     const salonIndex = i % salons.length;
 
-    await client.query(
-      `INSERT INTO staff (user_id, salon_id, role, bio) 
+    await client
+      .query(
+        `INSERT INTO staff (user_id, salon_id, role, bio) 
        VALUES ($1, $2, $3, $4) 
        ON CONFLICT (user_id, salon_id) DO NOTHING
        RETURNING id`,
-      [
-        barbers[barberIndex].id,
-        salons[salonIndex],
-        'barber',
-        faker.person.bio(),
-      ]
-    ).then(res => {
-        if(res.rows[0]) staff.push(res.rows[0].id);
-    });
+        [
+          barbers[barberIndex].id,
+          salons[salonIndex],
+          'barber',
+          faker.person.bio(),
+        ],
+      )
+      .then((res) => {
+        if (res.rows[0]) staff.push(res.rows[0].id);
+      });
   }
 
   // Eger staff uniq constraint yuzunden az eklendiyse rastgele ekleyerek 100'e tamamlamaya calis
   let staffAttempt = 0;
-  while(staff.length < COUNT && staffAttempt < 200) {
-     staffAttempt++;
-     const barberId = faker.helpers.arrayElement(barbers).id;
-     const salonId = faker.helpers.arrayElement(salons);
-     const res = await client.query(
+  while (staff.length < COUNT && staffAttempt < 200) {
+    staffAttempt++;
+    const barberId = faker.helpers.arrayElement(barbers).id;
+    const salonId = faker.helpers.arrayElement(salons);
+    const res = await client.query(
       `INSERT INTO staff (user_id, salon_id, role, bio) 
        VALUES ($1, $2, $3, $4) 
        ON CONFLICT (user_id, salon_id) DO NOTHING
        RETURNING id`,
-      [barberId, salonId, 'barber', faker.person.bio()]
+      [barberId, salonId, 'barber', faker.person.bio()],
     );
-    if(res.rows[0]) {
-        staff.push(res.rows[0].id);
+    if (res.rows[0]) {
+      staff.push(res.rows[0].id);
     }
   }
 
@@ -143,7 +147,10 @@ async function main() {
     const customerId = faker.helpers.arrayElement(customers).id;
     // Herhangi bir staff ve o staffin bagli oldugu salon alinmali. (Bizim staff objemiz sdc id arrayi, db'den bulalim)
     const randomStaffId = faker.helpers.arrayElement(staff);
-    const staffRec = await client.query(`SELECT salon_id FROM staff WHERE id = $1`, [randomStaffId]);
+    const staffRec = await client.query(
+      `SELECT salon_id FROM staff WHERE id = $1`,
+      [randomStaffId],
+    );
     const salonId = staffRec.rows[0].salon_id;
 
     // Slot start, end
@@ -165,7 +172,7 @@ async function main() {
         end,
         faker.helpers.arrayElement(statuses),
         faker.lorem.sentence(),
-      ]
+      ],
     );
   }
 
@@ -192,13 +199,15 @@ async function main() {
           faker.location.city(),
           faker.location.county(),
           {},
-          'pending'
-        ]
+          'pending',
+        ],
       );
     }
   }
 
-  console.log('✅ Bütün sahte veriler başarıyla eklendi! (Her tablo için en az ~100 adet veri oluşturuldu)');
+  console.log(
+    '✅ Bütün sahte veriler başarıyla eklendi! (Her tablo için en az ~100 adet veri oluşturuldu)',
+  );
   await client.end();
 }
 

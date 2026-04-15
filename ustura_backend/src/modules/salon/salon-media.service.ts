@@ -168,7 +168,9 @@ export class SalonMediaService {
     const existingGalleryUrls = existingSalon.galleryUrls ?? [];
 
     if (!existingGalleryUrls.includes(photoUrl)) {
-      throw salonInvalidMediaFileError('Gallery photo does not belong to salon.');
+      throw salonInvalidMediaFileError(
+        'Gallery photo does not belong to salon.',
+      );
     }
 
     const updatedSalon = await this.salonRepository.update(salonId, {

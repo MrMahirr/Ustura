@@ -18,7 +18,6 @@ import SettingsSection from '../SettingsSection';
 import {
   getBarberInputStyle,
   getBarberInputWebStyle,
-  getBarberWebTransition,
 } from '../presentation';
 import type { SalonFormData } from '../types';
 

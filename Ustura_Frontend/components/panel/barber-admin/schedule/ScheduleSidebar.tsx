@@ -58,7 +58,6 @@ interface NextUpCardProps {
 
 function NextUpCard({ nextUp }: NextUpCardProps) {
   const theme = useBarberAdminTheme();
-  const isDark = theme.theme === 'dark';
 
   return (
     <View

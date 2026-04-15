@@ -26,14 +26,24 @@ export default function BarberAdminPackages() {
   const state = useBarberPackages();
   const [query, setQuery] = React.useState('');
   const [confirmPackageId, setConfirmPackageId] = React.useState<string | null>(null);
+  const {
+    loading,
+    error,
+    currentPlan,
+    planCards,
+    requesting,
+    hasPendingRequest,
+    requestError,
+    requestSubscription,
+  } = state;
 
   const plansSectionRef = React.useRef<View>(null);
 
   const paddingH = width < 480 ? 12 : width < 768 ? 20 : width < 1280 ? 28 : 40;
 
   const selectedPlan = React.useMemo(
-    () => (confirmPackageId ? state.planCards.find((p) => p.id === confirmPackageId) : null),
-    [confirmPackageId, state.planCards],
+    () => (confirmPackageId ? planCards.find((p) => p.id === confirmPackageId) : null),
+    [confirmPackageId, planCards],
   );
 
   const handleSelectPlan = React.useCallback((packageId: string) => {
@@ -42,19 +52,19 @@ export default function BarberAdminPackages() {
 
   const handleConfirm = React.useCallback(async () => {
     if (!confirmPackageId) return;
-    const success = await state.requestSubscription(confirmPackageId);
+    const success = await requestSubscription(confirmPackageId);
     if (success) {
       setConfirmPackageId(null);
     }
-  }, [confirmPackageId, state.requestSubscription]);
+  }, [confirmPackageId, requestSubscription]);
 
   const handleCloseModal = React.useCallback(() => {
-    if (!state.requesting) {
+    if (!requesting) {
       setConfirmPackageId(null);
     }
-  }, [state.requesting]);
+  }, [requesting]);
 
-  if (state.loading) {
+  if (loading) {
     return (
       <View className={packagesClassNames.page} style={{ backgroundColor: theme.pageBackground }}>
         <BarberTopBar query={query} onQueryChange={setQuery} />
@@ -65,13 +75,13 @@ export default function BarberAdminPackages() {
     );
   }
 
-  if (state.error) {
+  if (error) {
     return (
       <View className={packagesClassNames.page} style={{ backgroundColor: theme.pageBackground }}>
         <BarberTopBar query={query} onQueryChange={setQuery} />
         <View className="flex-1 items-center justify-center gap-2 px-6">
           <Text className="font-headline text-base font-bold text-center" style={{ color: theme.error }}>
-            {state.error}
+            {error}
           </Text>
         </View>
       </View>
@@ -110,17 +120,17 @@ export default function BarberAdminPackages() {
           style={{ maxWidth: 1100, gap: width < 768 ? 40 : 64 }}>
           <PageHeader />
 
-          {state.currentPlan && (
-            <CurrentPlanBanner plan={state.currentPlan} />
+          {currentPlan && (
+            <CurrentPlanBanner plan={currentPlan} />
           )}
 
-          {state.planCards.length > 0 && (
+          {planCards.length > 0 && (
             <View ref={plansSectionRef}>
               <PlansHeader />
               <PlanComparisonGrid
-                plans={state.planCards}
+                plans={planCards}
                 onSelectPlan={handleSelectPlan}
-                disabled={state.requesting || state.hasPendingRequest}
+                disabled={requesting || hasPendingRequest}
               />
             </View>
           )}
@@ -132,8 +142,8 @@ export default function BarberAdminPackages() {
         onClose={handleCloseModal}
         onConfirm={handleConfirm}
         plan={selectedPlan}
-        requesting={state.requesting}
-        requestError={state.requestError}
+        requesting={requesting}
+        requestError={requestError}
       />
     </View>
   );

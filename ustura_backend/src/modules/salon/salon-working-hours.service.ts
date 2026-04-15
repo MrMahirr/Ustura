@@ -118,7 +118,7 @@ export class SalonWorkingHoursService {
     fieldName: 'open' | 'close',
     day: SalonDayKey,
   ): string {
-    const fieldValue = Reflect.get(value, fieldName);
+    const fieldValue: unknown = Reflect.get(value, fieldName);
 
     if (typeof fieldValue !== 'string' || !TIME_PATTERN.test(fieldValue)) {
       throw salonInvalidWorkingHoursError(

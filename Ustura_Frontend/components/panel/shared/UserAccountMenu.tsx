@@ -13,6 +13,7 @@ import { authRoleLabel } from '@/components/panel/shared/auth-role-label';
 import { authRoutes } from '@/constants/routes';
 import { useAuth } from '@/hooks/use-auth';
 import { hexToRgba } from '@/utils/color';
+import { showInfoFlash } from '@/utils/flash';
 
 export interface UserAccountMenuPalette {
   theme: 'light' | 'dark';
@@ -31,7 +32,6 @@ export interface UserAccountMenuProps {
 }
 
 function showMessage(title: string, message: string) {
-  const { showInfoFlash } = require('@/utils/flash');
   showInfoFlash(title, message);
 }
 

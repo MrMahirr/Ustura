@@ -3,6 +3,7 @@ import { DatabaseService } from '../../../database/database.service';
 import {
   PackageApproval,
   PackageApprovalRow,
+  PackageTier,
   Subscription,
   SubscriptionRow,
   SubscriptionStatus,
@@ -224,7 +225,7 @@ export class SubscriptionsRepository {
       updatedAt: row.updated_at,
       salonName: row.salon_name,
       packageName: row.package_name,
-      packageTier: row.package_tier as any,
+      packageTier: row.package_tier as PackageTier | undefined,
     };
   }
 
@@ -241,7 +242,7 @@ export class SubscriptionsRepository {
       ownerEmail: row.owner_email,
       packageId: row.package_id,
       packageName: row.package_name,
-      packageTier: row.package_tier as any,
+      packageTier: row.package_tier as PackageTier,
       packagePricePerMonth: Number(row.package_price_per_month),
       subscriptionStatus: row.subscription_status,
       subscriptionStartDate: row.subscription_start_date,
