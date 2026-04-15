@@ -4,7 +4,10 @@ import { DatabaseService } from '../../database/database.service';
 import type { SqlQueryExecutor } from '../../database/database.types';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
-import { salonInvalidFieldError, salonNotFoundError } from './errors/salon.errors';
+import {
+  salonInvalidFieldError,
+  salonNotFoundError,
+} from './errors/salon.errors';
 import type {
   AdminSalonSummary,
   CreateOwnedSalonDraft,
@@ -43,6 +46,7 @@ export class SalonManagementService implements SalonOwnerProvisioningServiceCont
       city: createSalonDto.city,
       district: createSalonDto.district,
       photoUrl: createSalonDto.photoUrl,
+      galleryUrls: [],
       workingHours: createSalonDto.workingHours,
     });
 
@@ -58,9 +62,13 @@ export class SalonManagementService implements SalonOwnerProvisioningServiceCont
       city: this.normalizeRequiredString(input.city, 'city'),
       district: this.normalizeOptionalString(input.district) ?? null,
       photoUrl: this.normalizeOptionalString(input.photoUrl) ?? null,
-      workingHours: this.salonWorkingHoursService.normalize(input.workingHours, {
-        requireAtLeastOneOpenDay: true,
-      }),
+      galleryUrls: Array.isArray(input.galleryUrls) ? input.galleryUrls : [],
+      workingHours: this.salonWorkingHoursService.normalize(
+        input.workingHours,
+        {
+          requireAtLeastOneOpenDay: true,
+        },
+      ),
     };
   }
 
@@ -94,7 +102,10 @@ export class SalonManagementService implements SalonOwnerProvisioningServiceCont
       return this.salonProjectionService.toOwnedDetail(existingSalon);
     }
 
-    const updatedSalon = await this.salonRepository.update(salonId, updateInput);
+    const updatedSalon = await this.salonRepository.update(
+      salonId,
+      updateInput,
+    );
 
     if (!updatedSalon) {
       throw salonNotFoundError();
@@ -204,12 +215,21 @@ export class SalonManagementService implements SalonOwnerProvisioningServiceCont
         : {}),
       ...(updateSalonDto.district !== undefined
         ? {
-            district: this.normalizeOptionalString(updateSalonDto.district) ?? null,
+            district:
+              this.normalizeOptionalString(updateSalonDto.district) ?? null,
           }
         : {}),
       ...(updateSalonDto.photoUrl !== undefined
         ? {
-            photoUrl: this.normalizeOptionalString(updateSalonDto.photoUrl) ?? null,
+            photoUrl:
+              this.normalizeOptionalString(updateSalonDto.photoUrl) ?? null,
+          }
+        : {}),
+      ...(updateSalonDto.galleryUrls !== undefined
+        ? {
+            galleryUrls: updateSalonDto.galleryUrls
+              .map((value) => value.trim())
+              .filter(Boolean),
           }
         : {}),
       ...(updateSalonDto.workingHours !== undefined

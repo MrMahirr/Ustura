@@ -15,6 +15,7 @@ import {
   AdminUserWorkingDay,
   FindAdminUsersFilters,
   CreateUserRecordInput,
+  UpdateManagedEmployeeInput,
   UpdateUserProfileInput,
   User,
 } from '../interfaces/user.types';
@@ -23,10 +24,7 @@ import {
 export class UserRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findByPrincipal(
-    kind: PrincipalKind,
-    id: string,
-  ): Promise<User | null> {
+  async findByPrincipal(kind: PrincipalKind, id: string): Promise<User | null> {
     const roleSql =
       kind === PrincipalKind.PLATFORM_ADMIN
         ? `'${Role.SUPER_ADMIN}'::varchar(20) AS role`
@@ -209,7 +207,9 @@ export class UserRepository {
       : 'FALSE::boolean';
   }
 
-  async findAdminUsers(filters: FindAdminUsersFilters): Promise<AdminUserSummary[]> {
+  async findAdminUsers(
+    filters: FindAdminUsersFilters,
+  ): Promise<AdminUserSummary[]> {
     const { values, whereClause } = this.buildAdminFilters(filters);
     const result = await this.databaseService.query<AdminUserRow>({
       text: `
@@ -246,7 +246,9 @@ export class UserRepository {
       values,
     });
 
-    return result.rows.map((row) => this.mapAdminUserRow(row) as AdminUserSummary);
+    return result.rows.map(
+      (row) => this.mapAdminUserRow(row) as AdminUserSummary,
+    );
   }
 
   async findAdminUserById(id: string): Promise<AdminUserSummary | null> {
@@ -339,7 +341,10 @@ export class UserRepository {
     });
   }
 
-  async findReservationsForUser(userId: string, limit = 10): Promise<AdminUserReservation[]> {
+  async findReservationsForUser(
+    userId: string,
+    limit = 10,
+  ): Promise<AdminUserReservation[]> {
     const result = await this.databaseService.query<{
       id: string;
       customer_name: string;
@@ -415,7 +420,10 @@ export class UserRepository {
     };
   }
 
-  async findActivityForUser(userId: string, limit = 10): Promise<AdminUserActivityEntry[]> {
+  async findActivityForUser(
+    userId: string,
+    limit = 10,
+  ): Promise<AdminUserActivityEntry[]> {
     const result = await this.databaseService.query<{
       id: string;
       action: string;
@@ -447,9 +455,14 @@ export class UserRepository {
     }));
   }
 
-  async findWorkingHoursForUser(userId: string): Promise<AdminUserWorkingDay[]> {
+  async findWorkingHoursForUser(
+    userId: string,
+  ): Promise<AdminUserWorkingDay[]> {
     const result = await this.databaseService.query<{
-      working_hours: Record<string, { open: string; close: string } | null> | null;
+      working_hours: Record<
+        string,
+        { open: string; close: string } | null
+      > | null;
     }>({
       text: `
         SELECT s.working_hours
@@ -488,7 +501,10 @@ export class UserRepository {
     });
   }
 
-  private formatAuditDetail(action: string, metadata: Record<string, unknown> | null): string | null {
+  private formatAuditDetail(
+    action: string,
+    metadata: Record<string, unknown> | null,
+  ): string | null {
     if (!metadata) return null;
 
     switch (action) {
@@ -557,6 +573,76 @@ export class UserRepository {
 
       return !!(personnelResult.rowCount && personnelResult.rowCount > 0);
     });
+  }
+
+  async updateManagedEmployee(
+    id: string,
+    input: UpdateManagedEmployeeInput & { passwordHash?: string | null },
+    executor: SqlQueryExecutor = this.databaseService,
+  ): Promise<User | null> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+
+    if (input.name !== undefined) {
+      values.push(input.name);
+      updates.push(`name = $${values.length}`);
+    }
+
+    if (input.email !== undefined) {
+      values.push(input.email);
+      updates.push(`email = $${values.length}`);
+    }
+
+    if (input.phone !== undefined) {
+      values.push(input.phone);
+      updates.push(`phone = $${values.length}`);
+    }
+
+    if (input.role !== undefined) {
+      values.push(input.role);
+      updates.push(`role = $${values.length}`);
+    }
+
+    if (input.passwordHash !== undefined) {
+      values.push(input.passwordHash);
+      updates.push(`password_hash = $${values.length}`);
+    }
+
+    if (input.mustChangePassword !== undefined) {
+      values.push(input.mustChangePassword);
+      updates.push(`must_change_password = $${values.length}`);
+    }
+
+    if (updates.length === 0) {
+      return this.findByPrincipal(PrincipalKind.PERSONNEL, id);
+    }
+
+    values.push(id);
+
+    const result = await executor.query<UserRow>({
+      name: 'user.update-managed-employee',
+      text: `
+        UPDATE personnel p
+        SET ${updates.join(', ')},
+            updated_at = NOW()
+        WHERE p.id = $${values.length}
+        RETURNING
+          p.id,
+          p.name,
+          p.email,
+          p.phone,
+          p.password_hash,
+          NULL::varchar(128) AS firebase_uid,
+          p.role,
+          p.must_change_password,
+          p.is_active,
+          p.created_at,
+          p.updated_at
+      `,
+      values,
+    });
+
+    return this.mapRow(result.rows[0]);
   }
 
   async getAdminOverview(): Promise<AdminUserOverview> {
@@ -633,7 +719,9 @@ export class UserRepository {
     ]);
 
     return {
-      salons: salonResult.rows.map((row) => this.mapAdminFilterOptionRow(row) as AdminUserFilterOption),
+      salons: salonResult.rows.map(
+        (row) => this.mapAdminFilterOptionRow(row) as AdminUserFilterOption,
+      ),
       cities: cityResult.rows.map((row) => row.city),
     };
   }

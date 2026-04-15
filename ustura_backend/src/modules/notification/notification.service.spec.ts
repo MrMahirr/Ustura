@@ -10,7 +10,9 @@ import { NotificationTemplateService } from './templates/notification-template.s
 describe('NotificationService', () => {
   let service: NotificationService;
   let channel: jest.Mocked<NotificationChannel>;
-  let notificationRepository: jest.Mocked<Pick<NotificationRepository, 'create'>>;
+  let notificationRepository: jest.Mocked<
+    Pick<NotificationRepository, 'create'>
+  >;
 
   beforeEach(() => {
     channel = {

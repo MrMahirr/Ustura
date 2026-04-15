@@ -91,7 +91,9 @@ describe('NotificationEventsConsumer', () => {
 
     await new Promise(process.nextTick);
 
-    expect(notificationService.sendOwnerApprovedBestEffort).toHaveBeenCalledWith({
+    expect(
+      notificationService.sendOwnerApprovedBestEffort,
+    ).toHaveBeenCalledWith({
       recipientEmail: 'owner@example.com',
       recipientName: 'Owner',
       salonName: 'Ustura Premium',
@@ -116,11 +118,13 @@ describe('NotificationEventsConsumer', () => {
 
     await new Promise(process.nextTick);
 
-    expect(notificationService.sendAuthSecurityBestEffort).toHaveBeenCalledWith({
-      recipientEmail: 'user@example.com',
-      recipientName: 'User',
-      reason: 'logout_all',
-      revokedSessionCount: 2,
-    });
+    expect(notificationService.sendAuthSecurityBestEffort).toHaveBeenCalledWith(
+      {
+        recipientEmail: 'user@example.com',
+        recipientName: 'User',
+        reason: 'logout_all',
+        revokedSessionCount: 2,
+      },
+    );
   });
 });

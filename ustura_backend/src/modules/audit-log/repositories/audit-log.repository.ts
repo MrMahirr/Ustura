@@ -79,7 +79,8 @@ export class AuditLogRepository {
       clauses.push(`al.entity_id = $${values.length}`);
     }
 
-    const whereClause = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const whereClause =
+      clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
 
     const countResult = await this.databaseService.query<{ count: string }>({
       text: `SELECT COUNT(*)::text AS count FROM audit_logs al ${whereClause}`,

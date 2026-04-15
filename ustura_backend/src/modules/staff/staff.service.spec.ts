@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import type { DatabaseTransaction } from '../../database/database.types';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
@@ -99,7 +104,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -141,8 +150,10 @@ describe('StaffService', () => {
       createEmployee: jest.fn(),
     };
     databaseService = {
-      transaction: jest.fn(async (operation: (tx: DatabaseTransaction) => Promise<unknown>) =>
-        operation({ query: jest.fn() } as DatabaseTransaction)),
+      transaction: jest.fn(
+        async (operation: (tx: DatabaseTransaction) => Promise<unknown>) =>
+          operation({ query: jest.fn() } as DatabaseTransaction),
+      ),
     };
     auditLogService = {
       recordBestEffort: jest.fn(),

@@ -13,9 +13,14 @@ import { useBarberAdminTheme } from './theme';
 export interface BarberTopBarProps {
   query: string;
   onQueryChange: (value: string) => void;
+  placeholder?: string;
 }
 
-export default function BarberTopBar({ query, onQueryChange }: BarberTopBarProps) {
+export default function BarberTopBar({
+  query,
+  onQueryChange,
+  placeholder = 'Randevu, musteri veya personel ara...',
+}: BarberTopBarProps) {
   const { width } = useWindowDimensions();
   const theme = useBarberAdminTheme();
 
@@ -42,7 +47,7 @@ export default function BarberTopBar({ query, onQueryChange }: BarberTopBarProps
           <TextInput
             value={query}
             onChangeText={onQueryChange}
-            placeholder="Randevu, musteri veya personel ara..."
+            placeholder={placeholder}
             placeholderTextColor={hexToRgba(theme.onSurfaceVariant, 0.65)}
             selectionColor={theme.primary}
             className="flex-1 font-body text-sm"

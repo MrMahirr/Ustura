@@ -15,4 +15,7 @@ export class PublicSalonSummaryDto {
 
   @ApiProperty({ nullable: true })
   photoUrl: string | null;
+
+  @ApiProperty({ type: [String] })
+  galleryUrls: string[];
 }

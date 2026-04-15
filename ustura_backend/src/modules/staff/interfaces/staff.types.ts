@@ -1,11 +1,14 @@
 import { Role } from '../../../shared/auth/role.enum';
 import type { CreateEmployeeAccountDto } from '../dto/create-employee-account.dto';
+import type { UpdateManagedEmployeeAccountDto } from '../dto/update-managed-employee-account.dto';
 
 export interface StaffMember {
   id: string;
   userId: string;
   salonId: string;
   displayName: string;
+  email: string;
+  phone: string;
   role: Role.BARBER | Role.RECEPTIONIST;
   bio: string | null;
   photoUrl: string | null;
@@ -33,4 +36,8 @@ export interface UpdateStaffInput {
 export interface StaffProvisioningSelection {
   userId?: string;
   employee?: CreateEmployeeAccountDto;
+}
+
+export interface UpdateStaffAccountInput {
+  account?: UpdateManagedEmployeeAccountDto;
 }

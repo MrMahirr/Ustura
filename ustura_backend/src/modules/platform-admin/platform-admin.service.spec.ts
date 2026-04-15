@@ -109,7 +109,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -120,7 +124,9 @@ describe('PlatformAdminService', () => {
   let service: PlatformAdminService;
   let repository: jest.Mocked<PlatformAdminRepository>;
   let databaseService: jest.Mocked<Pick<DatabaseService, 'transaction'>>;
-  let userQueryService: jest.Mocked<Pick<UserService, 'findByEmailForPrincipal'>>;
+  let userQueryService: jest.Mocked<
+    Pick<UserService, 'findByEmailForPrincipal'>
+  >;
   let userService: jest.Mocked<Pick<UserService, 'createOwner'>>;
   let salonService: jest.Mocked<
     Pick<SalonService, 'prepareOwnedSalonInput' | 'createOwnedSalon'>
@@ -242,7 +248,10 @@ describe('PlatformAdminService', () => {
     expect(typeof storedHash).toBe('string');
     expect(storedHash.startsWith('$2')).toBe(true);
     expect(await bcrypt.compare('password123', storedHash)).toBe(false);
-    expect((result as OwnerApplicationRecord & { passwordHash?: string }).passwordHash).toBeUndefined();
+    expect(
+      (result as OwnerApplicationRecord & { passwordHash?: string })
+        .passwordHash,
+    ).toBeUndefined();
   });
 
   it('approves a pending owner application in a transaction and provisions owner plus salon', async () => {
@@ -363,7 +372,8 @@ describe('PlatformAdminService', () => {
 
     expect(capturedError).toBeInstanceOf(ConflictException);
     expect(getExceptionCode(capturedError)).toBe(
-      ERROR_CODES.PLATFORM_ADMIN.OWNER_APPLICATION_APPLICANT_EMAIL_USED_BY_STAFF,
+      ERROR_CODES.PLATFORM_ADMIN
+        .OWNER_APPLICATION_APPLICANT_EMAIL_USED_BY_STAFF,
     );
     expect(userService.createOwner).not.toHaveBeenCalled();
   });

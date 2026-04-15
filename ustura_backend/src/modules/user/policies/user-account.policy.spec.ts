@@ -32,7 +32,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -132,6 +136,8 @@ describe('UserAccountPolicy', () => {
     }
 
     expect(capturedError).toBeInstanceOf(BadRequestException);
-    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.PHONE_REQUIRED);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.PHONE_REQUIRED,
+    );
   });
 });

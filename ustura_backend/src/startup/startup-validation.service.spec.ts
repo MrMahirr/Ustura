@@ -32,7 +32,9 @@ describe('StartupValidationService', () => {
 
   it('bubbles readiness failures', async () => {
     healthServiceMock.assertReadyForStartup.mockRejectedValue(
-      new Error('Startup validation failed: database: PostgreSQL connection failed.'),
+      new Error(
+        'Startup validation failed: database: PostgreSQL connection failed.',
+      ),
     );
 
     await expect(service.onApplicationBootstrap()).rejects.toThrow(

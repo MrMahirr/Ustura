@@ -21,7 +21,9 @@ export class AdminReportsController {
   @Roles(Role.SUPER_ADMIN)
   @Get('dashboard')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Super admin rapor ozeti (KPI, grafik verileri, tablolar)' })
+  @ApiOperation({
+    summary: 'Super admin rapor ozeti (KPI, grafik verileri, tablolar)',
+  })
   @ApiOkResponse({ description: 'Dashboard payload' })
   async dashboard(@Query() query: AdminReportsQueryDto) {
     const period = query.period ?? 'month';

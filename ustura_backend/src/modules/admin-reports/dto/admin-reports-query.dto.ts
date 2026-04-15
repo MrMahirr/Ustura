@@ -6,7 +6,8 @@ export type AdminReportPeriod = 'today' | 'week' | 'month' | 'year';
 export class AdminReportsQueryDto {
   @ApiPropertyOptional({
     enum: ['today', 'week', 'month', 'year', 'custom'],
-    description: 'Rapor penceresi. custom + customFrom/customTo ileride genisletilebilir.',
+    description:
+      'Rapor penceresi. custom + customFrom/customTo ileride genisletilebilir.',
   })
   @IsOptional()
   @IsString()

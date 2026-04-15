@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ScrollView, View, Text, useWindowDimensions, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -7,7 +8,9 @@ import Footer from '@/components/landing/Footer';
 import AudienceSwitcher, { type Audience } from '@/components/hizmetler/AudienceSwitcher';
 import FeatureShowcase from '@/components/hizmetler/FeatureShowcase';
 import ServiceCard from '@/components/hizmetler/ServiceCard';
+import { buildLandingRegisterRoute } from '@/constants/routes';
 import Button from '@/components/ui/Button';
+import { buildBookingRoute } from '@/components/wizard/navigation';
 import { getLandingLayout } from '@/components/landing/layout';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -30,6 +33,7 @@ const OWNER_SERVICES = [
 ];
 
 export default function HizmetlerPage() {
+  const router = useRouter();
   const surface = useThemeColor({}, 'surface');
   const primary = useThemeColor({}, 'primary');
   const onSurface = useThemeColor({}, 'onSurface');
@@ -157,6 +161,11 @@ export default function HizmetlerPage() {
             <Button
               title={isCustomer ? 'Hemen Randevu Al' : 'Salonunu Kaydet'}
               variant={isCustomer ? 'primary' : 'outline'}
+              onPress={
+                isCustomer
+                  ? () => router.push(buildBookingRoute({ step: 'staff' }))
+                  : () => router.push(buildLandingRegisterRoute())
+              }
               style={{ paddingHorizontal: 48, paddingVertical: 20 }}
             />
             <View className="flex-row items-center gap-2">

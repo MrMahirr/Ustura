@@ -10,14 +10,29 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import StaffPhotoField from '@/components/panel/barber-admin/staff/StaffPhotoField';
+import { validateManagedImageFile } from '@/components/panel/barber-admin/shared/media-upload';
 import { useAuthContext } from '@/contexts/AuthContext';
+import {
+  removeMyStaffPhoto,
+  uploadMyStaffPhoto,
+  type StaffRecord,
+} from '@/services/staff.service';
 import { hexToRgba } from '@/utils/color';
 
 import { useBarberAdminTheme } from '../../theme';
 import SettingsSection from '../SettingsSection';
 import { getBarberInputStyle, getBarberInputWebStyle } from '../presentation';
 
-export default function AccountTab() {
+interface AccountTabProps {
+  assignment?: StaffRecord | null;
+  salonName?: string | null;
+}
+
+export default function AccountTab({
+  assignment = null,
+  salonName = null,
+}: AccountTabProps) {
   const { width } = useWindowDimensions();
   const theme = useBarberAdminTheme();
   const isMobile = width < 640;
@@ -30,6 +45,21 @@ export default function AccountTab() {
   const [pwError, setPwError] = React.useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = React.useState(false);
 
+  const [staffAssignment, setStaffAssignment] = React.useState<StaffRecord | null>(
+    assignment,
+  );
+  const [pendingPhotoFile, setPendingPhotoFile] = React.useState<File | null>(null);
+  const [photoSaving, setPhotoSaving] = React.useState(false);
+  const [photoError, setPhotoError] = React.useState<string | null>(null);
+  const [photoSuccess, setPhotoSuccess] = React.useState(false);
+
+  React.useEffect(() => {
+    setStaffAssignment(assignment);
+    setPendingPhotoFile(null);
+    setPhotoError(null);
+    setPhotoSuccess(false);
+  }, [assignment]);
+
   const inputStyle = getBarberInputStyle(theme);
   const webStyle = getBarberInputWebStyle();
 
@@ -37,17 +67,17 @@ export default function AccountTab() {
     owner: 'Salon Sahibi',
     barber: 'Berber',
     receptionist: 'Resepsiyonist',
-    super_admin: 'Platform Yöneticisi',
-    customer: 'Müşteri',
+    super_admin: 'Platform Yoneticisi',
+    customer: 'Musteri',
   };
 
   const handlePasswordChange = async () => {
     if (newPw !== confirmPw) {
-      setPwError('Yeni şifreler eşleşmiyor.');
+      setPwError('Yeni sifreler eslesmiyor.');
       return;
     }
     if (newPw.length < 6) {
-      setPwError('Yeni şifre en az 6 karakter olmalıdır.');
+      setPwError('Yeni sifre en az 6 karakter olmali.');
       return;
     }
     try {
@@ -61,9 +91,65 @@ export default function AccountTab() {
       setConfirmPw('');
       setTimeout(() => setPwSuccess(false), 3000);
     } catch (err: any) {
-      setPwError(err?.message ?? 'Şifre değiştirme başarısız oldu.');
+      setPwError(err?.message ?? 'Sifre degistirme basarisiz oldu.');
     } finally {
       setPwSaving(false);
+    }
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!staffAssignment) {
+      setPhotoError('Aktif personel atamasi bulunamadi.');
+      return;
+    }
+
+    const validationMessage = validateManagedImageFile(file);
+
+    if (validationMessage) {
+      setPhotoError(validationMessage);
+      return;
+    }
+
+    try {
+      setPhotoSaving(true);
+      setPhotoError(null);
+      setPhotoSuccess(false);
+      setPendingPhotoFile(file);
+      const updatedAssignment = await uploadMyStaffPhoto(staffAssignment.id, file);
+      setStaffAssignment(updatedAssignment);
+      setPhotoSuccess(true);
+      setTimeout(() => setPhotoSuccess(false), 3000);
+    } catch (error) {
+      setPhotoError(
+        error instanceof Error ? error.message : 'Profil fotografi yuklenemedi.',
+      );
+    } finally {
+      setPendingPhotoFile(null);
+      setPhotoSaving(false);
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    if (!staffAssignment?.photoUrl) {
+      setPhotoSuccess(false);
+      return;
+    }
+
+    try {
+      setPhotoSaving(true);
+      setPhotoError(null);
+      setPhotoSuccess(false);
+      setPendingPhotoFile(null);
+      const updatedAssignment = await removeMyStaffPhoto(staffAssignment.id);
+      setStaffAssignment(updatedAssignment);
+      setPhotoSuccess(true);
+      setTimeout(() => setPhotoSuccess(false), 3000);
+    } catch (error) {
+      setPhotoError(
+        error instanceof Error ? error.message : 'Profil fotografi kaldirilamadi.',
+      );
+    } finally {
+      setPhotoSaving(false);
     }
   };
 
@@ -74,22 +160,58 @@ export default function AccountTab() {
       <SettingsSection
         title="Profil Bilgileri"
         icon="badge"
-        description="Hesap bilgileriniz oturum verilerinizden alınmaktadır.">
-        <InfoRow label="Ad Soyad" value={user?.fullName ?? '—'} theme={theme} isMobile={isMobile} />
-        <InfoRow label="E-posta" value={user?.email ?? '—'} theme={theme} isMobile={isMobile} />
-        <InfoRow label="Telefon" value={user?.phone ?? '—'} theme={theme} isMobile={isMobile} />
+        description="Hesap bilgileriniz aktif oturum verinizden alinir.">
+        <InfoRow label="Ad Soyad" value={user?.fullName ?? '-'} theme={theme} isMobile={isMobile} />
+        <InfoRow label="E-posta" value={user?.email ?? '-'} theme={theme} isMobile={isMobile} />
+        <InfoRow label="Telefon" value={user?.phone ?? '-'} theme={theme} isMobile={isMobile} />
         <InfoRow
           label="Rol"
-          value={roleLabelMap[user?.role ?? ''] ?? user?.role ?? '—'}
+          value={roleLabelMap[user?.role ?? ''] ?? user?.role ?? '-'}
           theme={theme}
           isMobile={isMobile}
         />
+        {staffAssignment ? (
+          <InfoRow
+            label="Aktif Atama"
+            value={salonName ?? 'Personel atamasi'}
+            theme={theme}
+            isMobile={isMobile}
+          />
+        ) : null}
       </SettingsSection>
 
-      <SettingsSection title="Şifre Değiştir" icon="lock-outline">
+      {staffAssignment ? (
+        <SettingsSection
+          title="Profil Fotografi"
+          icon="portrait"
+          description="Bu gorsel salon detay sayfasindaki berber listesi ve personel kartlarina yansir.">
+          <StaffPhotoField
+            photoUrl={staffAssignment.photoUrl}
+            photoFile={pendingPhotoFile}
+            disabled={photoSaving}
+            errorText={photoError}
+            title="Profil fotografini surukle birak ile yukle"
+            description="Yuklenen fotograf aktif personel atamana lokal olarak baglanir ve vitrinde otomatik gorunur."
+            helperText="Yukleme tamamlandiginda salon detay sayfasindaki personel listesi otomatik olarak yeni fotografi kullanir."
+            onFileChange={handlePhotoUpload}
+            onRemove={handlePhotoRemove}
+          />
+
+          {photoSuccess ? (
+            <View className="flex-row items-center gap-2">
+              <MaterialIcons name="check-circle" size={16} color={theme.success} />
+              <Text style={{ color: theme.success, fontSize: 12, fontFamily: 'Manrope-Bold' }}>
+                Profil fotografi guncellendi.
+              </Text>
+            </View>
+          ) : null}
+        </SettingsSection>
+      ) : null}
+
+      <SettingsSection title="Sifre Degistir" icon="lock-outline">
         <View className="gap-3">
           <PasswordField
-            label="Mevcut Şifre"
+            label="Mevcut Sifre"
             value={currentPw}
             onChange={setCurrentPw}
             inputStyle={inputStyle}
@@ -99,7 +221,7 @@ export default function AccountTab() {
           <View style={{ flexDirection: isMobile ? 'column' : 'row', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <PasswordField
-                label="Yeni Şifre"
+                label="Yeni Sifre"
                 value={newPw}
                 onChange={setNewPw}
                 inputStyle={inputStyle}
@@ -109,7 +231,7 @@ export default function AccountTab() {
             </View>
             <View style={{ flex: 1 }}>
               <PasswordField
-                label="Yeni Şifre (Tekrar)"
+                label="Yeni Sifre (Tekrar)"
                 value={confirmPw}
                 onChange={setConfirmPw}
                 inputStyle={inputStyle}
@@ -129,7 +251,7 @@ export default function AccountTab() {
           <View className="flex-row items-center gap-2">
             <MaterialIcons name="check-circle" size={16} color={theme.success} />
             <Text style={{ color: theme.success, fontSize: 12, fontFamily: 'Manrope-Bold' }}>
-              Şifre başarıyla değiştirildi.
+              Sifre basariyla degistirildi.
             </Text>
           </View>
         )}
@@ -157,7 +279,7 @@ export default function AccountTab() {
               fontFamily: 'Manrope-Bold',
               fontSize: 13,
             }}>
-            Şifreyi Güncelle
+            Sifreyi Guncelle
           </Text>
         </Pressable>
       </SettingsSection>
@@ -256,7 +378,7 @@ function PasswordField({
         value={value}
         onChangeText={onChange}
         secureTextEntry
-        placeholder="••••••"
+        placeholder="******"
         placeholderTextColor={hexToRgba(theme.onSurfaceVariant, 0.3)}
         style={[inputStyle, webStyle]}
       />

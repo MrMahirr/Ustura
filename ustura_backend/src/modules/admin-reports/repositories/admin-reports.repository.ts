@@ -112,9 +112,10 @@ export class AdminReportsRepository {
     from: Date,
     to: Date,
   ): Promise<{ day: string; cnt: number }[]> {
-    const result = await this.databaseService.query<{ day: Date; cnt: string }>({
-      name: 'admin-reports.reservations-daily',
-      text: `
+    const result = await this.databaseService.query<{ day: Date; cnt: string }>(
+      {
+        name: 'admin-reports.reservations-daily',
+        text: `
         SELECT date_trunc('day', slot_start AT TIME ZONE 'UTC')::date AS day,
                COUNT(*)::text AS cnt
         FROM reservations
@@ -124,8 +125,9 @@ export class AdminReportsRepository {
         GROUP BY 1
         ORDER BY 1
       `,
-      values: [from, to],
-    });
+        values: [from, to],
+      },
+    );
     return result.rows.map((r) => ({
       day: r.day.toISOString().slice(0, 10),
       cnt: parseInt(r.cnt, 10),
@@ -201,9 +203,17 @@ export class AdminReportsRepository {
     }));
   }
 
-  async getSalonCountsByCity(limit: number): Promise<{ city: string; cnt: number }[]> {
-    const safeLimit = Math.min(100, Math.max(1, Math.floor(Number(limit)) || 8));
-    const result = await this.databaseService.query<{ city: string; cnt: string }>({
+  async getSalonCountsByCity(
+    limit: number,
+  ): Promise<{ city: string; cnt: number }[]> {
+    const safeLimit = Math.min(
+      100,
+      Math.max(1, Math.floor(Number(limit)) || 8),
+    );
+    const result = await this.databaseService.query<{
+      city: string;
+      cnt: string;
+    }>({
       text: `
         SELECT COALESCE(NULLIF(TRIM(s.city), ''), 'Bilinmiyor') AS city,
                COUNT(*)::text AS cnt
@@ -221,10 +231,7 @@ export class AdminReportsRepository {
     }));
   }
 
-  async getReservationSlotStartsBetween(
-    from: Date,
-    to: Date,
-  ): Promise<Date[]> {
+  async getReservationSlotStartsBetween(from: Date, to: Date): Promise<Date[]> {
     const result = await this.databaseService.query<{ slot_start: Date }>({
       name: 'admin-reports.reservation-slots',
       text: `

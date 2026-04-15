@@ -5,6 +5,7 @@ import type { WorkingHoursEntry } from '@/services/salon.service';
 export type BarberSettingsTabId =
   | 'salon-info'
   | 'storefront'
+  | 'services'
   | 'working-hours'
   | 'notifications'
   | 'account';

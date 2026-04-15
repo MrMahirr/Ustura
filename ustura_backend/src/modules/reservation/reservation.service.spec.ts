@@ -1,4 +1,8 @@
-import { ConflictException, ForbiddenException, HttpException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+} from '@nestjs/common';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { Role } from '../../shared/auth/role.enum';
 import { DatabaseConstraintViolationError } from '../../database/database.errors';
@@ -30,7 +34,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -680,7 +688,9 @@ describe('ReservationService', () => {
         cancelledAt: null,
         cancelledByUserId: null,
       } as any);
-      reservationRepository.cancel.mockResolvedValue(cancelledReservation as any);
+      reservationRepository.cancel.mockResolvedValue(
+        cancelledReservation as any,
+      );
 
       // Cancel the first reservation
       await service.cancel(createCustomerPayload(), 'reservation-1');

@@ -125,4 +125,3 @@ export interface PackageApprovalRow extends QueryResultRow {
   staff_count: number;
   reservation_count: number;
 }
-

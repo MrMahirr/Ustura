@@ -26,6 +26,8 @@ const REQUIRED_MIGRATIONS = [
   '016_owner_applications_review_state_allow_null_salon.sql',
   '017_personnel_must_change_password.sql',
   '018_fix_seed_uuid_format.sql',
+  '019_add_salon_gallery_urls.sql',
+  '020_create_salon_services.sql',
 ] as const;
 
 const REQUIRED_IDENTITY_TABLES = [
@@ -172,19 +174,16 @@ export class HealthService {
     const redis = await this.checkRedisConnectivity();
 
     return {
-      status:
-        [
-          database,
-          schemaMigrations,
-          usersTableSchema,
-          reservationsTableSchema,
-          refreshTokensTableSchema,
-          redis,
-        ].every(
-          (check) => check.status === 'up',
-        )
-          ? 'ready'
-          : 'not_ready',
+      status: [
+        database,
+        schemaMigrations,
+        usersTableSchema,
+        reservationsTableSchema,
+        refreshTokensTableSchema,
+        redis,
+      ].every((check) => check.status === 'up')
+        ? 'ready'
+        : 'not_ready',
       timestamp: new Date().toISOString(),
       checks: {
         database,
@@ -208,9 +207,7 @@ export class HealthService {
       .filter(([, check]) => check.status === 'down')
       .map(([name, check]) => `${name}: ${check.message}`);
 
-    throw new Error(
-      `Startup validation failed: ${failedChecks.join(' | ')}`,
-    );
+    throw new Error(`Startup validation failed: ${failedChecks.join(' | ')}`);
   }
 
   private async checkDatabaseConnectivity(): Promise<HealthCheckResult> {
@@ -301,9 +298,10 @@ export class HealthService {
   private async checkUsersTableSchema(): Promise<HealthCheckResult> {
     try {
       for (const spec of REQUIRED_IDENTITY_TABLES) {
-        const result = await this.databaseService.query<InformationSchemaColumnRow>({
-          name: `health.identity-table-columns-${spec.table}`,
-          text: `
+        const result =
+          await this.databaseService.query<InformationSchemaColumnRow>({
+            name: `health.identity-table-columns-${spec.table}`,
+            text: `
             SELECT
               column_name,
               is_nullable
@@ -312,8 +310,8 @@ export class HealthService {
               AND table_name = $1
               AND column_name = ANY($2::text[])
           `,
-          values: [spec.table, spec.columns.map((column) => column.name)],
-        });
+            values: [spec.table, spec.columns.map((column) => column.name)],
+          });
         const columnsByName = new Map(
           result.rows.map((row) => [row.column_name, row.is_nullable]),
         );
@@ -329,7 +327,9 @@ export class HealthService {
         }
 
         const invalidNullability = spec.columns
-          .filter((column) => columnsByName.get(column.name) !== column.isNullable)
+          .filter(
+            (column) => columnsByName.get(column.name) !== column.isNullable,
+          )
           .map((column) => `${spec.table}.${column.name} nullability mismatch`);
 
         if (invalidNullability.length > 0) {
@@ -349,7 +349,9 @@ export class HealthService {
           `,
           values: [spec.table],
         });
-        const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
+        const indexNames = new Set(
+          indexesResult.rows.map((row) => row.indexname),
+        );
         const missingIndexes = spec.indexes.filter(
           (indexName) => !indexNames.has(indexName),
         );
@@ -364,7 +366,8 @@ export class HealthService {
 
       return {
         status: 'up',
-        message: 'Identity tables (customers, personnel, platform_admins) are up to date.',
+        message:
+          'Identity tables (customers, personnel, platform_admins) are up to date.',
       };
     } catch (error) {
       return {
@@ -407,9 +410,11 @@ export class HealthService {
         };
       }
 
-      const invalidNullability = REQUIRED_RESERVATION_COLUMNS.filter((column) => {
-        return columnsByName.get(column.name) !== column.isNullable;
-      }).map((column) => `${column.name} should be nullable`);
+      const invalidNullability = REQUIRED_RESERVATION_COLUMNS.filter(
+        (column) => {
+          return columnsByName.get(column.name) !== column.isNullable;
+        },
+      ).map((column) => `${column.name} should be nullable`);
 
       if (invalidNullability.length > 0) {
         return {
@@ -459,7 +464,9 @@ export class HealthService {
             AND tablename = 'reservations'
         `,
       });
-      const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
+      const indexNames = new Set(
+        indexesResult.rows.map((row) => row.indexname),
+      );
       const missingIndexes = REQUIRED_RESERVATION_INDEXES.filter(
         (indexName) => !indexNames.has(indexName),
       );
@@ -517,9 +524,10 @@ export class HealthService {
 
   private async checkRefreshTokensTableSchema(): Promise<HealthCheckResult> {
     try {
-      const result = await this.databaseService.query<InformationSchemaColumnRow>({
-        name: 'health.refresh-tokens-table-columns',
-        text: `
+      const result =
+        await this.databaseService.query<InformationSchemaColumnRow>({
+          name: 'health.refresh-tokens-table-columns',
+          text: `
           SELECT
             column_name,
             is_nullable
@@ -528,8 +536,8 @@ export class HealthService {
             AND table_name = 'refresh_tokens'
             AND column_name = ANY($1::text[])
         `,
-        values: [REQUIRED_REFRESH_TOKEN_COLUMNS.map((column) => column.name)],
-      });
+          values: [REQUIRED_REFRESH_TOKEN_COLUMNS.map((column) => column.name)],
+        });
       const columnsByName = new Map(
         result.rows.map((row) => [row.column_name, row.is_nullable]),
       );
@@ -544,9 +552,11 @@ export class HealthService {
         };
       }
 
-      const invalidNullability = REQUIRED_REFRESH_TOKEN_COLUMNS.filter((column) => {
-        return columnsByName.get(column.name) !== column.isNullable;
-      }).map((column) => `${column.name} nullability mismatch`);
+      const invalidNullability = REQUIRED_REFRESH_TOKEN_COLUMNS.filter(
+        (column) => {
+          return columnsByName.get(column.name) !== column.isNullable;
+        },
+      ).map((column) => `${column.name} nullability mismatch`);
 
       if (invalidNullability.length > 0) {
         return {
@@ -564,7 +574,9 @@ export class HealthService {
             AND tablename = 'refresh_tokens'
         `,
       });
-      const indexNames = new Set(indexesResult.rows.map((row) => row.indexname));
+      const indexNames = new Set(
+        indexesResult.rows.map((row) => row.indexname),
+      );
       const missingIndexes = REQUIRED_REFRESH_TOKEN_INDEXES.filter(
         (indexName) => !indexNames.has(indexName),
       );

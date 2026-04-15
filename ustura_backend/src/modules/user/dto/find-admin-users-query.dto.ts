@@ -1,8 +1,5 @@
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import type {
-  AdminUserRole,
-  AdminUserStatus,
-} from '../interfaces/user.types';
+import type { AdminUserRole, AdminUserStatus } from '../interfaces/user.types';
 
 export class FindAdminUsersQueryDto {
   @IsOptional()

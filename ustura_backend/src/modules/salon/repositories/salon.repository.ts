@@ -35,6 +35,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -93,6 +94,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -166,6 +168,7 @@ export class SalonRepository {
           s.city,
           s.district,
           s.photo_url,
+          s.gallery_urls,
           s.is_active,
           s.created_at,
           s.updated_at
@@ -180,7 +183,9 @@ export class SalonRepository {
     });
 
     return {
-      items: result.rows.map((row) => this.mapAdminRow(row) as AdminSalonSummary),
+      items: result.rows.map(
+        (row) => this.mapAdminRow(row) as AdminSalonSummary,
+      ),
       pagination: {
         page,
         pageSize,
@@ -206,6 +211,7 @@ export class SalonRepository {
           s.city,
           s.district,
           s.photo_url,
+          s.gallery_urls,
           s.is_active,
           s.created_at,
           s.updated_at
@@ -234,6 +240,7 @@ export class SalonRepository {
           s.city,
           s.district,
           s.photo_url,
+          s.gallery_urls,
           s.working_hours,
           s.is_active,
           s.created_at,
@@ -373,6 +380,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -408,9 +416,10 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING
           id,
           owner_id,
@@ -419,6 +428,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -431,6 +441,7 @@ export class SalonRepository {
         input.city,
         input.district ?? null,
         input.photoUrl ?? null,
+        JSON.stringify(input.galleryUrls ?? []),
         input.workingHours,
       ],
     });
@@ -471,6 +482,11 @@ export class SalonRepository {
       updates.push(`photo_url = $${values.length}`);
     }
 
+    if (input.galleryUrls !== undefined) {
+      values.push(JSON.stringify(input.galleryUrls));
+      updates.push(`gallery_urls = $${values.length}`);
+    }
+
     if (input.workingHours !== undefined) {
       values.push(input.workingHours);
       updates.push(`working_hours = $${values.length}`);
@@ -500,6 +516,7 @@ export class SalonRepository {
           city,
           district,
           photo_url,
+          gallery_urls,
           working_hours,
           is_active,
           created_at,
@@ -537,6 +554,7 @@ export class SalonRepository {
       city: row.city,
       district: row.district,
       photoUrl: row.photo_url,
+      galleryUrls: row.gallery_urls ?? [],
       workingHours: row.working_hours,
       isActive: row.is_active,
       createdAt: row.created_at,
@@ -559,13 +577,16 @@ export class SalonRepository {
       city: row.city,
       district: row.district,
       photoUrl: row.photo_url,
+      galleryUrls: row.gallery_urls ?? [],
       isActive: row.is_active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
   }
 
-  private mapAdminDetailRow(row?: AdminSalonDetailRow): AdminSalonDetail | null {
+  private mapAdminDetailRow(
+    row?: AdminSalonDetailRow,
+  ): AdminSalonDetail | null {
     if (!row) {
       return null;
     }
@@ -672,6 +693,7 @@ interface SalonRow extends QueryResultRow {
   city: string;
   district: string | null;
   photo_url: string | null;
+  gallery_urls: string[] | null;
   working_hours: WorkingHours;
   is_active: boolean;
   created_at: Date;
@@ -696,6 +718,7 @@ interface AdminSalonRow extends QueryResultRow {
   city: string;
   district: string | null;
   photo_url: string | null;
+  gallery_urls: string[] | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;

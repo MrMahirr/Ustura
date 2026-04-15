@@ -86,7 +86,9 @@ export class SalonQueryService implements SalonCatalogServiceContract {
     this.salonPolicy.assertCanManage(currentUser);
 
     const salons = await this.salonRepository.findByOwnerId(currentUser.sub);
-    return salons.map((salon) => this.salonProjectionService.toOwnedSummary(salon));
+    return salons.map((salon) =>
+      this.salonProjectionService.toOwnedSummary(salon),
+    );
   }
 
   async findPublicById(id: string): Promise<SalonPublicDetail> {

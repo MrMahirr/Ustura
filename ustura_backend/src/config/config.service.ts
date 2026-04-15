@@ -86,7 +86,9 @@ export class AppConfigService {
     this.emailJs = Object.freeze({
       serviceId: this.getValue<string>('EMAILJS_SERVICE_ID'),
       templateApproval: this.getValue<string>('EMAILJS_TEMPLATE_APPROVAL'),
-      templateStaffWelcome: this.getValue<string>('EMAILJS_TEMPLATE_STAFF_WELCOME'),
+      templateStaffWelcome: this.getValue<string>(
+        'EMAILJS_TEMPLATE_STAFF_WELCOME',
+      ),
       publicKey: this.getValue<string>('EMAILJS_PUBLIC_KEY'),
       privateKey: this.getValue<string>('EMAILJS_PRIVATE_KEY'),
     });

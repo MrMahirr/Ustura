@@ -9,7 +9,12 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -42,8 +47,16 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List users for super admin management' })
   @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({ name: 'role', required: false, enum: ['manager', 'owner', 'employee'] })
-  @ApiQuery({ name: 'status', required: false, enum: ['active', 'busy', 'inactive', 'suspended'] })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    enum: ['manager', 'owner', 'employee'],
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['active', 'busy', 'inactive', 'suspended'],
+  })
   @ApiQuery({ name: 'salonId', required: false, type: String, format: 'uuid' })
   @ApiQuery({ name: 'city', required: false, type: String })
   async findAdminUsers(@Query() query: FindAdminUsersQueryDto) {
@@ -63,7 +76,10 @@ export class UserController {
   @Roles(Role.SUPER_ADMIN)
   @Get('admin/:id/detail')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Get enriched admin user detail with stats, reservations, activity, schedule' })
+  @ApiOperation({
+    summary:
+      'Get enriched admin user detail with stats, reservations, activity, schedule',
+  })
   async findAdminUserDetail(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.userAdminQueryService.findAdminUserDetail(id);
   }
@@ -72,7 +88,9 @@ export class UserController {
   @Roles(Role.SUPER_ADMIN)
   @Patch('admin/:id/status')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Activate or suspend a personnel or platform admin account' })
+  @ApiOperation({
+    summary: 'Activate or suspend a personnel or platform admin account',
+  })
   async patchAdminUserStatus(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: AdminPatchUserStatusDto,
@@ -90,7 +108,9 @@ export class UserController {
   @Roles(Role.SUPER_ADMIN)
   @Patch('admin/:id/profile')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Update name/phone of a personnel or platform admin account' })
+  @ApiOperation({
+    summary: 'Update name/phone of a personnel or platform admin account',
+  })
   async patchAdminUserProfile(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: AdminUpdateUserProfileDto,

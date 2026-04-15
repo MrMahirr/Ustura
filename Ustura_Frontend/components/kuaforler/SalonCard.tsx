@@ -15,10 +15,20 @@ export interface SalonCardProps {
   reviewCount: number;
   imageUrl: string;
   barbers: string[];
+  onPress?: () => void;
   onBookPress?: () => void;
 }
 
-export default function SalonCard({ name, location, rating, reviewCount, imageUrl, barbers, onBookPress }: SalonCardProps) {
+export default function SalonCard({
+  name,
+  location,
+  rating,
+  reviewCount,
+  imageUrl,
+  barbers,
+  onPress,
+  onBookPress,
+}: SalonCardProps) {
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const surfaceContainerHighest = useThemeColor({}, 'surfaceContainerHighest');
   const surfaceContainerLowest = useThemeColor({}, 'surfaceContainerLowest');
@@ -47,7 +57,11 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
   };
 
   return (
-    <Pressable className="h-full" onHoverIn={handleHoverIn} onHoverOut={handleHoverOut}>
+    <Pressable
+      className="h-full"
+      onPress={onPress}
+      onHoverIn={handleHoverIn}
+      onHoverOut={handleHoverOut}>
       <Animated.View
         style={[
           {
@@ -122,17 +136,15 @@ export default function SalonCard({ name, location, rating, reviewCount, imageUr
             </View>
           </View>
 
-          <View className="mb-6 flex-row flex-wrap gap-2">
-            {barbers.map((barber) => (
-              <View key={barber} className="rounded-full px-2 py-1" style={{ backgroundColor: surfaceContainerHighest }}>
-                <Text className="font-body text-[10px] font-bold uppercase tracking-[1px]" style={{ color: onSurfaceVariant }}>
-                  {barber}
-                </Text>
-              </View>
-            ))}
-          </View>
+
 
           <View className="mt-auto">
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="font-label text-[11px] uppercase tracking-[1.8px]" style={{ color: onSurfaceVariant }}>
+                Detayi incele
+              </Text>
+              <MaterialIcons name="arrow-forward" size={18} color={primary} />
+            </View>
             <Button
               title="Randevu Al"
               onPress={onBookPress}

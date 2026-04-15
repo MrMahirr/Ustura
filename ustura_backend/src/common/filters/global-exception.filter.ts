@@ -161,7 +161,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return fallbackMessage;
   }
 
-  private resolveHttpExceptionCode(response: string | object): string | undefined {
+  private resolveHttpExceptionCode(
+    response: string | object,
+  ): string | undefined {
     if (typeof response !== 'object' || response == null) {
       return undefined;
     }

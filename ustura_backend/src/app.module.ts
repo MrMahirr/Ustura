@@ -17,6 +17,7 @@ import { StaffModule } from './modules/staff/staff.module';
 import { ReservationModule } from './modules/reservation/reservation.module';
 import { PackageModule } from './modules/package/package.module';
 import { AdminReportsModule } from './modules/admin-reports/admin-reports.module';
+import { SalonServiceModule } from './modules/salon-service/salon-service.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { StartupValidationService } from './startup/startup-validation.service';
 
@@ -45,6 +46,7 @@ import { StartupValidationService } from './startup/startup-validation.service';
     ReservationModule,
     PackageModule,
     AdminReportsModule,
+    SalonServiceModule,
   ],
   controllers: [],
   providers: [

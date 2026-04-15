@@ -3,7 +3,6 @@ import type { JwtPayload } from '../../shared/auth/jwt-payload.interface';
 import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 import {
   AuditLogListResult,
-  AuditLogRecord,
   CreateAuditLogInput,
 } from './interfaces/audit-log.types';
 import { AuditLogPolicy } from './policies/audit-log.policy';
@@ -23,9 +22,7 @@ export class AuditLogService {
       const message =
         error instanceof Error ? error.message : 'Unknown audit logging error.';
 
-      this.logger.warn(
-        `Audit log write skipped: ${message}`,
-      );
+      this.logger.warn(`Audit log write skipped: ${message}`);
     });
   }
 

@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, HttpException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ERROR_CODES } from '../../shared/errors/error-codes';
 import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { Role } from '../../shared/auth/role.enum';
@@ -31,7 +36,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 
@@ -105,7 +114,9 @@ describe('UserProfileService', () => {
     }
 
     expect(capturedError).toBeInstanceOf(BadRequestException);
-    expect(getExceptionCode(capturedError)).toBe(ERROR_CODES.USER.PHONE_REQUIRED);
+    expect(getExceptionCode(capturedError)).toBe(
+      ERROR_CODES.USER.PHONE_REQUIRED,
+    );
     expect(userRepository.findByPhoneForPrincipal).not.toHaveBeenCalled();
     expect(userRepository.updateProfile).not.toHaveBeenCalled();
   });

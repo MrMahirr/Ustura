@@ -42,7 +42,11 @@ function formatInt(n: number): string {
   return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(n);
 }
 
-function deltaLabel(curr: number, prev: number, percentMode: boolean): { label: string; positive: boolean } {
+function deltaLabel(
+  curr: number,
+  prev: number,
+  percentMode: boolean,
+): { label: string; positive: boolean } {
   if (prev <= 0 && curr <= 0) {
     return { label: '0%', positive: true };
   }
@@ -75,7 +79,17 @@ function resolveReportWindow(period: AdminReportPeriod | 'custom'): {
 
   switch (period) {
     case 'today':
-      from = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate(), 0, 0, 0, 0));
+      from = new Date(
+        Date.UTC(
+          to.getUTCFullYear(),
+          to.getUTCMonth(),
+          to.getUTCDate(),
+          0,
+          0,
+          0,
+          0,
+        ),
+      );
       break;
     case 'week':
       from.setTime(to.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -86,7 +100,9 @@ function resolveReportWindow(period: AdminReportPeriod | 'custom'): {
     case 'month':
     case 'custom':
     default:
-      from = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), 1, 0, 0, 0, 0));
+      from = new Date(
+        Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), 1, 0, 0, 0, 0),
+      );
       break;
   }
 
@@ -119,7 +135,9 @@ function bucketReservationsIntoSegments(
 function buildHeatmap(slots: Date[]): number[][] {
   const cols = 53;
   const rows = 7;
-  const matrix = Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
+  const matrix = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => 0),
+  );
   const end = new Date();
   const start = new Date(end.getTime() - cols * 7 * 24 * 60 * 60 * 1000);
   start.setUTCHours(0, 0, 0, 0);
@@ -130,7 +148,7 @@ function buildHeatmap(slots: Date[]): number[][] {
     const idx = Math.floor((s.getTime() - start.getTime()) / dayMs);
     const col = Math.min(cols - 1, Math.max(0, idx));
     const dow = (s.getUTCDay() + 6) % 7;
-    matrix[dow]![col] += 1;
+    matrix[dow][col] += 1;
   }
 
   const flat = matrix.flat();
@@ -149,7 +167,10 @@ function buildHeatmap(slots: Date[]): number[][] {
 
 function buildHourly(slots: Date[]): AdminReportHourlyDto[] {
   const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-  const counts = Object.fromEntries(hours.map((h) => [h, 0])) as Record<number, number>;
+  const counts = Object.fromEntries(hours.map((h) => [h, 0])) as Record<
+    number,
+    number
+  >;
   for (const s of slots) {
     const h = s.getUTCHours();
     if (h in counts) counts[h] += 1;
@@ -298,8 +319,18 @@ export class AdminReportsService {
       }),
     ]);
 
-    const currSeg = bucketReservationsIntoSegments(slotsCurr, from, to, segments);
-    const prevSeg = bucketReservationsIntoSegments(slotsPrev, prevFrom, prevTo, segments);
+    const currSeg = bucketReservationsIntoSegments(
+      slotsCurr,
+      from,
+      to,
+      segments,
+    );
+    const prevSeg = bucketReservationsIntoSegments(
+      slotsPrev,
+      prevFrom,
+      prevTo,
+      segments,
+    );
 
     const revenueSeries: AdminReportRevenuePointDto[] = currSeg.map((c, i) => ({
       day: i + 1,
@@ -318,15 +349,18 @@ export class AdminReportsService {
 
     const maxBas = Math.max(1, ...growthRows.map((r) => r.basvuru));
     const maxOnay = Math.max(1, ...growthRows.map((r) => r.onay));
-    const salonGrowth: AdminReportSalonGrowthPointDto[] = growthRows.map((r, idx) => {
-      const d = new Date(r.ym);
-      return {
-        month: idx,
-        monthLabel: MONTH_LABELS_TR[d.getUTCMonth()] ?? String(d.getUTCMonth() + 1),
-        basvuru: Math.round((r.basvuru / maxBas) * 100),
-        onay: Math.round((r.onay / maxOnay) * 100),
-      };
-    });
+    const salonGrowth: AdminReportSalonGrowthPointDto[] = growthRows.map(
+      (r, idx) => {
+        const d = new Date(r.ym);
+        return {
+          month: idx,
+          monthLabel:
+            MONTH_LABELS_TR[d.getUTCMonth()] ?? String(d.getUTCMonth() + 1),
+          basvuru: Math.round((r.basvuru / maxBas) * 100),
+          onay: Math.round((r.onay / maxOnay) * 100),
+        };
+      },
+    );
 
     const maxCity = Math.max(1, ...cityRows.map((c) => c.cnt));
     const cities: AdminReportCityDto[] = cityRows.map((c) => ({
@@ -338,7 +372,11 @@ export class AdminReportsService {
     const heatmap = buildHeatmap(slotsHeatmap);
     const hourly = buildHourly(slotsCurr);
 
-    const dRevenue = deltaLabel(Math.round(newMrrCurr), Math.round(newMrrPrev), true);
+    const dRevenue = deltaLabel(
+      Math.round(newMrrCurr),
+      Math.round(newMrrPrev),
+      true,
+    );
     const dSalonNew = deltaLabel(salonsCreatedCurr, salonsCreatedPrev, false);
     const dRes = deltaLabel(resCurr, resPrev, true);
     const dUsers = deltaLabel(newCustomersCurr, newCustomersPrev, true);
@@ -423,15 +461,16 @@ export class AdminReportsService {
     };
   }
 
-  private buildSystem(readiness: Awaited<
-    ReturnType<HealthService['getReadiness']>
-  > | null): AdminReportSystemDto {
+  private buildSystem(
+    readiness: Awaited<ReturnType<HealthService['getReadiness']>> | null,
+  ): AdminReportSystemDto {
     if (!readiness || readiness.status !== 'ready') {
       return { apiUptimePct: 96.5, responseTimeMs: 320, errorRatePct: 1.2 };
     }
     const checks = Object.values(readiness.checks);
     const up = checks.filter((c) => c.status === 'up').length;
-    const apiUptimePct = Math.round((up / Math.max(1, checks.length)) * 1000) / 10;
+    const apiUptimePct =
+      Math.round((up / Math.max(1, checks.length)) * 1000) / 10;
     const errorRatePct = up === checks.length ? 0.2 : 2.5;
     return { apiUptimePct, responseTimeMs: 187, errorRatePct };
   }

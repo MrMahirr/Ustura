@@ -24,6 +24,7 @@ export default function Footer() {
     <View
       className="border-t py-7"
       style={{
+        marginTop: 'auto',
         backgroundColor: surfaceContainerLow,
         borderTopColor: outlineVariant,
         paddingHorizontal: layout.horizontalPadding,

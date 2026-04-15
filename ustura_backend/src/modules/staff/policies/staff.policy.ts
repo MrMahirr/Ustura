@@ -46,7 +46,8 @@ export class StaffPolicy {
     userId?: string;
     employee?: object;
   }): void {
-    const hasUserId = typeof input.userId === 'string' && input.userId.trim().length > 0;
+    const hasUserId =
+      typeof input.userId === 'string' && input.userId.trim().length > 0;
     const hasEmployee = input.employee !== undefined;
 
     if (hasUserId === hasEmployee) {

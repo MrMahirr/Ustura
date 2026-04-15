@@ -34,7 +34,9 @@ export class NotificationService {
   ): void {
     this.runBestEffort('reservation.created', () =>
       this.sendMessage(
-        this.notificationTemplateService.buildReservationCreatedMessage(payload),
+        this.notificationTemplateService.buildReservationCreatedMessage(
+          payload,
+        ),
       ),
     );
   }
@@ -44,7 +46,9 @@ export class NotificationService {
   ): void {
     this.runBestEffort('reservation.cancelled', () =>
       this.sendMessage(
-        this.notificationTemplateService.buildReservationCancelledMessage(payload),
+        this.notificationTemplateService.buildReservationCancelledMessage(
+          payload,
+        ),
       ),
     );
   }
@@ -131,10 +135,7 @@ export class NotificationService {
     );
   }
 
-  private runBestEffort(
-    operation: string,
-    work: () => Promise<void>,
-  ): void {
+  private runBestEffort(operation: string, work: () => Promise<void>): void {
     void work().catch((error: unknown) => {
       const message =
         error instanceof Error ? error.message : 'Unknown notification error.';

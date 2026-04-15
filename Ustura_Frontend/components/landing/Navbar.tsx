@@ -6,6 +6,8 @@ import Button from '@/components/ui/Button';
 import LandingBurgerMenu, { type LandingBurgerMenuItem } from '@/components/landing/LandingBurgerMenu';
 import SessionProfileCard from '@/components/layout/SessionProfileCard';
 import ThemeToggleButton from '@/components/ui/ThemeToggleButton';
+import { buildBookingRoute } from '@/components/wizard/navigation';
+import { buildLandingRegisterRoute } from '@/constants/routes';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppTheme } from '@/contexts/ThemeContext';
@@ -121,14 +123,11 @@ export default function Navbar({ onRegisterPress }: NavbarProps) {
       return;
     }
 
-    router.push({
-      pathname: '/(public)',
-      params: { scrollTo: 'register' },
-    });
+    router.push(buildLandingRegisterRoute());
   };
 
   const handleBookingPress = () => {
-    router.push('/(public)/kuaforler');
+    router.push(buildBookingRoute({ step: 'staff' }));
   };
 
   return (

@@ -101,8 +101,7 @@ export class AuthService {
     loginDto: LoginDto,
     clientContext?: SessionClientContext,
   ): Promise<AuthSessionResponse> {
-    const principalKind =
-      loginDto.principalKind ?? PrincipalKind.CUSTOMER;
+    const principalKind = loginDto.principalKind ?? PrincipalKind.CUSTOMER;
     const user = await this.userQueryService.findByEmailForPrincipal(
       loginDto.email,
       principalKind,
@@ -259,11 +258,10 @@ export class AuthService {
       await this.googleWebTokenVerifierService.verifyCustomerAccessToken(
         googleWebCustomerAuthDto.accessToken,
       );
-    const existingUser =
-      await this.userQueryService.findByEmailForPrincipal(
-        googleIdentity.email,
-        PrincipalKind.CUSTOMER,
-      );
+    const existingUser = await this.userQueryService.findByEmailForPrincipal(
+      googleIdentity.email,
+      PrincipalKind.CUSTOMER,
+    );
 
     if (existingUser) {
       this.assertCustomerGoogleEligibility(existingUser);
@@ -322,8 +320,7 @@ export class AuthService {
     }
 
     const verifiedPrincipalKind =
-      verifiedToken.principalKind ??
-      roleToPrincipalKind(verifiedToken.role);
+      verifiedToken.principalKind ?? roleToPrincipalKind(verifiedToken.role);
 
     if (
       storedToken.principalId !== verifiedToken.sub ||
@@ -349,26 +346,28 @@ export class AuthService {
       throw refreshTokenInvalidError();
     }
 
-    const session = await this.databaseService.transaction(async (transaction) => {
-      const revoked = await this.authRepository.revokeToken(
-        tokenHash,
-        {
-          id: user.id,
-          kind: verifiedPrincipalKind,
-        },
-        transaction,
-      );
+    const session = await this.databaseService.transaction(
+      async (transaction) => {
+        const revoked = await this.authRepository.revokeToken(
+          tokenHash,
+          {
+            id: user.id,
+            kind: verifiedPrincipalKind,
+          },
+          transaction,
+        );
 
-      if (!revoked) {
-        throw refreshTokenInvalidError();
-      }
+        if (!revoked) {
+          throw refreshTokenInvalidError();
+        }
 
-      return this.createSession(user, {
-        clientContext,
-        rotatedFromTokenId: storedToken.id,
-        executor: transaction,
-      });
-    });
+        return this.createSession(user, {
+          clientContext,
+          rotatedFromTokenId: storedToken.id,
+          executor: transaction,
+        });
+      },
+    );
 
     this.recordUserAudit(AuditLogAction.AUTH_REFRESHED, user, {
       provider: 'refresh_token',

@@ -27,6 +27,10 @@ export function staffManagementForbiddenError() {
   );
 }
 
+export function staffInvalidMediaFileError(message: string) {
+  return badRequestError(message, ERROR_CODES.STAFF.INVALID_MEDIA_FILE);
+}
+
 export function staffProvisioningModeInvalidError() {
   return badRequestError(
     'Provide either user_id or employee details when creating staff, but not both.',
@@ -46,6 +50,13 @@ export function staffSelfViewForbiddenError() {
   return forbiddenError(
     'Only barber and receptionist accounts can access staff self view.',
     ERROR_CODES.STAFF.SELF_VIEW_FORBIDDEN,
+  );
+}
+
+export function staffSelfManagementForbiddenError() {
+  return forbiddenError(
+    'You do not have permission to manage this staff profile.',
+    ERROR_CODES.STAFF.SELF_MANAGEMENT_FORBIDDEN,
   );
 }
 

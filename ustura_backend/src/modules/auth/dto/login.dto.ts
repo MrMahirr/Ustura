@@ -1,4 +1,11 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { PrincipalKind } from '../../../shared/auth/principal-kind.enum';
 
 export class LoginDto {

@@ -151,7 +151,9 @@ export class ReservationService {
     }
   }
 
-  async findByCustomerId(currentUser: JwtPayload): Promise<ReservationRecord[]> {
+  async findByCustomerId(
+    currentUser: JwtPayload,
+  ): Promise<ReservationRecord[]> {
     this.reservationPolicy.assertCanViewOwnReservations(currentUser);
 
     return this.reservationRepository.findByCustomerId(currentUser.sub);
@@ -172,7 +174,8 @@ export class ReservationService {
       membership,
     });
 
-    const reservations = await this.reservationRepository.findBySalonId(salonId);
+    const reservations =
+      await this.reservationRepository.findBySalonId(salonId);
 
     if (accessScope === 'assigned_only') {
       return reservations.filter(
@@ -187,7 +190,8 @@ export class ReservationService {
     currentUser: JwtPayload,
     reservationId: string,
   ): Promise<ReservationRecord> {
-    const reservation = await this.reservationRepository.findById(reservationId);
+    const reservation =
+      await this.reservationRepository.findById(reservationId);
 
     if (!reservation) {
       throw reservationNotFoundError();
@@ -253,7 +257,8 @@ export class ReservationService {
     reservationId: string,
     updateReservationStatusDto: UpdateReservationStatusDto,
   ): Promise<ReservationRecord> {
-    const reservation = await this.reservationRepository.findById(reservationId);
+    const reservation =
+      await this.reservationRepository.findById(reservationId);
 
     if (!reservation) {
       throw reservationNotFoundError();
@@ -349,11 +354,12 @@ export class ReservationService {
       throw customerDetailsRequiredError();
     }
 
-    const customer = await this.userProvisioningService.findOrCreateManagedCustomer({
-      name: createReservationDto.customerName,
-      email: createReservationDto.customerEmail,
-      phone: createReservationDto.customerPhone,
-    });
+    const customer =
+      await this.userProvisioningService.findOrCreateManagedCustomer({
+        name: createReservationDto.customerName,
+        email: createReservationDto.customerEmail,
+        phone: createReservationDto.customerPhone,
+      });
 
     return customer;
   }

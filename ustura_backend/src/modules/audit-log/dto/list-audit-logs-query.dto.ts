@@ -1,12 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsUUID,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 import { AuditLogAction } from '../enums/audit-log-action.enum';
 import { AuditLogEntityType } from '../enums/audit-log-entity-type.enum';
 

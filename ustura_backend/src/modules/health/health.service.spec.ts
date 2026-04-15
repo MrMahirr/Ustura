@@ -3,36 +3,36 @@ import { RedisService } from '../../redis/redis.service';
 import { HealthService } from './health.service';
 
 type DatabaseServiceMock = {
-  query: jest.Mock;
+  query: jest.MockedFunction<(query: unknown) => Promise<{ rows: unknown[] }>>;
 };
 
 type RedisClientMock = {
-  ping: jest.Mock;
+  ping: jest.MockedFunction<() => Promise<string>>;
 };
 
 type RedisServiceMock = {
-  connect: jest.Mock;
-  getClient: jest.Mock<RedisClientMock, []>;
-  isUsingMemoryFallback: jest.Mock<boolean, []>;
+  connect: jest.MockedFunction<() => Promise<void>>;
+  getClient: jest.MockedFunction<() => RedisClientMock>;
+  isUsingMemoryFallback: jest.MockedFunction<() => boolean>;
 };
 
 function createDatabaseServiceMock(): DatabaseServiceMock {
   return {
-    query: jest.fn(),
+    query: jest.fn<(query: unknown) => Promise<{ rows: unknown[] }>>(),
   };
 }
 
 function createRedisClientMock(): RedisClientMock {
   return {
-    ping: jest.fn(),
+    ping: jest.fn<() => Promise<string>>(),
   };
 }
 
 function createRedisServiceMock(client: RedisClientMock): RedisServiceMock {
   return {
-    connect: jest.fn(),
-    getClient: jest.fn().mockReturnValue(client),
-    isUsingMemoryFallback: jest.fn().mockReturnValue(false),
+    connect: jest.fn<() => Promise<void>>(),
+    getClient: jest.fn<() => RedisClientMock>().mockReturnValue(client),
+    isUsingMemoryFallback: jest.fn<() => boolean>().mockReturnValue(false),
   };
 }
 
@@ -54,6 +54,9 @@ const ALL_MIGRATION_ROWS = [
   '015_ensure_salons_is_active.sql',
   '016_owner_applications_review_state_allow_null_salon.sql',
   '017_personnel_must_change_password.sql',
+  '018_fix_seed_uuid_format.sql',
+  '019_add_salon_gallery_urls.sql',
+  '020_create_salon_services.sql',
 ].map((filename) => ({ filename }));
 
 const IDENTITY_HEALTHY_SEQUENCE: unknown[] = [
@@ -68,6 +71,7 @@ const IDENTITY_HEALTHY_SEQUENCE: unknown[] = [
     rows: [
       { column_name: 'password_hash', is_nullable: 'YES' },
       { column_name: 'role', is_nullable: 'NO' },
+      { column_name: 'must_change_password', is_nullable: 'NO' },
     ],
   },
   { rows: [{ indexname: 'uq_personnel_lower_email' }] },
@@ -239,7 +243,9 @@ describe('HealthService', () => {
   });
 
   it('skips schema checks when PostgreSQL is unavailable', async () => {
-    databaseServiceMock.query.mockRejectedValue(new Error('connect ECONNREFUSED'));
+    databaseServiceMock.query.mockRejectedValue(
+      new Error('connect ECONNREFUSED'),
+    );
     redisServiceMock.connect.mockResolvedValue(undefined);
     redisClientMock.ping.mockResolvedValue('PONG');
 
@@ -262,7 +268,9 @@ describe('HealthService', () => {
   });
 
   it('throws on startup readiness assertion when dependencies are down', async () => {
-    databaseServiceMock.query.mockRejectedValue(new Error('connect ECONNREFUSED'));
+    databaseServiceMock.query.mockRejectedValue(
+      new Error('connect ECONNREFUSED'),
+    );
     redisServiceMock.connect.mockResolvedValue(undefined);
     redisClientMock.ping.mockResolvedValue('PONG');
 

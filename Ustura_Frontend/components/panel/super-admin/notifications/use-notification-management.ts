@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   NotificationService,
-  type NotificationRecord,
   type NotificationListResponse,
 } from '@/services/notification.service';
 import type { NotificationFilterKey, NotificationOverview } from './types';

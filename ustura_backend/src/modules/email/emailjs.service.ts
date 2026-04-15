@@ -12,7 +12,10 @@ const EMAILJS_NON_BROWSER_SECURITY_URL =
   'https://dashboard.emailjs.com/admin/account/security';
 
 /** @emailjs/nodejs başarısızlıkta genelde Error değil { status, text } döner */
-function formatEmailJsFailure(error: unknown): { message: string; status?: number } {
+function formatEmailJsFailure(error: unknown): {
+  message: string;
+  status?: number;
+} {
   if (error instanceof Error) {
     return { message: error.message, status: undefined };
   }
@@ -44,10 +47,7 @@ function isNonBrowserApiDisabled403(
   status: number | undefined,
   message: string,
 ): boolean {
-  return (
-    status === 403 &&
-    /non-browser|non browser/i.test(message)
-  );
+  return status === 403 && /non-browser|non browser/i.test(message);
 }
 
 @Injectable()
@@ -62,8 +62,7 @@ export class EmailJsService implements EmailServiceContract {
       config.emailJs.publicKey &&
       config.emailJs.privateKey
     );
-    this.isConfigured =
-      keysReady && !!config.emailJs.templateApproval?.trim();
+    this.isConfigured = keysReady && !!config.emailJs.templateApproval?.trim();
     this.isStaffWelcomeConfigured =
       keysReady && !!config.emailJs.templateStaffWelcome?.trim();
 

@@ -83,10 +83,7 @@ export class GoogleWebTokenVerifierService {
     };
   }
 
-  private async fetchJson<T>(
-    input: string,
-    init?: RequestInit,
-  ): Promise<T> {
+  private async fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
     let response: Response;
 
     try {

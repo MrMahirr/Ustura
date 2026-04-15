@@ -7,8 +7,10 @@ import {
 } from '@/components/panel/super-admin/salon-profile/presentation';
 import { useSuperAdminTheme } from '@/components/panel/super-admin/theme';
 import Input from '@/components/ui/Input';
-import type { AdminSalonUpdatePayload } from '@/services/salon.service';
-import type { AdminSalonDetailRecord } from '@/services/salon.service';
+import type {
+  AdminSalonDetailRecord,
+  AdminSalonUpdatePayload,
+} from '@/services/salon.service';
 import { hexToRgba } from '@/utils/color';
 
 import type { SalonProfileMutationResult } from './use-salon-profile';
@@ -42,7 +44,7 @@ export default function SalonProfileEditSection({
   useEffect(() => {
     setForm(buildFormState(detail));
     setLocalError(null);
-  }, [detail.id, detail.updatedAt]);
+  }, [detail]);
 
   const submit = async () => {
     if (!form.name.trim() || !form.address.trim() || !form.city.trim()) {

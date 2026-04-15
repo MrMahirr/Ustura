@@ -76,13 +76,13 @@ export class PlatformAdminService {
 
     const normalizedSalonInput =
       this.salonOwnerProvisioningService.prepareOwnedSalonInput({
-      name: createOwnerApplicationDto.salonName,
-      address: createOwnerApplicationDto.salonAddress,
-      city: createOwnerApplicationDto.salonCity,
-      district: createOwnerApplicationDto.salonDistrict,
-      photoUrl: createOwnerApplicationDto.salonPhotoUrl,
-      workingHours: createOwnerApplicationDto.salonWorkingHours,
-    });
+        name: createOwnerApplicationDto.salonName,
+        address: createOwnerApplicationDto.salonAddress,
+        city: createOwnerApplicationDto.salonCity,
+        district: createOwnerApplicationDto.salonDistrict,
+        photoUrl: createOwnerApplicationDto.salonPhotoUrl,
+        workingHours: createOwnerApplicationDto.salonWorkingHours,
+      });
     const placeholderHash = await bcrypt.hash(
       generateTemporaryPassword(),
       this.passwordCost,
@@ -98,7 +98,8 @@ export class PlatformAdminService {
       salonDistrict: normalizedSalonInput.district,
       salonPhotoUrl: normalizedSalonInput.photoUrl,
       salonWorkingHours: normalizedSalonInput.workingHours,
-      notes: this.normalizeOptionalString(createOwnerApplicationDto.notes) ?? null,
+      notes:
+        this.normalizeOptionalString(createOwnerApplicationDto.notes) ?? null,
     });
 
     return this.toOwnerApplication(createdApplication);
@@ -110,7 +111,9 @@ export class PlatformAdminService {
     this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
 
     const applications = await this.platformAdminRepository.findAll();
-    return applications.map((application) => this.toOwnerApplication(application));
+    return applications.map((application) =>
+      this.toOwnerApplication(application),
+    );
   }
 
   async approveOwnerApplication(
@@ -121,81 +124,83 @@ export class PlatformAdminService {
 
     let temporaryPassword: string | null = null;
 
-    const approvedApplication = await this.databaseService.transaction(async (transaction) => {
-      const application =
-        await this.platformAdminRepository.findByIdForUpdate(
-          applicationId,
-          transaction,
-        );
+    const approvedApplication = await this.databaseService.transaction(
+      async (transaction) => {
+        const application =
+          await this.platformAdminRepository.findByIdForUpdate(
+            applicationId,
+            transaction,
+          );
 
-      if (!application) {
-        throw ownerApplicationNotFoundError();
-      }
-
-      this.platformAdminPolicy.assertPendingApplication(application);
-
-      const normalizedEmail = application.applicantEmail.trim().toLowerCase();
-      const existingPersonnel =
-        await this.userQueryService.findByEmailForPrincipal(
-          normalizedEmail,
-          PrincipalKind.PERSONNEL,
-        );
-
-      let owner: User;
-
-      if (!existingPersonnel) {
-        temporaryPassword = generateTemporaryPassword();
-        const temporaryPasswordHash = await bcrypt.hash(
-          temporaryPassword,
-          this.passwordCost,
-        );
-        owner = await this.userProvisioningService.createOwner(
-          {
-            name: application.applicantName,
-            email: application.applicantEmail,
-            phone: application.applicantPhone,
-            passwordHash: temporaryPasswordHash,
-          },
-          transaction,
-        );
-      } else if (existingPersonnel.role === Role.OWNER) {
-        if (!existingPersonnel.isActive) {
-          throw ownerApplicationApplicantOwnerInactiveError();
+        if (!application) {
+          throw ownerApplicationNotFoundError();
         }
-        owner = existingPersonnel;
-      } else {
-        throw ownerApplicationApplicantEmailUsedByStaffError();
-      }
 
-      const salon = await this.salonOwnerProvisioningService.createOwnedSalon(
-        owner.id,
-        {
-          name: application.salonName,
-          address: application.salonAddress,
-          city: application.salonCity,
-          district: application.salonDistrict,
-          photoUrl: application.salonPhotoUrl,
-          workingHours: application.salonWorkingHours,
-        },
-        transaction,
-      );
-      const approvedApplication =
-        await this.platformAdminRepository.markApproved(
-          application.id,
+        this.platformAdminPolicy.assertPendingApplication(application);
+
+        const normalizedEmail = application.applicantEmail.trim().toLowerCase();
+        const existingPersonnel =
+          await this.userQueryService.findByEmailForPrincipal(
+            normalizedEmail,
+            PrincipalKind.PERSONNEL,
+          );
+
+        let owner: User;
+
+        if (!existingPersonnel) {
+          temporaryPassword = generateTemporaryPassword();
+          const temporaryPasswordHash = await bcrypt.hash(
+            temporaryPassword,
+            this.passwordCost,
+          );
+          owner = await this.userProvisioningService.createOwner(
+            {
+              name: application.applicantName,
+              email: application.applicantEmail,
+              phone: application.applicantPhone,
+              passwordHash: temporaryPasswordHash,
+            },
+            transaction,
+          );
+        } else if (existingPersonnel.role === Role.OWNER) {
+          if (!existingPersonnel.isActive) {
+            throw ownerApplicationApplicantOwnerInactiveError();
+          }
+          owner = existingPersonnel;
+        } else {
+          throw ownerApplicationApplicantEmailUsedByStaffError();
+        }
+
+        const salon = await this.salonOwnerProvisioningService.createOwnedSalon(
+          owner.id,
           {
-            reviewedByUserId: currentUser.sub,
-            approvedOwnerUserId: owner.id,
-            approvedSalonId: salon.id,
+            name: application.salonName,
+            address: application.salonAddress,
+            city: application.salonCity,
+            district: application.salonDistrict,
+            photoUrl: application.salonPhotoUrl,
+            workingHours: application.salonWorkingHours,
           },
           transaction,
         );
+        const approvedApplication =
+          await this.platformAdminRepository.markApproved(
+            application.id,
+            {
+              reviewedByUserId: currentUser.sub,
+              approvedOwnerUserId: owner.id,
+              approvedSalonId: salon.id,
+            },
+            transaction,
+          );
 
-      if (!approvedApplication) {
-        throw ownerApplicationNotFoundError();
-      }
+        if (!approvedApplication) {
+          throw ownerApplicationNotFoundError();
+        }
 
-      return this.toOwnerApplication(approvedApplication);
-    });
+        return this.toOwnerApplication(approvedApplication);
+      },
+    );
 
     this.domainEventBus.publish({
       name: 'owner.approved',
@@ -205,14 +210,18 @@ export class PlatformAdminService {
         applicantName: approvedApplication.applicantName,
         applicantEmail: approvedApplication.applicantEmail,
         salonName: approvedApplication.salonName,
-        approvedAt: (approvedApplication.reviewedAt ?? new Date()).toISOString(),
+        approvedAt: (
+          approvedApplication.reviewedAt ?? new Date()
+        ).toISOString(),
         reviewedByUserId: approvedApplication.reviewedByUserId,
         approvedOwnerUserId: approvedApplication.approvedOwnerUserId,
         approvedSalonId: approvedApplication.approvedSalonId,
       },
     });
 
-    const loginUrl = this.buildUniqueLoginUrl(approvedApplication.applicantEmail);
+    const loginUrl = this.buildUniqueLoginUrl(
+      approvedApplication.applicantEmail,
+    );
 
     this.emailService
       .sendOwnerApprovalEmail({
@@ -250,11 +259,10 @@ export class PlatformAdminService {
     this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
 
     return this.databaseService.transaction(async (transaction) => {
-      const application =
-        await this.platformAdminRepository.findByIdForUpdate(
-          applicationId,
-          transaction,
-        );
+      const application = await this.platformAdminRepository.findByIdForUpdate(
+        applicationId,
+        transaction,
+      );
 
       if (!application) {
         throw ownerApplicationNotFoundError();
@@ -327,11 +335,10 @@ export class PlatformAdminService {
     this.platformAdminPolicy.assertCanManageOwnerApplications(currentUser);
 
     return this.databaseService.transaction(async (transaction) => {
-      const application =
-        await this.platformAdminRepository.findByIdForUpdate(
-          applicationId,
-          transaction,
-        );
+      const application = await this.platformAdminRepository.findByIdForUpdate(
+        applicationId,
+        transaction,
+      );
 
       if (!application) {
         throw ownerApplicationNotFoundError();

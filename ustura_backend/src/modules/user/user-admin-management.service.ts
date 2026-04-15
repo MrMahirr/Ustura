@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
-import { cannotSelfDeactivateAdminUserError, userNotFoundError } from './errors/user.errors';
-import type { AdminUserSummary, UpdateUserProfileInput } from './interfaces/user.types';
+import {
+  cannotSelfDeactivateAdminUserError,
+  userNotFoundError,
+} from './errors/user.errors';
+import type {
+  AdminUserSummary,
+  UpdateUserProfileInput,
+} from './interfaces/user.types';
 import { UserRepository } from './repositories/user.repository';
 import { UserAdminQueryService } from './user-admin-query.service';
 

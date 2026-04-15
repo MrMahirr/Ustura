@@ -169,7 +169,10 @@ export class SubscriptionsRepository {
     });
   }
 
-  async createPending(salonId: string, packageId: string): Promise<Subscription> {
+  async createPending(
+    salonId: string,
+    packageId: string,
+  ): Promise<Subscription> {
     const result = await this.databaseService.query<SubscriptionRow>({
       text: `
         INSERT INTO subscriptions (salon_id, package_id, status, start_date)

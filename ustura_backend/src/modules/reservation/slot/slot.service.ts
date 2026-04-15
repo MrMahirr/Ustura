@@ -88,9 +88,7 @@ export class SlotService {
 
       return generatedSlots.map((slot) => {
         const availableStaffIds = activeBarbers
-          .filter(
-            (staff) => !reservedKeys.has(`${staff.id}:${slot.start}`),
-          )
+          .filter((staff) => !reservedKeys.has(`${staff.id}:${slot.start}`))
           .map((staff) => staff.id);
 
         return {
@@ -133,8 +131,7 @@ export class SlotService {
       const selection = selections.get(slot.start);
       const isReserved = reservedStarts.has(slot.start);
       const heldByOther =
-        !!selection &&
-        selection.holderId !== query.requesterSelectionOwnerId;
+        !!selection && selection.holderId !== query.requesterSelectionOwnerId;
 
       return {
         ...slot,
@@ -321,7 +318,8 @@ export class SlotService {
       holderId,
       slotStart,
       expiresAt: new Date(
-        Date.now() + this.configService.reservation.slotSelectionTtlSeconds * 1000,
+        Date.now() +
+          this.configService.reservation.slotSelectionTtlSeconds * 1000,
       ).toISOString(),
     };
   }

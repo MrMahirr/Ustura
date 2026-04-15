@@ -1,7 +1,4 @@
-import {
-  ExecutionContext,
-  Injectable,
-} from '@nestjs/common';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { SKIP_MUST_CHANGE_PASSWORD_KEY } from '../decorators/skip-must-change-password.decorator';
@@ -30,9 +27,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    const request = context
-      .switchToHttp()
-      .getRequest<{ user?: JwtPayload }>();
+    const request = context.switchToHttp().getRequest<{ user?: JwtPayload }>();
     const user = request.user;
 
     if (user?.mustChangePassword === true) {

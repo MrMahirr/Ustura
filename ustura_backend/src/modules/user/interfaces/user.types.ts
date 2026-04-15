@@ -62,6 +62,15 @@ export interface UpdateUserProfileInput {
   phone?: string;
 }
 
+export interface UpdateManagedEmployeeInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  role?: Role.BARBER | Role.RECEPTIONIST;
+  mustChangePassword?: boolean;
+}
+
 export type AdminUserRole = 'manager' | 'owner' | 'employee';
 export type AdminUserStatus = 'active' | 'busy' | 'inactive' | 'suspended';
 

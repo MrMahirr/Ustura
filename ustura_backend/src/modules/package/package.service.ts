@@ -125,8 +125,10 @@ export class PackageService {
     }
 
     await this.subscriptionsRepository.cancelAllActiveForSalon(salonId);
-    const subscription =
-      await this.subscriptionsRepository.createPending(salonId, packageId);
+    const subscription = await this.subscriptionsRepository.createPending(
+      salonId,
+      packageId,
+    );
 
     return {
       subscriptionId: subscription.id,
@@ -136,7 +138,10 @@ export class PackageService {
     };
   }
 
-  async getMySalonSubscription(userId: string, role: string): Promise<SalonSubscriptionDetail> {
+  async getMySalonSubscription(
+    userId: string,
+    role: string,
+  ): Promise<SalonSubscriptionDetail> {
     const salonRow = await this.databaseService.query<{ id: string }>({
       text:
         role === 'owner'
@@ -150,7 +155,8 @@ export class PackageService {
       return this.emptySalonSubscription();
     }
 
-    const subscription = await this.subscriptionsRepository.findActiveBySalonId(salonId);
+    const subscription =
+      await this.subscriptionsRepository.findActiveBySalonId(salonId);
 
     const pkg = subscription
       ? await this.packagesRepository.findById(subscription.packageId)
@@ -226,11 +232,15 @@ export class PackageService {
   async getOverviewStats() {
     const packages = await this.packagesRepository.findAllAdmin();
     const subscriptions = await this.subscriptionsRepository.findAllDetailed();
-    
-    const activeSubCount = subscriptions.filter(s => s.status === 'active').length;
+
+    const activeSubCount = subscriptions.filter(
+      (s) => s.status === 'active',
+    ).length;
     const monthlyRev = packages.reduce((acc, p) => {
-      const pkgSubs = subscriptions.filter(s => s.packageId === p.id && s.status === 'active');
-      return acc + (pkgSubs.length * p.pricePerMonth);
+      const pkgSubs = subscriptions.filter(
+        (s) => s.packageId === p.id && s.status === 'active',
+      );
+      return acc + pkgSubs.length * p.pricePerMonth;
     }, 0);
 
     return {
@@ -238,7 +248,8 @@ export class PackageService {
       activeSubscriptions: activeSubCount,
       subscriptionGrowthPercent: 0, // Placeholder
       monthlyRevenue: monthlyRev,
-      pendingApprovals: subscriptions.filter(s => s.status === 'pending').length,
+      pendingApprovals: subscriptions.filter((s) => s.status === 'pending')
+        .length,
     };
   }
 }

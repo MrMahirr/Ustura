@@ -37,6 +37,11 @@ import { SalonRepository } from './repositories/salon.repository';
       useExisting: SalonManagementService,
     },
   ],
-  exports: [SALON_CATALOG_SERVICE, SALON_OWNER_PROVISIONING_SERVICE, SalonService],
+  exports: [
+    SALON_CATALOG_SERVICE,
+    SALON_OWNER_PROVISIONING_SERVICE,
+    SalonOwnershipService,
+    SalonService,
+  ],
 })
 export class SalonModule {}

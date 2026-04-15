@@ -33,7 +33,11 @@ import {
   staffSalonNotFoundError,
   staffUserNotFoundError,
 } from './errors/staff.errors';
-import type { CreateStaffInput, StaffMember, UpdateStaffInput } from './interfaces/staff.types';
+import type {
+  CreateStaffInput,
+  StaffMember,
+  UpdateStaffInput,
+} from './interfaces/staff.types';
 import { StaffPolicy } from './policies/staff.policy';
 import { StaffRepository } from './repositories/staff.repository';
 
@@ -92,47 +96,45 @@ export class StaffService {
       const user = await this.requireUser(createStaffDto.userId);
       this.staffPolicy.assertCanAssignUserToRole(user, createStaffDto.role);
 
-      return this.createOrReactivateMembership(
-        currentUser,
-        {
-          ...membershipInput,
-          userId: user.id,
-        },
-      );
+      return this.createOrReactivateMembership(currentUser, {
+        ...membershipInput,
+        userId: user.id,
+      });
     }
 
     const employee = createStaffDto.employee!;
     const explicitPassword = employee.password?.trim();
-    const provisionalPassword =
-      explicitPassword ?? generateTemporaryPassword();
+    const provisionalPassword = explicitPassword ?? generateTemporaryPassword();
     const mustChangePassword = !explicitPassword;
 
-    const staffMember = await this.databaseService.transaction(async (transaction) => {
-      const passwordHash = await bcrypt.hash(
-        provisionalPassword,
-        this.passwordCost,
-      );
-      const user = await this.userProvisioningService.createEmployee(
-        {
-          name: employee.name,
-          email: employee.email,
-          phone: employee.phone,
-          passwordHash,
-          role: createStaffDto.role,
-          mustChangePassword,
-        },
-        transaction,
-      );
+    const staffMember = await this.databaseService.transaction(
+      async (transaction) => {
+        const passwordHash = await bcrypt.hash(
+          provisionalPassword,
+          this.passwordCost,
+        );
+        const user = await this.userProvisioningService.createEmployee(
+          {
+            name: employee.name,
+            email: employee.email,
+            phone: employee.phone,
+            passwordHash,
+            role: createStaffDto.role,
+            mustChangePassword,
+          },
+          transaction,
+        );
 
-      return this.createOrReactivateMembership(
-        currentUser,
-        {
-          ...membershipInput,
-          userId: user.id,
-        },
-        transaction,
-      );
-    });
+        return this.createOrReactivateMembership(
+          currentUser,
+          {
+            ...membershipInput,
+            userId: user.id,
+          },
+          transaction,
+        );
+      },
+    );
 
     if (mustChangePassword) {
       const loginUrl = this.buildStaffLoginUrl(employee.email);
@@ -166,31 +168,73 @@ export class StaffService {
 
     const existingStaffMember = await this.requireStaffMember(salonId, staffId);
     const nextRole = updateStaffDto.role ?? existingStaffMember.role;
-
-    if (updateStaffDto.role !== undefined || updateStaffDto.isActive === true) {
-      const user = await this.requireUser(existingStaffMember.userId);
-      this.staffPolicy.assertCanAssignUserToRole(user, nextRole);
-    }
-
     const normalizedInput = this.normalizeUpdateInput(updateStaffDto);
+    const normalizedAccountInput = this.normalizeManagedAccountInput(
+      updateStaffDto,
+      nextRole,
+    );
+    const hasStaffChanges = Object.keys(normalizedInput).length > 0;
+    const hasAccountChanges = Object.keys(normalizedAccountInput).length > 0;
 
-    if (Object.keys(normalizedInput).length === 0) {
+    if (!hasStaffChanges && !hasAccountChanges) {
       return existingStaffMember;
     }
 
-    const updatedStaffMember = await this.staffRepository.update(
-      existingStaffMember.id,
-      normalizedInput,
+    const updatedStaffMember = await this.databaseService.transaction(
+      async (transaction) => {
+        if (hasAccountChanges) {
+          await this.userProvisioningService.updateManagedEmployee(
+            existingStaffMember.userId,
+            normalizedAccountInput,
+            transaction,
+          );
+        }
+
+        if (!hasStaffChanges) {
+          return (
+            (await this.staffRepository.findById(
+              existingStaffMember.id,
+              transaction,
+            )) ?? existingStaffMember
+          );
+        }
+
+        const updated = await this.staffRepository.update(
+          existingStaffMember.id,
+          normalizedInput,
+          transaction,
+        );
+
+        if (!updated) {
+          throw staffNotFoundError();
+        }
+
+        return updated;
+      },
     );
 
     if (!updatedStaffMember) {
       throw staffNotFoundError();
     }
 
-    this.recordStaffAudit(currentUser, AuditLogAction.STAFF_UPDATED, updatedStaffMember, {
-      salonId,
-      changes: normalizedInput,
-    });
+    this.recordStaffAudit(
+      currentUser,
+      AuditLogAction.STAFF_UPDATED,
+      updatedStaffMember,
+      {
+        salonId,
+        changes: normalizedInput,
+        accountChanges: hasAccountChanges
+          ? {
+              name: normalizedAccountInput.name !== undefined,
+              email: normalizedAccountInput.email !== undefined,
+              phone: normalizedAccountInput.phone !== undefined,
+              password: normalizedAccountInput.password !== undefined,
+              role: normalizedAccountInput.role !== undefined,
+            }
+          : undefined,
+      },
+    );
 
     return updatedStaffMember;
   }
@@ -357,7 +401,9 @@ export class StaffService {
     return user;
   }
 
-  private normalizeUpdateInput(updateStaffDto: UpdateStaffDto): UpdateStaffInput {
+  private normalizeUpdateInput(
+    updateStaffDto: UpdateStaffDto,
+  ): UpdateStaffInput {
     const normalizedInput: UpdateStaffInput = {};
 
     if (updateStaffDto.role !== undefined) {
@@ -365,7 +411,8 @@ export class StaffService {
     }
 
     if (updateStaffDto.bio !== undefined) {
-      normalizedInput.bio = this.normalizeOptionalString(updateStaffDto.bio) ?? null;
+      normalizedInput.bio =
+        this.normalizeOptionalString(updateStaffDto.bio) ?? null;
     }
 
     if (updateStaffDto.photoUrl !== undefined) {
@@ -375,6 +422,45 @@ export class StaffService {
 
     if (updateStaffDto.isActive !== undefined) {
       normalizedInput.isActive = updateStaffDto.isActive;
+    }
+
+    return normalizedInput;
+  }
+
+  private normalizeManagedAccountInput(
+    updateStaffDto: UpdateStaffDto,
+    role: StaffMember['role'],
+  ) {
+    const normalizedInput: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+      role?: StaffMember['role'];
+      mustChangePassword?: boolean;
+    } = {};
+
+    const account = updateStaffDto.account;
+
+    if (account?.name !== undefined) {
+      normalizedInput.name = account.name.trim();
+    }
+
+    if (account?.email !== undefined) {
+      normalizedInput.email = account.email.trim().toLowerCase();
+    }
+
+    if (account?.phone !== undefined) {
+      normalizedInput.phone = account.phone.trim();
+    }
+
+    if (account?.password !== undefined) {
+      normalizedInput.password = account.password.trim();
+      normalizedInput.mustChangePassword = true;
+    }
+
+    if (updateStaffDto.role !== undefined) {
+      normalizedInput.role = role;
     }
 
     return normalizedInput;

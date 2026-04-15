@@ -13,6 +13,7 @@ export interface SalonRecord {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   workingHours: Record<string, WorkingHoursEntry | null>;
   isActive: boolean;
   createdAt: string;
@@ -43,6 +44,7 @@ export interface AdminSalonRecord {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -128,6 +130,7 @@ export type AdminSalonUpdatePayload = {
   city?: string;
   district?: string;
   photoUrl?: string | null;
+  galleryUrls?: string[];
   workingHours?: Record<string, unknown>;
   isActive?: boolean;
 };
@@ -172,6 +175,7 @@ export interface OwnedSalonSummary {
   city: string;
   district: string | null;
   photoUrl: string | null;
+  galleryUrls: string[];
   isActive: boolean;
   updatedAt: string;
 }
@@ -189,6 +193,7 @@ export type OwnedSalonUpdatePayload = {
   city?: string;
   district?: string | null;
   photoUrl?: string | null;
+  galleryUrls?: string[];
   workingHours?: Record<string, WorkingHoursEntry | null>;
 };
 
@@ -225,5 +230,37 @@ export async function removeOwnedSalonPhoto(salonId: string) {
     path: `/salons/${salonId}/storefront-photo`,
     method: 'DELETE',
     auth: true,
+  });
+}
+
+export async function uploadOwnedSalonGalleryPhotos(
+  salonId: string,
+  files: File[],
+) {
+  const formData = new FormData();
+
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+
+  return apiRequest<SalonRecord, FormData>({
+    path: `/salons/${salonId}/storefront-gallery`,
+    method: 'POST',
+    auth: true,
+    body: formData,
+  });
+}
+
+export async function removeOwnedSalonGalleryPhoto(
+  salonId: string,
+  photoUrl: string,
+) {
+  return apiRequest<SalonRecord>({
+    path: `/salons/${salonId}/storefront-gallery`,
+    method: 'DELETE',
+    auth: true,
+    query: {
+      photoUrl,
+    },
   });
 }

@@ -4,6 +4,7 @@ import type {
   CreateCustomerInput,
   CreateEmployeeInput,
   CreateOwnerInput,
+  UpdateManagedEmployeeInput,
   User,
   UserProfile,
 } from './user.types';
@@ -11,10 +12,7 @@ import type {
 export const USER_QUERY_SERVICE = Symbol('USER_QUERY_SERVICE');
 
 export interface UserQueryServiceContract {
-  findByPrincipal(
-    kind: PrincipalKind,
-    id: string,
-  ): Promise<User | null>;
+  findByPrincipal(kind: PrincipalKind, id: string): Promise<User | null>;
   findByEmailForPrincipal(
     email: string,
     kind: PrincipalKind,
@@ -45,9 +43,11 @@ export interface UserProvisioningServiceContract {
     currentPassword: string,
     newPassword: string,
   ): Promise<User>;
-  deactivateUser(
-    kind: PrincipalKind,
+  updateManagedEmployee(
     id: string,
-  ): Promise<UserProfile>;
+    input: UpdateManagedEmployeeInput,
+    executor?: SqlQueryExecutor,
+  ): Promise<User>;
+  deactivateUser(kind: PrincipalKind, id: string): Promise<UserProfile>;
   linkFirebaseCustomerIdentity(id: string, firebaseUid: string): Promise<User>;
 }

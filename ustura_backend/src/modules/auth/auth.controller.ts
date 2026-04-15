@@ -65,7 +65,9 @@ export class AuthController {
       limit: 5,
     },
   })
-  @ApiOperation({ summary: 'Authenticate a customer with Firebase Google sign-in' })
+  @ApiOperation({
+    summary: 'Authenticate a customer with Firebase Google sign-in',
+  })
   @ApiBody({ type: GoogleCustomerAuthDto })
   @ApiOkResponse({ type: AuthSessionResponseDto })
   async authenticateCustomerWithGoogle(
@@ -129,7 +131,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Rotate refresh token and issue a new session' })
   @ApiBody({ type: RefreshTokenDto })
   @ApiOkResponse({ type: AuthSessionResponseDto })
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto, @Req() request: Request) {
+  async refresh(
+    @Body() refreshTokenDto: RefreshTokenDto,
+    @Req() request: Request,
+  ) {
     return this.authService.refreshToken(
       refreshTokenDto,
       this.buildSessionClientContext(request),
@@ -182,17 +187,16 @@ export class AuthController {
     @CurrentUser() currentUser: JwtPayload,
     @Body() refreshTokenDto: RefreshTokenDto,
   ) {
-    return this.authService.logout(
-      currentUser,
-      refreshTokenDto.refreshToken,
-    );
+    return this.authService.logout(currentUser, refreshTokenDto.refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)
   @SkipMustChangePassword()
   @Post('logout-all')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Revoke all active refresh tokens for the current user' })
+  @ApiOperation({
+    summary: 'Revoke all active refresh tokens for the current user',
+  })
   @ApiOkResponse({
     schema: {
       type: 'object',
@@ -208,9 +212,7 @@ export class AuthController {
       },
     },
   })
-  async logoutAll(
-    @CurrentUser() currentUser: JwtPayload,
-  ) {
+  async logoutAll(@CurrentUser() currentUser: JwtPayload) {
     return this.authService.logoutAll(currentUser);
   }
 

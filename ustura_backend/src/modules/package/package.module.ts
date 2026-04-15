@@ -8,11 +8,7 @@ import { SubscriptionsRepository } from './repositories/subscriptions.repository
 @Module({
   imports: [DatabaseModule],
   controllers: [PackageController],
-  providers: [
-    PackageService,
-    PackagesRepository,
-    SubscriptionsRepository,
-  ],
+  providers: [PackageService, PackagesRepository, SubscriptionsRepository],
   exports: [PackageService],
 })
 export class PackageModule {}

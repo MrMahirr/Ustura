@@ -65,13 +65,15 @@ export class PlatformAdminController {
           ? this.maskValue(this.configService.emailJs.serviceId)
           : null,
         templateApproval: this.configService.emailJs.templateApproval || null,
-        templateStaffWelcome: this.configService.emailJs.templateStaffWelcome || null,
+        templateStaffWelcome:
+          this.configService.emailJs.templateStaffWelcome || null,
         hasPublicKey: !!this.configService.emailJs.publicKey,
         hasPrivateKey: !!this.configService.emailJs.privateKey,
       },
       reservation: {
         slotDurationMinutes: this.configService.reservation.slotDurationMinutes,
-        slotSelectionTtlSeconds: this.configService.reservation.slotSelectionTtlSeconds,
+        slotSelectionTtlSeconds:
+          this.configService.reservation.slotSelectionTtlSeconds,
         slotLockTtlSeconds: this.configService.reservation.slotLockTtlSeconds,
         businessTimeZone: this.configService.reservation.businessTimeZone,
         businessUtcOffset: this.configService.reservation.businessUtcOffset,
@@ -94,7 +96,11 @@ export class PlatformAdminController {
 
   private maskValue(value: string): string {
     if (value.length <= 6) return '••••••';
-    return value.slice(0, 3) + '•'.repeat(Math.min(value.length - 6, 10)) + value.slice(-3);
+    return (
+      value.slice(0, 3) +
+      '•'.repeat(Math.min(value.length - 6, 10)) +
+      value.slice(-3)
+    );
   }
 
   @Post('owner-applications')

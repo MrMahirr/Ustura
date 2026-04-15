@@ -18,10 +18,11 @@ import { barberSettingsClassNames } from './settings/presentation';
 import AccountTab from './settings/tabs/AccountTab';
 import NotificationTab from './settings/tabs/NotificationTab';
 import SalonInfoTab from './settings/tabs/SalonInfoTab';
+import ServicesTab from './settings/tabs/ServicesTab';
 import StorefrontTab from './settings/tabs/StorefrontTab';
 import WorkingHoursTab from './settings/tabs/WorkingHoursTab';
+import { useBarberSettings } from './settings/use-barber-settings';
 import { useBarberAdminTheme } from './theme';
-import { BARBER_SETTINGS_TABS, useBarberSettings } from './settings/use-barber-settings';
 
 export default function BarberAdminSettings() {
   const { width } = useWindowDimensions();
@@ -65,7 +66,7 @@ export default function BarberAdminSettings() {
           <Text
             className="text-center font-bold"
             style={{ color: theme.error, fontSize: 16 }}>
-            {state.error ?? 'Salon bilgileri yüklenemedi.'}
+            {state.error ?? 'Ayar bilgileri yuklenemedi.'}
           </Text>
           <Pressable
             onPress={state.refresh}
@@ -98,18 +99,19 @@ export default function BarberAdminSettings() {
         showsVerticalScrollIndicator={false}>
         <View className={barberSettingsClassNames.content}>
           <SettingsPageHeader
+            isOwnerView={state.isOwnerView}
             salonName={state.salon.name}
             onRefresh={state.refresh}
           />
 
           <BarberSettingsTabBar
-            tabs={BARBER_SETTINGS_TABS}
+            tabs={state.availableTabs}
             activeTab={state.activeTab}
             onTabChange={state.setActiveTab}
           />
 
           <View style={{ minHeight: 300 }}>
-            {state.activeTab === 'salon-info' && (
+            {state.isOwnerView && state.activeTab === 'salon-info' && (
               <SalonInfoTab
                 salon={state.salon}
                 saving={state.saving}
@@ -118,7 +120,7 @@ export default function BarberAdminSettings() {
                 onSave={state.updateSalonInfo}
               />
             )}
-            {state.activeTab === 'storefront' && (
+            {state.isOwnerView && state.activeTab === 'storefront' && (
               <StorefrontTab
                 salon={state.salon}
                 saving={state.saving}
@@ -127,9 +129,22 @@ export default function BarberAdminSettings() {
                 onSavePhoto={state.updatePhotoUrl}
                 onUploadPhoto={state.uploadPhotoFile}
                 onRemovePhoto={state.removePhoto}
+                onUploadGallery={state.uploadGalleryFiles}
+                onRemoveGalleryPhoto={state.removeGalleryPhoto}
               />
             )}
-            {state.activeTab === 'working-hours' && (
+            {state.isOwnerView && state.activeTab === 'services' && (
+              <ServicesTab
+                services={state.services}
+                saving={state.saving}
+                saveSuccess={state.saveSuccess}
+                saveError={state.saveError}
+                onCreate={state.createService}
+                onUpdate={state.updateService}
+                onDelete={state.deleteService}
+              />
+            )}
+            {state.isOwnerView && state.activeTab === 'working-hours' && (
               <WorkingHoursTab
                 salon={state.salon}
                 saving={state.saving}
@@ -139,7 +154,12 @@ export default function BarberAdminSettings() {
               />
             )}
             {state.activeTab === 'notifications' && <NotificationTab />}
-            {state.activeTab === 'account' && <AccountTab />}
+            {state.activeTab === 'account' && (
+              <AccountTab
+                assignment={state.activeAssignment}
+                salonName={state.salon.name}
+              />
+            )}
           </View>
         </View>
       </ScrollView>
@@ -148,9 +168,11 @@ export default function BarberAdminSettings() {
 }
 
 function SettingsPageHeader({
+  isOwnerView,
   salonName,
   onRefresh,
 }: {
+  isOwnerView: boolean;
   salonName: string;
   onRefresh: () => void;
 }) {
@@ -174,14 +196,16 @@ function SettingsPageHeader({
             fontSize: isMobile ? 24 : 28,
             letterSpacing: -0.3,
           }}>
-          Salon Ayarları
+          {isOwnerView ? 'Salon Ayarlari' : 'Panel Ayarlari'}
         </Text>
         <Text
           style={{
             color: hexToRgba(theme.onSurfaceVariant, 0.65),
             fontSize: 14,
           }}>
-          {salonName} — bilgileri, vitrin görünümü ve çalışma saatlerini yönetin.
+          {isOwnerView
+            ? `${salonName} icin bilgiler, vitrin gorunumu ve calisma saatlerini yonetin.`
+            : `${salonName} icindeki personel hesabinizin ayarlarini ve panel tercihlerini yonetin.`}
         </Text>
       </View>
 
@@ -198,7 +222,10 @@ function SettingsPageHeader({
                 cursor: 'pointer',
               } as any)
             : Platform.OS === 'web'
-              ? ({ transition: 'border-color 180ms ease, background-color 180ms ease', cursor: 'pointer' } as any)
+              ? ({
+                  transition: 'border-color 180ms ease, background-color 180ms ease',
+                  cursor: 'pointer',
+                } as any)
               : null,
         ]}>
         <MaterialIcons name="refresh" size={16} color={theme.primary} />

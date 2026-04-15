@@ -1,4 +1,8 @@
-import { ConflictException, ForbiddenException, HttpException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+} from '@nestjs/common';
 import { ERROR_CODES } from '../../../shared/errors/error-codes';
 import { Role } from '../../../shared/auth/role.enum';
 import type { JwtPayload } from '../../../shared/auth/jwt-payload.interface';
@@ -33,9 +37,7 @@ function createUser(overrides: Partial<User> = {}): User {
   };
 }
 
-function createStaffMember(
-  overrides: Partial<StaffMember> = {},
-): StaffMember {
+function createStaffMember(overrides: Partial<StaffMember> = {}): StaffMember {
   return {
     id: 'staff-1',
     userId: 'user-1',
@@ -57,7 +59,11 @@ function getExceptionCode(error: unknown): string | undefined {
 
   const response = error.getResponse();
 
-  if (typeof response !== 'object' || response == null || !('code' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response == null ||
+    !('code' in response)
+  ) {
     return undefined;
   }
 

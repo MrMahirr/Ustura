@@ -37,7 +37,9 @@ export class PackageController {
   @Roles(Role.OWNER, Role.BARBER, Role.RECEPTIONIST)
   @Get('my-subscription')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Get current salon subscription and usage for the logged-in staff' })
+  @ApiOperation({
+    summary: 'Get current salon subscription and usage for the logged-in staff',
+  })
   async getMySalonSubscription(@CurrentUser() user: JwtPayload) {
     return this.packageService.getMySalonSubscription(user.sub, user.role);
   }
@@ -46,12 +48,19 @@ export class PackageController {
   @Roles(Role.OWNER, Role.BARBER, Role.RECEPTIONIST)
   @Post('request-subscription')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Request a package subscription (creates pending subscription for admin approval)' })
+  @ApiOperation({
+    summary:
+      'Request a package subscription (creates pending subscription for admin approval)',
+  })
   async requestSubscription(
     @CurrentUser() user: JwtPayload,
     @Body() input: RequestSubscriptionDto,
   ) {
-    return this.packageService.requestSubscription(user.sub, user.role, input.packageId);
+    return this.packageService.requestSubscription(
+      user.sub,
+      user.role,
+      input.packageId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -67,7 +76,9 @@ export class PackageController {
   @Roles(Role.SUPER_ADMIN)
   @Get('overview')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Get package and subscription overview stats for admin' })
+  @ApiOperation({
+    summary: 'Get package and subscription overview stats for admin',
+  })
   async getOverviewStats() {
     return this.packageService.getOverviewStats();
   }
@@ -137,8 +148,7 @@ export class PackageController {
   @Delete(':id')
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary:
-      'Super admin: paketi kalici sil (abonelik yoksa; aksi halde 400)',
+    summary: 'Super admin: paketi kalici sil (abonelik yoksa; aksi halde 400)',
   })
   async deletePackage(@Param('id', new ParseUUIDPipe()) id: string) {
     await this.packageService.deletePackage(id);

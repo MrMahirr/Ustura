@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'expo-router';
 import { ScrollView, Text, View, useWindowDimensions, Platform } from 'react-native';
 
 import Navbar from '@/components/landing/Navbar';
@@ -10,11 +11,13 @@ import SalonCard from '@/components/kuaforler/SalonCard';
 import { mapSalonToListItem } from '@/components/kuaforler/salon-listing';
 import { getLandingLayout } from '@/components/landing/layout';
 import Button from '@/components/ui/Button';
+import { buildPublicSalonDetailRoute } from '@/constants/routes';
 import { useSalonCities, useSalons } from '@/hooks/use-salons';
 import { useBookingEntry } from '@/hooks/use-booking-entry';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function KuaforlerPage() {
+  const router = useRouter();
   const surface = useThemeColor({}, 'surface');
   const surfaceContainerLow = useThemeColor({}, 'surfaceContainerLow');
   const onSurface = useThemeColor({}, 'onSurface');
@@ -128,7 +131,11 @@ export default function KuaforlerPage() {
                       isTablet ? { width: '48%' } : null,
                       !isDesktop && !isTablet ? { width: '100%' } : null,
                     ]}>
-                    <SalonCard {...salon} onBookPress={() => openBooking(salon)} />
+                    <SalonCard
+                      {...salon}
+                      onPress={() => router.push(buildPublicSalonDetailRoute(salon.id))}
+                      onBookPress={() => openBooking(salon)}
+                    />
                   </View>
                 ))}
               </View>

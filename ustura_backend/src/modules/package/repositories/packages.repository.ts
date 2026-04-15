@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
-import {
-  Package,
-  PackageRow,
-} from '../interfaces/package.types';
+import { Package, PackageRow } from '../interfaces/package.types';
 import { CreatePackageDto } from '../dto/create-package.dto';
 import { UpdatePackageDto } from '../dto/update-package.dto';
 

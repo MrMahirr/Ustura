@@ -38,6 +38,16 @@ export const buildPanelUserDetailRoute = (userId: string): Href => ({
   params: { userId },
 });
 
+export const buildPublicSalonDetailRoute = (salonId: string): Href => ({
+  pathname: '/(public)/kuaforler/[salonId]',
+  params: { salonId },
+});
+
+export const buildLandingRegisterRoute = (): Href => ({
+  pathname: '/',
+  params: { scrollTo: 'register' },
+});
+
 /** Acik / pazarlama sayfalari (grup URL'de gorunmez) */
 export const publicRoutes = {
   home: '/',

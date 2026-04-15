@@ -15,6 +15,7 @@ import {
   CreateEmployeeInput,
   CreateOwnerInput,
   CreateUserRecordInput,
+  UpdateManagedEmployeeInput,
   User,
   UserProfile,
 } from './interfaces/user.types';
@@ -37,10 +38,7 @@ export class UserService
     private readonly userAccountPolicy: UserAccountPolicy,
   ) {}
 
-  async findByPrincipal(
-    kind: PrincipalKind,
-    id: string,
-  ): Promise<User | null> {
+  async findByPrincipal(kind: PrincipalKind, id: string): Promise<User | null> {
     return this.userRepository.findByPrincipal(kind, id);
   }
 
@@ -142,6 +140,127 @@ export class UserService
     return updated;
   }
 
+  async updateManagedEmployee(
+    id: string,
+    input: UpdateManagedEmployeeInput,
+    executor?: SqlQueryExecutor,
+  ): Promise<User> {
+    const user = await this.userRepository.findByPrincipal(
+      PrincipalKind.PERSONNEL,
+      id,
+    );
+
+    if (!user) {
+      throw userNotFoundError();
+    }
+
+    const nextRole = (input.role ?? user.role) as
+      | Role.BARBER
+      | Role.RECEPTIONIST;
+    this.userAccountPolicy.assertValidEmployeeRole(nextRole);
+
+    const normalizedInput: UpdateManagedEmployeeInput = {
+      name: input.name?.trim(),
+      email:
+        input.email !== undefined
+          ? this.normalizeEmail(input.email)
+          : undefined,
+      phone:
+        input.phone !== undefined
+          ? this.normalizePhone(input.phone)
+          : undefined,
+      password: input.password?.trim(),
+      role: nextRole,
+      mustChangePassword: input.mustChangePassword,
+    };
+
+    this.userAccountPolicy.assertCreateUserRequirements({
+      role: nextRole,
+      hasPassword:
+        (normalizedInput.password?.length ?? 0) > 0 ||
+        Boolean(user.passwordHash),
+      hasFirebaseIdentity: false,
+      hasPhone:
+        normalizedInput.phone !== undefined
+          ? normalizedInput.phone.length > 0
+          : user.phone.trim().length > 0,
+    });
+
+    if (
+      normalizedInput.email &&
+      normalizedInput.email !== this.normalizeEmail(user.email)
+    ) {
+      const existingUser = await this.userRepository.findByEmailForPrincipal(
+        normalizedInput.email,
+        PrincipalKind.PERSONNEL,
+        executor,
+      );
+
+      if (existingUser && existingUser.id !== id) {
+        throw emailAlreadyExistsError();
+      }
+    }
+
+    if (
+      normalizedInput.phone !== undefined &&
+      normalizedInput.phone !== this.normalizePhone(user.phone)
+    ) {
+      const existingPhoneUser =
+        await this.userRepository.findByPhoneForPrincipal(
+          normalizedInput.phone,
+          PrincipalKind.PERSONNEL,
+          executor,
+        );
+
+      if (existingPhoneUser && existingPhoneUser.id !== id) {
+        throw phoneAlreadyExistsError();
+      }
+    }
+
+    try {
+      const updated = await this.userRepository.updateManagedEmployee(
+        id,
+        {
+          name: normalizedInput.name,
+          email: normalizedInput.email,
+          phone: normalizedInput.phone,
+          role: normalizedInput.role,
+          passwordHash: normalizedInput.password
+            ? await bcrypt.hash(normalizedInput.password, this.passwordCost)
+            : undefined,
+          mustChangePassword: normalizedInput.password
+            ? (normalizedInput.mustChangePassword ?? true)
+            : undefined,
+        },
+        executor,
+      );
+
+      if (!updated) {
+        throw userNotFoundError();
+      }
+
+      return updated;
+    } catch (error) {
+      if (
+        error instanceof DatabaseConstraintViolationError &&
+        (error.constraint === 'uq_users_phone_non_empty' ||
+          error.constraint?.includes('phone'))
+      ) {
+        throw phoneAlreadyExistsError();
+      }
+
+      if (
+        error instanceof DatabaseConstraintViolationError &&
+        (error.constraint === 'users_email_key' ||
+          error.constraint === 'uq_personnel_lower_email')
+      ) {
+        throw emailAlreadyExistsError();
+      }
+
+      throw error;
+    }
+  }
+
   async createOwner(
     input: CreateOwnerInput,
     executor?: SqlQueryExecutor,
@@ -155,10 +274,7 @@ export class UserService
     );
   }
 
-  async deactivateUser(
-    kind: PrincipalKind,
-    id: string,
-  ): Promise<UserProfile> {
+  async deactivateUser(kind: PrincipalKind, id: string): Promise<UserProfile> {
     const user = await this.userRepository.deactivate(kind, id);
 
     if (!user) {
@@ -233,11 +349,12 @@ export class UserService
     }
 
     if (normalizedPhone.length > 0) {
-      const existingPhoneUser = await this.userRepository.findByPhoneForPrincipal(
-        normalizedPhone,
-        principalKind,
-        executor,
-      );
+      const existingPhoneUser =
+        await this.userRepository.findByPhoneForPrincipal(
+          normalizedPhone,
+          principalKind,
+          executor,
+        );
 
       if (existingPhoneUser) {
         throw phoneAlreadyExistsError();

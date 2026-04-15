@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DomainEventBus } from '../../events/domain-event-bus.service';
 import { PrincipalKind } from '../../shared/auth/principal-kind.enum';
 import { NotificationService } from './notification.service';
@@ -116,8 +112,7 @@ export class NotificationEventsConsumer
 
         this.notificationService.persistBestEffort({
           recipientId: event.payload.userId ?? null,
-          recipientKind:
-            event.payload.principalKind ?? PrincipalKind.CUSTOMER,
+          recipientKind: event.payload.principalKind ?? PrincipalKind.CUSTOMER,
           key: 'auth.security',
           title: 'Oturum guvenligi bildirimi',
           body: `Hesabiniz icin guvenlik olayi tespit edildi. Etkilenen oturum: ${event.payload.revokedSessionCount}.`,

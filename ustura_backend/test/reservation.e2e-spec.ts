@@ -11,10 +11,7 @@ import { cancellationForbiddenError } from '../src/modules/reservation/errors/re
 import { ReservationStatus } from '../src/modules/reservation/enums/reservation-status.enum';
 import { ReservationService } from '../src/modules/reservation/reservation.service';
 import { createContractTestApp } from './helpers/create-contract-test-app';
-import {
-  TEST_JWT_SECRET,
-  TestJwtStrategy,
-} from './helpers/test-jwt.strategy';
+import { TEST_JWT_SECRET, TestJwtStrategy } from './helpers/test-jwt.strategy';
 
 describe('ReservationController (e2e)', () => {
   let app: INestApplication;
@@ -146,7 +143,9 @@ describe('ReservationController (e2e)', () => {
         expect(body.path).toBe('/api/reservations');
         expect(body.message).toContain('salonId must be a UUID');
         expect(body.message).toContain('staffId must be a UUID');
-        expect(body.message).toContain('slotStart must be a valid ISO 8601 date string');
+        expect(body.message).toContain(
+          'slotStart must be a valid ISO 8601 date string',
+        );
         expect(body.message).toContain('property extra should not exist');
       });
 
@@ -154,7 +153,9 @@ describe('ReservationController (e2e)', () => {
   });
 
   it('DELETE /api/reservations/:reservationId preserves domain error codes from the service layer', async () => {
-    reservationService.cancel.mockRejectedValueOnce(cancellationForbiddenError());
+    reservationService.cancel.mockRejectedValueOnce(
+      cancellationForbiddenError(),
+    );
 
     await request(app.getHttpServer())
       .delete('/api/reservations/55555555-5555-5555-5555-555555555555')

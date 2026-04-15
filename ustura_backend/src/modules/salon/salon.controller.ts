@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -24,7 +25,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -68,7 +69,9 @@ export class SalonController {
   }
 
   @Get('cities')
-  @ApiOperation({ summary: 'List distinct active salon cities for public filters' })
+  @ApiOperation({
+    summary: 'List distinct active salon cities for public filters',
+  })
   @ApiOkResponse({ type: String, isArray: true })
   async findCities() {
     return this.salonQueryService.findPublicCities();
@@ -198,7 +201,11 @@ export class SalonController {
     @Param('salonId', new ParseUUIDPipe()) salonId: string,
     @Body() updateSalonDto: UpdateSalonDto,
   ) {
-    return this.salonManagementService.update(currentUser, salonId, updateSalonDto);
+    return this.salonManagementService.update(
+      currentUser,
+      salonId,
+      updateSalonDto,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -213,7 +220,9 @@ export class SalonController {
   )
   @ApiBearerAuth('access-token')
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload and assign a local storefront photo for an owned salon' })
+  @ApiOperation({
+    summary: 'Upload and assign a local storefront photo for an owned salon',
+  })
   @ApiParam({ name: 'salonId', format: 'uuid' })
   @ApiBody({
     schema: {
@@ -261,9 +270,77 @@ export class SalonController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OWNER)
+  @Post(':salonId/storefront-gallery')
+  @UseInterceptors(
+    FilesInterceptor('files', 8, {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload one or more gallery photos for an owned salon',
+  })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['files'],
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ type: OwnedSalonResponseDto })
+  async uploadStorefrontGallery(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+    @UploadedFiles() files: unknown[],
+    @Req() request: Request,
+  ) {
+    return this.salonMediaService.uploadOwnedGalleryPhotos(
+      currentUser,
+      salonId,
+      files as never,
+      this.resolveRequestBaseUrl(request),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER)
+  @Delete(':salonId/storefront-gallery')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Remove a gallery photo for an owned salon' })
+  @ApiParam({ name: 'salonId', format: 'uuid' })
+  @ApiQuery({ name: 'photoUrl', required: true, type: String })
+  @ApiOkResponse({ type: OwnedSalonResponseDto })
+  async removeStorefrontGalleryPhoto(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('salonId', new ParseUUIDPipe()) salonId: string,
+    @Query('photoUrl') photoUrl: string,
+  ) {
+    return this.salonMediaService.removeOwnedGalleryPhoto(
+      currentUser,
+      salonId,
+      photoUrl,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER)
   @Delete(':salonId')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Soft delete a salon owned by the authenticated owner' })
+  @ApiOperation({
+    summary: 'Soft delete a salon owned by the authenticated owner',
+  })
   @ApiParam({ name: 'salonId', format: 'uuid' })
   @ApiOkResponse({ type: OwnedSalonResponseDto })
   async remove(

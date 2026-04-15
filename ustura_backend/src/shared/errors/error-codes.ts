@@ -14,15 +14,13 @@ export const ERROR_CODES = {
     REFRESH_TOKEN_INVALID: 'auth.refresh_token_invalid',
     REFRESH_TOKEN_REUSE_DETECTED: 'auth.refresh_token_reuse_detected',
     FIREBASE_GOOGLE_NOT_CONFIGURED: 'auth.firebase_google_not_configured',
-    FIREBASE_CERTIFICATES_UNAVAILABLE:
-      'auth.firebase_certificates_unavailable',
+    FIREBASE_CERTIFICATES_UNAVAILABLE: 'auth.firebase_certificates_unavailable',
     FIREBASE_CERTIFICATES_INVALID: 'auth.firebase_certificates_invalid',
   },
   USER: {
     CUSTOMER_CREDENTIALS_REQUIRED: 'user.customer_credentials_required',
     CUSTOMER_INACTIVE: 'user.customer_inactive',
-    CUSTOMER_ONLY_MANAGED_RESERVATION:
-      'user.customer_only_managed_reservation',
+    CUSTOMER_ONLY_MANAGED_RESERVATION: 'user.customer_only_managed_reservation',
     CUSTOMER_GOOGLE_ONLY: 'user.customer_google_only',
     EMAIL_ALREADY_EXISTS: 'user.email_already_exists',
     GOOGLE_IDENTITY_ALREADY_LINKED: 'user.google_identity_already_linked',
@@ -49,10 +47,12 @@ export const ERROR_CODES = {
   STAFF: {
     ALREADY_ASSIGNED: 'staff.already_assigned',
     INVALID_ACCOUNT_ROLE: 'staff.invalid_account_role',
+    INVALID_MEDIA_FILE: 'staff.invalid_media_file',
     MANAGEMENT_FORBIDDEN: 'staff.management_forbidden',
     NOT_FOUND: 'staff.not_found',
     PROVISIONING_MODE_INVALID: 'staff.provisioning_mode_invalid',
     SALON_NOT_FOUND: 'staff.salon_not_found',
+    SELF_MANAGEMENT_FORBIDDEN: 'staff.self_management_forbidden',
     SELF_VIEW_FORBIDDEN: 'staff.self_view_forbidden',
     USER_INACTIVE: 'staff.user_inactive',
     USER_NOT_FOUND: 'staff.user_not_found',
@@ -64,6 +64,12 @@ export const ERROR_CODES = {
     INVALID_WORKING_HOURS: 'salon.invalid_working_hours',
     MANAGEMENT_FORBIDDEN: 'salon.management_forbidden',
     NOT_FOUND: 'salon.not_found',
+  },
+  SALON_SERVICE: {
+    INVALID_FIELD: 'salon_service.invalid_field',
+    MANAGEMENT_FORBIDDEN: 'salon_service.management_forbidden',
+    NOT_FOUND: 'salon_service.not_found',
+    SALON_NOT_FOUND: 'salon_service.salon_not_found',
   },
   RESERVATION: {
     BARBER_NOT_FOUND: 'reservation.barber_not_found',

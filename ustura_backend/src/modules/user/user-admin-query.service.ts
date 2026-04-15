@@ -12,7 +12,9 @@ import { UserRepository } from './repositories/user.repository';
 export class UserAdminQueryService {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async findAdminUsers(query: FindAdminUsersQueryDto): Promise<AdminUserListResult> {
+  async findAdminUsers(
+    query: FindAdminUsersQueryDto,
+  ): Promise<AdminUserListResult> {
     const filters = {
       search: this.normalizeOptionalString(query.search),
       role: query.role,

@@ -88,7 +88,9 @@ describe('SalonRepository (Integration)', () => {
   });
 
   it('find returns null for non existing salon', async () => {
-    const found = await salonRepository.findById('00000000-0000-0000-0000-000000000000');
+    const found = await salonRepository.findById(
+      '00000000-0000-0000-0000-000000000000',
+    );
     expect(found).toBeNull();
   });
 });

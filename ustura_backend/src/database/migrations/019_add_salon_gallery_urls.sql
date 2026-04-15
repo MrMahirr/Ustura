@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE salons
+ADD COLUMN IF NOT EXISTS gallery_urls JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+COMMIT;
